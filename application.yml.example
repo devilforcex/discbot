@@ -1,0 +1,76 @@
+# Lavalink v4 Configuration Example
+# Copy this file to application.yml in your Lavalink server directory
+# Download Lavalink v4 from: https://github.com/lavalink-devs/Lavalink/releases
+
+server:
+  port: 2333
+  address: 127.0.0.1
+
+lavalink:
+  server:
+    password: "youshallnotpass"
+    sources:
+      youtube: true
+      bandcamp: true
+      soundcloud: true
+      twitch: true
+      vimeo: true
+      http: true
+      local: false
+    filters:
+      volume: true
+      equalizer: true
+      karaoke: false
+      timescale: true
+      tremolo: false
+      vibrato: false
+      distortion: false
+      rotation: false
+      channelMix: false
+      lowPass: false
+    bufferDurationMs: 400
+    frameBufferDurationMs: 5000
+    opusEncodingQuality: 10
+    resamplingQuality: HIGH
+    trackStuckThresholdMs: 10000
+    useSeekGhosting: true
+    youtubePlaylistLoadLimit: 6
+    playerUpdateInterval: 5
+    youtubeSearchEnabled: true
+    soundcloudSearchEnabled: true
+    gc-warnings: true
+
+plugins:
+  # Spotify plugin configuration (optional)
+  # Download from: https://github.com/lavalink-devs/lava-spotify
+  # Place jar file in Lavalink's plugins/ directory
+  - name: spotify-plugin
+    dependency: "com.github.lavalink-devs:lavalink-spotify-plugin:v1.3.0"
+    repository: "https://jitpack.io"
+    spotify:
+      clientId: "your_spotify_client_id"
+      clientSecret: "your_spotify_client_secret"
+      countryCode: "US"
+      maxTracksPerRequest: 200
+      playlistPageSize: 200
+      albumPageSize: 200
+
+metrics:
+  prometheus:
+    enabled: false
+    endpoint: /metrics
+
+sentry:
+  dsn: ""
+  environment: ""
+
+logging:
+  file:
+    path: ./logs/
+  level:
+    root: INFO
+    lavalink: INFO
+  logback:
+    rollingpolicy:
+      max-history: 30
+      max-file-size: 1GB

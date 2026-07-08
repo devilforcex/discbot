@@ -1,0 +1,45 @@
+# Environment
+.env
+
+# Database
+data/
+*.db
+
+# Logs
+logs/
+*.log
+bot/logs/
+
+# Lavalink
+Lavalink.jar
+application.yml
+plugins/
+lavalink/
+*.yml.bak
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+venv/
+.venv/
+env/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Dashboard generated
+bot/dashboard/static/
+bot/dashboard/templates/
