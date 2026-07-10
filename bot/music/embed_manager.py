@@ -434,7 +434,7 @@ class EmbedManager:
             inline=False,
         )
 
-        embed.set_footer(text="Music commands work in the designated music channel • Filters require playing track")
+        embed.set_footer(text="DrusaBota • Made with ❤️ by Steel • Use dropdown to switch category • Discord link in buttons below")
         return embed
 
     # ------------------------------------------------------------

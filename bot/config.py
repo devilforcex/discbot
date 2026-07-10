@@ -96,6 +96,28 @@ class Config(BaseSettings):
         description="Secret key for dashboard session/auth",
     )
 
+    # Branding & Links — for help menu & website (Steel)
+    support_server_url: Optional[str] = Field(
+        default=None,
+        description="Discord support server invite URL",
+    )
+    discord_invite_url: Optional[str] = Field(
+        default=None,
+        description="Alias for support server invite",
+    )
+    bot_invite_url: Optional[str] = Field(
+        default=None,
+        description="Bot invite URL (OAuth2)",
+    )
+    website_url: Optional[str] = Field(
+        default="https://github.com/devilforcex/discbot",
+        description="Website / Vote URL for help menu buttons",
+    )
+    made_by_text: str = Field(
+        default="Made with ❤️ by Steel",
+        description="Footer branding text",
+    )
+
     @model_validator(mode="after")
     def validate_token(self) -> "Config":
         """Ensure Discord bot token is provided."""
