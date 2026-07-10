@@ -393,9 +393,7 @@ class WavelinkEvents(commands.Cog):
     def _discard_queued_track(self, guild_id: int, track_data: dict) -> None:
         """Remove a bad queued track if loop-queue reinserted it."""
         try:
-            self.bot.queue_manager.get_queue(guild_id).remove(track_data)
-        except ValueError:
-            pass
+            self.bot.queue_manager.remove_by_uri(guild_id, track_data)
         except Exception as e:
             logger.debug("Failed to discard bad queued track in guild %s: %s", guild_id, e)
 
