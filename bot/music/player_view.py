@@ -1,5 +1,6 @@
 """
 Interactive Discord buttons for the persistent music player.
+Enhanced with audio filters select and seek controls (+10/-10/Replay) inspired by reference screenshots.
 """
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ from typing import Optional
 
 import discord
 
+from bot.music.audio_filters import FILTER_INFO, get_filter_choices
 from bot.music.emoji import EMOJI
 from bot.music.embed_manager import EmbedManager
 
@@ -20,11 +22,98 @@ CID_PREFIX = "mb"
 COOLDOWN_SECONDS = 1.0
 
 
+class FilterSelect(discord.ui.Select):
+    """Persistent filter dropdown: Select A Filter To Apply."""
+
+    def __init__(self, bot=None, guild_id: int = 0):
+        self.bot = bot
+        self._gid = guild_id
+
+        options = []
+        for value, label, desc, emoji in get_filter_choices():
+            # Ensure label and desc fit Discord limits
+            # Discord: label <=100, description <=100
+            options.append(
+                discord.SelectOption(
+                    label=label[:100],
+                    description=desc[:100],
+                    value=value,
+                    emoji=emoji,
+                )
+            )
+
+        super().__init__(
+            placeholder="Select A Filter To Apply.",
+            min_values=1,
+            max_values=1,
+            options=options[:25],
+            custom_id=f"{CID_PREFIX}:filter:{guild_id}",
+            row=0,
+        )
+
+    async def callback(self, interaction: discord.Interaction):
+        bot = self.bot or interaction.client
+        guild_id = self._gid
+        # Try parse from custom_id if gid 0
+        if not guild_id:
+            try:
+                cid = interaction.data.get("custom_id", "")
+                parts = cid.split(":")
+                if len(parts) >= 3:
+                    guild_id = int(parts[2])
+            except Exception:
+                pass
+        if not guild_id and interaction.guild:
+            guild_id = interaction.guild.id
+
+        if not guild_id:
+            await interaction.response.send_message(f"{EMOJI['error']} Could not resolve guild.", ephemeral=True)
+            return
+
+        from bot.music.player_controller import PlayerController
+
+        controller = getattr(bot, "player_controller", None)
+        if controller is None:
+            controller = PlayerController(bot)
+            bot.player_controller = controller
+
+        user = interaction.user
+        if not isinstance(user, discord.Member):
+            await interaction.response.send_message(f"{EMOJI['error']} Guild members only.", ephemeral=True)
+            return
+
+        # Auth check
+        ok, err = controller.check_authorized(user.id)
+        if not ok:
+            await interaction.response.send_message(err, ephemeral=True)
+            return
+
+        filter_name = self.values[0]
+
+        await interaction.response.defer(ephemeral=True)
+
+        result = await controller.set_filter(guild_id, user, filter_name)
+        await interaction.followup.send(result.message, ephemeral=True)
+
+        if result.refresh_player:
+            mgr = getattr(bot, "player_messages", None)
+            if mgr:
+                try:
+                    await mgr.update_now_playing(guild_id)
+                except Exception as e:
+                    logger.debug("Player message refresh after filter failed: %s", e)
+
+
 class PlayerView(discord.ui.View):
-    """Persistent player control buttons.
+    """Persistent player control buttons + filter select.
 
     custom_id format: mb:{action}:{guild_id}
     timeout=None so buttons survive restarts when re-registered via bot.add_view.
+    Layout:
+      Row 0: FilterSelect (Select A Filter To Apply.)
+      Row 1: ⏯ play_pause | ⏭ skip | ⏹ stop | 🔀 shuffle | 🔁 loop
+      Row 2: 🔉 vol_down | 🔊 vol_up | ⭐ favorite | 📋 queue | 🔌 disconnect
+      Row 3: ⏮ replay | ⏪ -10 | ⏩ +10
     """
 
     def __init__(self, bot=None, guild_id: Optional[int] = None):
@@ -33,25 +122,32 @@ class PlayerView(discord.ui.View):
         self.guild_id = guild_id
         self._cooldowns: dict[int, float] = {}
 
-        # When used as persistent view, guild_id may be None and is parsed from custom_id
         gid = guild_id or 0
         self.clear_items()
-        self._build_buttons(gid)
+        self._build_components(gid)
 
-    def _build_buttons(self, guild_id: int) -> None:
-        # Row 0 — transport
-        self.add_item(self._btn(EMOJI["play_pause"], "play_pause", guild_id, 0, discord.ButtonStyle.primary))
-        self.add_item(self._btn(EMOJI["skip"], "skip", guild_id, 0, discord.ButtonStyle.secondary))
-        self.add_item(self._btn(EMOJI["stop"], "stop", guild_id, 0, discord.ButtonStyle.secondary))
-        self.add_item(self._btn(EMOJI["shuffle"], "shuffle", guild_id, 0, discord.ButtonStyle.secondary))
-        self.add_item(self._btn(EMOJI["loop_queue"], "loop", guild_id, 0, discord.ButtonStyle.secondary))
+    def _build_components(self, guild_id: int) -> None:
+        # Row 0 — filter select (persistent)
+        self.add_item(FilterSelect(bot=self.bot, guild_id=guild_id))
 
-        # Row 1 — volume / extras
-        self.add_item(self._btn(EMOJI["vol_down"], "vol_down", guild_id, 1, discord.ButtonStyle.secondary))
-        self.add_item(self._btn(EMOJI["vol_up"], "vol_up", guild_id, 1, discord.ButtonStyle.secondary))
-        self.add_item(self._btn(EMOJI["favorite"], "favorite", guild_id, 1, discord.ButtonStyle.secondary))
-        self.add_item(self._btn(EMOJI["queue"], "queue", guild_id, 1, discord.ButtonStyle.secondary))
-        self.add_item(self._btn(EMOJI["disconnect"], "disconnect", guild_id, 1, discord.ButtonStyle.danger))
+        # Row 1 — transport
+        self.add_item(self._btn(EMOJI["play_pause"], "play_pause", guild_id, 1, discord.ButtonStyle.primary))
+        self.add_item(self._btn(EMOJI["skip"], "skip", guild_id, 1, discord.ButtonStyle.secondary))
+        self.add_item(self._btn(EMOJI["stop"], "stop", guild_id, 1, discord.ButtonStyle.secondary))
+        self.add_item(self._btn(EMOJI["shuffle"], "shuffle", guild_id, 1, discord.ButtonStyle.secondary))
+        self.add_item(self._btn(EMOJI["loop_queue"], "loop", guild_id, 1, discord.ButtonStyle.secondary))
+
+        # Row 2 — volume / extras
+        self.add_item(self._btn(EMOJI["vol_down"], "vol_down", guild_id, 2, discord.ButtonStyle.secondary))
+        self.add_item(self._btn(EMOJI["vol_up"], "vol_up", guild_id, 2, discord.ButtonStyle.secondary))
+        self.add_item(self._btn(EMOJI["favorite"], "favorite", guild_id, 2, discord.ButtonStyle.secondary))
+        self.add_item(self._btn(EMOJI["queue"], "queue", guild_id, 2, discord.ButtonStyle.secondary))
+        self.add_item(self._btn(EMOJI["disconnect"], "disconnect", guild_id, 2, discord.ButtonStyle.danger))
+
+        # Row 3 — seek controls (new)
+        self.add_item(self._btn("⏮️", "replay", guild_id, 3, discord.ButtonStyle.secondary))
+        self.add_item(self._btn("⏪", "seek_back", guild_id, 3, discord.ButtonStyle.secondary))
+        self.add_item(self._btn("⏩", "seek_fwd", guild_id, 3, discord.ButtonStyle.secondary))
 
     def _btn(
         self,
@@ -79,7 +175,6 @@ class PlayerView(discord.ui.View):
     def _parse_guild_id(self, interaction: discord.Interaction) -> Optional[int]:
         if self.guild_id:
             return self.guild_id
-        # From custom_id on the pressed component
         try:
             custom_id = interaction.data.get("custom_id", "")
             parts = custom_id.split(":")
@@ -187,8 +282,13 @@ class PlayerView(discord.ui.View):
                 result = await controller.favorite(guild_id, user)
             elif action == "disconnect":
                 result = await controller.disconnect(guild_id, user)
+            elif action == "seek_fwd":
+                result = await controller.seek_forward(guild_id, user, 10)
+            elif action == "seek_back":
+                result = await controller.seek_backward(guild_id, user, 10)
+            elif action == "replay":
+                result = await controller.replay(guild_id, user)
             else:
-                result = None
                 await interaction.followup.send(
                     f"{EMOJI['error']} Unknown action.",
                     ephemeral=True,

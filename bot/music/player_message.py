@@ -118,6 +118,7 @@ class PlayerMessageManager:
                 "loop": loop,
                 "queue_len": queue_len,
                 "autoplay": getattr(player, "autoplay_enabled", False) if player else False,
+                "active_filter": getattr(player, "active_filter", "off") if player else "off",
             }
 
         track = player.last_track
@@ -134,6 +135,7 @@ class PlayerMessageManager:
             "loop": loop,
             "queue_len": queue_len,
             "autoplay": getattr(player, "autoplay_enabled", False),
+            "active_filter": getattr(player, "active_filter", "off"),
             "requester": None,
         }
 
@@ -157,6 +159,7 @@ class PlayerMessageManager:
             autoplay=state["autoplay"],
             queue_len=state["queue_len"],
             requester=state.get("requester"),
+            active_filter=state.get("active_filter", "off"),
         )
 
     async def ensure_message(
