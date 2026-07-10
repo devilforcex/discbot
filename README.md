@@ -219,6 +219,26 @@ docker compose restart bot
 docker compose down
 ```
 
+### Updating an Existing Checkout
+
+There is no need to delete and clone the repository again. From the existing
+project directory, run:
+
+```bash
+./update.sh
+```
+
+The script safely fast-forwards the currently checked-out branch, pulls the
+latest Lavalink image, and rebuilds/restarts the Compose stack. It preserves
+ignored runtime files such as `.env`, `data/`, and `logs/`, and stops instead of
+overwriting tracked local changes.
+
+To update the source without restarting Docker:
+
+```bash
+./update.sh --pull-only
+```
+
 If the dashboard is enabled with `DASHBOARD_ENABLED=true`, it is exposed at `http://localhost:18080`.
 
 ## 📋 Commands
