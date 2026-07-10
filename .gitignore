@@ -47,3 +47,10 @@ Thumbs.db
 !docker/
 !docker/lavalink/
 !docker/lavalink/application.yml
+# Allow our refactored lavalink package (not the Lavalink server folder)
+!bot/music/lavalink/
+!bot/music/lavalink/**
+# Re-ignore pycache inside allowed package
+bot/music/lavalink/__pycache__/
+**/__pycache__/
+__pycache__/
