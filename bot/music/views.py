@@ -7,7 +7,7 @@ from __future__ import annotations
 
 import logging
 import math
-from typing import List, Optional
+from typing import List
 
 import discord
 import wavelink
@@ -15,7 +15,6 @@ import wavelink
 from bot.database import favorites_manager, guild_settings, playlist_manager
 from bot.music.embed_manager import EmbedManager
 from bot.music.emoji import EMOJI
-from bot.music.queue_manager import LoopMode
 
 logger = logging.getLogger(__name__)
 

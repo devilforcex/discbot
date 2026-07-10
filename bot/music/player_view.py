@@ -11,7 +11,7 @@ from typing import Optional
 
 import discord
 
-from bot.music.audio_filters import FILTER_INFO, get_filter_choices
+from bot.music.audio_filters import get_filter_choices
 from bot.music.emoji import EMOJI
 from bot.music.embed_manager import EmbedManager
 

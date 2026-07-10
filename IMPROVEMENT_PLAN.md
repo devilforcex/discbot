@@ -4,7 +4,7 @@
 **База:** текущ работещ bot (prefix `!`, Lavalink v4, SQLite, FastAPI dashboard)  
 **Източници:** кодът в repo, [Discord Bots Overview](https://docs.discord.com/developers/bots/overview), [Interactions](https://docs.discord.com/developers/interactions/overview), [Message Components](https://docs.discord.com/developers/components/overview)
 
-> **Branch бележка:** предишна сесия `arena/019f4c0b-discbot` merge-ната в master `28856e2`. Текуща сесия е `arena/019f4c1f-discbot` — продължение Фаза 2.
+> **Branch бележка:** предишна сесия `arena/019f4c0b-discbot` merge-ната в master `28856e2`. Текуща сесия е `arena/019f4c49-discbot` — Phase 5 стабилизация: debug pass + базови tests.
 
 ---
 
@@ -12,18 +12,18 @@
 
 | Област | Статус | Проблем / gap |
 |--------|--------|----------------|
-| Prefix команди (`!play`, `!skip`…) | ✅ Работи | Help embed още показва **slash** (`/play`) — outdated copy |
+| Prefix команди (`!play`, `!skip`…) | ✅ Работи | Help/aliases са обновени за `!` prefix |
 | Access control (owner/whitelist/blacklist) | ✅ Работи | — |
-| Lavalink + queue + loop + autoplay | ✅ Работи | Autoplay recommendation е крехък |
-| Now Playing embed | ⚠️ Частично | Само статичен текст + progress bar; **няма бутони** |
-| Interactive UI (`discord.ui.View` / Buttons) | ❌ Липсва | 0 употреби на Button/View/Interaction handlers |
-| Persistent player message | ❌ Липсва | Всеки `!play`/`!np` праща ново съобщение |
-| Emoji consistency | ⚠️ Частично | Има emoji в titles, но help/commands не са унифицирани |
-| Web dashboard | ⚠️ Минимален | Inline HTML, без real-time player, без controls, dark theme basic |
+| Lavalink + queue + loop + autoplay | ✅ Работи | Reconnect/debug pass направен; autoplay recommendation остава fragile by design |
+| Now Playing embed | ✅ Работи | Persistent NP message + progress refresh + controls |
+| Interactive UI (`discord.ui.View` / Buttons) | ✅ Работи | Player buttons + select menus за search/queue/favorites/playlists |
+| Persistent player message | ✅ Работи | `PlayerMessageManager` edit-ва едно NP съобщение и restore-ва views |
+| Emoji consistency | ✅ Работи | `bot/music/emoji.py` централизира vocabulary/colors |
+| Web dashboard | ✅ Работи | FastAPI template/static UI + live polling + controls; остава pixel QA |
 | Components V2 | ❌ Не се ползва | Discord препоръчва layout + buttons; legacy Action Rows също са OK |
-| Hosting на static UI | ❌ Няма | Dashboard е FastAPI runtime; static docs/landing може на Pages/Netlify |
+| Hosting на static UI | ✅ Assets ready | `docs/` landing е готов за Pages/Netlify; live dashboard остава VPS/runtime |
 
-**Ключов извод:** backend-ът (playback, queue, auth, DB) е готов. Следващият скок е **UX слой**: interactive embed player + красив dashboard + polish на команди/emoji.
+**Ключов извод:** backend-ът и UX слоят са имплементирани. Следващият скок е **Phase 5 стабилизация**: tests, Docker/Lavalink packaging, live QA, dashboard audit logs и production docs.
 
 ---
 
@@ -337,15 +337,15 @@ Inline f-string HTML **премахнат** от `dashboard.py`.
 
 ### Фаза 5 — Quality & production (ongoing)
 
-| # | Задача |
-|---|--------|
-| 5.1 | Unit tests за `PlayerController` + queue (pytest + pytest-asyncio) |
-| 5.2 | Fix `ctx.defer()` misuse (prefix commands нямат native defer като slash — ползвай typing / temp msg) |
-| 5.3 | Rate-limit button spam (cooldown 1s per user) |
-| 5.4 | Audit log за dashboard remote controls |
-| 5.5 | Docker Compose: bot + Lavalink (+ optional dashboard) |
-| 5.6 | Healthcheck endpoint + systemd examples update |
-| 5.7 | Components V2 experiment (optional redesign) |
+| # | Задача | Статус |
+|---|--------|--------|
+| 5.1 | Unit tests за core helpers | 🟡 started — `tests/test_queue_manager.py`, `tests/test_database.py` (`python -m unittest discover -v`) |
+| 5.2 | Fix `ctx.defer()` misuse (prefix commands нямат native defer като slash — ползвай typing / temp msg) | ✅ OK — няма `ctx.defer`; interaction defer остава валиден |
+| 5.3 | Rate-limit button spam (cooldown 1s per user) | ✅ done — `COOLDOWN_SECONDS = 1.0` в `player_view.py` |
+| 5.4 | Audit log за dashboard remote controls | ⏳ TODO |
+| 5.5 | Docker Compose: bot + Lavalink (+ optional dashboard) | ✅ done — `Dockerfile`, `docker-compose.yml`, `docker/lavalink/application.yml` |
+| 5.6 | Healthcheck endpoint + systemd examples update | 🟡 partial — `/api/health` има; docs/examples pending |
+| 5.7 | Components V2 experiment (optional redesign) | optional / later |
 
 ---
 
@@ -355,9 +355,9 @@ Inline f-string HTML **премахнат** от `dashboard.py`.
 
 - [x] Application + Bot user + Gateway (discord.py)
 - [x] Intents: `message_content`, `voice_states`, `guilds`
-- [ ] **Interactions:** Buttons + Select Menus (Фаза 1–2)
+- [x] **Interactions:** Buttons + Select Menus (Фаза 1–2)
 - [ ] Optional: re-introduce **slash commands** alongside prefix (`/play` + `!play`) — slash дава native autocomplete
-- [ ] Message Components persistence (`custom_id` + `add_view` on ready)
+- [x] Message Components persistence (`custom_id` + `add_view` on ready)
 - [ ] Permissions: `Send Messages`, `Embed Links`, `Connect`, `Speak`, `Use External Emojis` (ако custom emoji)
 - [ ] Privileged intents toggle in Developer Portal remains correct
 
@@ -494,7 +494,20 @@ Week 3 (optional)
 | Persistent NP message + progress refresh | ✅ готово (Phase 1) |
 | Search select menu / queue pagination | ✅ готово (Phase 2 — this branch) |
 | Favorites / playlists play via select | ✅ готово (Phase 2 — this branch) |
-| Docker / tests | ⏳ Фаза 5 |
+| Docker / tests | 🟡 Phase 5 започната — базови unit tests + Docker Compose готови; live Docker QA pending |
+
+**Phase 5 test command:**
+```bash
+python -m unittest discover -v
+```
+
+**Docker Compose quick start:**
+```bash
+cp .env.example .env
+# edit .env
+docker compose up -d --build
+docker compose logs -f bot
+```
 
 **Как да тестваш Phase 2:**
 1. Стартирай Lavalink + `python bot/main.py`
@@ -508,4 +521,4 @@ Week 3 (optional)
 
 ---
 
-*Предишна сесия `arena/019f4c0b-discbot` merge-ната в master `28856e2`. Текуща работа на `arena/019f4c1f-discbot` — Фаза 2 завършена.*
+*Предишна сесия `arena/019f4c0b-discbot` merge-ната в master `28856e2`. Phase 2 е завършена; текуща работа на `arena/019f4c49-discbot` — Phase 5 стабилизация.*

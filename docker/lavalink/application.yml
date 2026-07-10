@@ -1,10 +1,6 @@
-# Lavalink v4 Configuration Example
-# Copy this file to application.yml in your Lavalink server directory
-# Download Lavalink v4 from: https://github.com/lavalink-devs/Lavalink/releases
-
 server:
   port: 12333
-  address: 127.0.0.1
+  address: 0.0.0.0
 
 lavalink:
   server:
@@ -41,19 +37,15 @@ lavalink:
     gc-warnings: true
 
 plugins:
-  # Spotify plugin configuration (optional)
-  # Download from: https://github.com/lavalink-devs/lava-spotify
-  # Place jar file in Lavalink's plugins/ directory
-  - name: spotify-plugin
-    dependency: "com.github.lavalink-devs:lavalink-spotify-plugin:v1.3.0"
-    repository: "https://jitpack.io"
-    spotify:
-      clientId: "your_spotify_client_id"
-      clientSecret: "your_spotify_client_secret"
-      countryCode: "US"
-      maxTracksPerRequest: 200
-      playlistPageSize: 200
-      albumPageSize: 200
+  # Optional Spotify support. Uncomment and set credentials if the plugin is
+  # desired; keep disabled by default for a reliable first container boot.
+  # - name: spotify-plugin
+  #   dependency: "com.github.lavalink-devs:lavalink-spotify-plugin:v1.3.0"
+  #   repository: "https://jitpack.io"
+  #   spotify:
+  #     clientId: "your_spotify_client_id"
+  #     clientSecret: "your_spotify_client_secret"
+  #     countryCode: "US"
 
 metrics:
   prometheus:

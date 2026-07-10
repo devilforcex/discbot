@@ -89,41 +89,47 @@ This plan extends the previous plan with 14 additional requirements covering use
 **No new dependencies.** All functionality uses `discord.py` built-in prefix command support and `sqlite3` (stdlib). No packages to install.
 
 [Testing]
-**Manual verification checklist after implementation.** No test framework exists; verify by inspecting all modified files.
+**Manual verification checklist after implementation.** Basic stdlib `unittest` suite is now started; live Discord/Lavalink behavior still needs manual QA.
 
 Verification items:
-- [ ] Config.guild_id == 1074037877899542538
-- [ ] Config.music_channel_id == 1097945134630445227
-- [ ] Config.owner_id == 954887574248374322
-- [ ] .env.example has GUILD_ID, MUSIC_CHANNEL_ID, OWNER_ID
-- [ ] message_content intent enabled in bot.py
-- [ ] command_prefix = "!" in bot.py
-- [ ] No @app_commands.command decorators in music_commands.py
-- [ ] No app_commands imports in music_commands.py
-- [ ] No self.tree.sync() in bot.py
-- [ ] Guild check: commands silently ignored outside GUILD_ID
-- [ ] Channel check: music commands blocked outside MUSIC_CHANNEL_ID with error message
-- [ ] Channel exceptions: !help, !ping, !whoami, !requestaccess work outside music channel
-- [ ] Authorization order: owner passes, blacklisted blocked, whitelisted passes, others blocked
-- [ ] !adduser accepts both @mention and raw ID
-- [ ] !removeuser accepts both @mention and raw ID
-- [ ] !listusers shows username, display_name, user_id
-- [ ] !requestaccess creates pending entry and notifies owner
-- [ ] !pendingrequests shows pending requests
-- [ ] !approve accepts @mention or ID, adds to approved_users
-- [ ] !deny accepts @mention or ID, marks as denied
-- [ ] !blacklist prevents all command access
-- [ ] !unblacklist removes from blacklist
-- [ ] !whoami shows: username, display name, ID, guild, channel, access status, blacklist status
-- [ ] !status shows: guild ID, music channel ID, Lavalink status, queue length, current track, uptime
-- [ ] !247 on/off persists to bot_settings SQLite table
-- [ ] audit_logs table records: adduser, removeuser, approve, deny, blacklist, unblacklist
-- [ ] approved_users table has: user_id, username, display_name, added_by, added_at
-- [ ] access_requests table has: id, user_id, username, display_name, guild, requested_at, status
-- [ ] blacklisted_users table has: user_id, username, display_name, added_by, added_at
-- [ ] bot_settings table has: key, value
-- [ ] Lavalink auto-reconnect with exponential backoff on disconnect
-- [ ] README.md documents all features
+
+> Status 2026-07-10: implementation is present in code and static checks pass. Live Discord/Lavalink QA is still required for runtime behavior.
+
+- [x] Config.guild_id == 1074037877899542538
+- [x] Config.music_channel_id == 1097945134630445227
+- [x] Config.owner_id == 954887574248374322
+- [x] .env.example has GUILD_ID, MUSIC_CHANNEL_ID, OWNER_ID
+- [x] message_content intent enabled in bot.py
+- [x] command_prefix = "!" in bot.py
+- [x] No @app_commands.command decorators in music_commands.py
+- [x] No app_commands imports in music_commands.py
+- [x] No self.tree.sync() in bot.py
+- [x] Guild check blocks commands outside configured GUILD_ID
+- [x] Channel check: music commands blocked outside MUSIC_CHANNEL_ID with error message
+- [x] Channel exceptions: !help, !ping, !whoami, !requestaccess work outside music channel
+- [x] Authorization order: owner passes, blacklisted blocked, whitelisted passes, others blocked
+- [x] !adduser accepts both @mention and raw ID
+- [x] !removeuser accepts both @mention and raw ID
+- [x] !listusers shows username, display_name, user_id
+- [x] !requestaccess creates pending entry and notifies owner
+- [x] !pendingrequests shows pending requests
+- [x] !approve accepts @mention or ID, adds to approved_users
+- [x] !deny accepts @mention or ID, marks as denied
+- [x] !blacklist prevents command access
+- [x] !unblacklist removes from blacklist
+- [x] !whoami shows: username, display name, ID, guild, channel, access status, blacklist status
+- [x] !status shows: guild ID, music channel ID, Lavalink status, queue length, current track, uptime
+- [x] !247 on/off persists to bot_settings SQLite table
+- [x] audit_logs table records: adduser, removeuser, approve, deny, blacklist, unblacklist
+- [x] approved_users table has: user_id, username, display_name, added_by, added_at
+- [x] access_requests table has: id, user_id, username, display_name, guild, requested_at, status
+- [x] blacklisted_users table has: user_id, username, display_name, added_by, added_at
+- [x] bot_settings table has: key, value
+- [x] Lavalink auto-reconnect with exponential backoff on startup/disconnect
+- [x] README.md documents all features
+- [x] Basic unittest suite started: `python -m unittest discover -v`
+- [ ] Live runtime QA with real Discord bot + Lavalink
+
 
 [Implementation Order]
 **Eight sequential steps following dependency order: config → database → core → errors → admin_cog → music_cog → env → docs.**

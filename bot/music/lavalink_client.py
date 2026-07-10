@@ -3,6 +3,7 @@ Lavalink client setup for the Discord Music Bot.
 Manages Wavelink node connections, lifecycle, and event dispatching.
 """
 
+import inspect
 import logging
 from typing import Optional
 
@@ -12,7 +13,6 @@ from discord.ext import commands
 
 from bot.config import Config
 from bot.music.player import Player
-from bot.music.queue_manager import QueueManager
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +42,36 @@ class LavalinkClient:
         # Register custom player
         wavelink.Player = Player
 
+        # Avoid duplicate connection attempts when setup() is called from
+        # reconnect logic while the pool is already healthy. If a stale
+        # disconnected node is still registered, close the pool before creating
+        # a replacement node.
+        existing = None
+        try:
+            existing = wavelink.Pool.get_node()
+            if existing and getattr(existing, "is_connected", False):
+                self._ready = True
+                logger.debug("Lavalink node already connected: %s", existing.uri)
+                return
+        except Exception:
+            # No node registered yet (or Pool cannot resolve a node). Continue
+            # with normal connection setup.
+            existing = None
+
+        if existing:
+            close = getattr(wavelink.Pool, "close", None)
+            if close is not None:
+                result = close()
+                if inspect.isawaitable(result):
+                    await result
+
+        # Wavelink v3 expects the Lavalink REST URI (http/https). It opens the
+        # websocket session internally; passing ws:// here breaks node setup on
+        # current Wavelink releases.
+        scheme = "https" if config.lavalink_secure else "http"
+        uri = f"{scheme}://{config.lavalink_host}:{config.lavalink_port}"
         node: wavelink.Node = wavelink.Node(
-            uri=f"{'ws' if not config.lavalink_secure else 'wss'}://{config.lavalink_host}:{config.lavalink_port}",
+            uri=uri,
             password=config.lavalink_password,
         )
 
@@ -53,12 +81,10 @@ class LavalinkClient:
                 client=self.bot,
                 nodes=[node],
             )
-            logger.info(
-                "Connected to Lavalink at %s:%s",
-                config.lavalink_host,
-                config.lavalink_port,
-            )
+            self._ready = True
+            logger.info("Connected to Lavalink at %s", uri)
         except Exception as e:
+            self._ready = False
             logger.error("Failed to connect to Lavalink: %s", e)
             raise
 
@@ -76,8 +102,10 @@ class LavalinkClient:
         Returns:
             The Player instance, or None if not available.
         """
-        player: Optional[Player] = self.bot.voice_clients and discord.utils.get(
-            self.bot.voice_clients, guild__id=guild_id
+        player: Optional[Player] = (
+            discord.utils.get(self.bot.voice_clients, guild__id=guild_id)
+            if self.bot.voice_clients
+            else None
         )
 
         if player is None and channel is not None:
@@ -96,13 +124,35 @@ class LavalinkClient:
         Args:
             guild_id: Discord guild ID.
         """
-        player: Optional[Player] = self.bot.voice_clients and discord.utils.get(
-            self.bot.voice_clients, guild__id=guild_id
+        player: Optional[Player] = (
+            discord.utils.get(self.bot.voice_clients, guild__id=guild_id)
+            if self.bot.voice_clients
+            else None
         )
 
         if player:
             await player.disconnect()
             logger.info("Disconnected player for guild %s", guild_id)
+
+    async def close(self) -> None:
+        """Disconnect voice clients and close all Wavelink nodes if supported."""
+        self._ready = False
+
+        for voice_client in list(getattr(self.bot, "voice_clients", [])):
+            try:
+                await voice_client.disconnect(force=True)
+            except TypeError:
+                await voice_client.disconnect()
+            except Exception as e:
+                logger.debug("Voice client disconnect failed during shutdown: %s", e)
+
+        close = getattr(wavelink.Pool, "close", None)
+        if close is None:
+            return
+
+        result = close()
+        if inspect.isawaitable(result):
+            await result
 
 
 class WavelinkEvents(commands.Cog):
@@ -118,6 +168,15 @@ class WavelinkEvents(commands.Cog):
         Args:
             payload: Node ready event payload.
         """
+        if hasattr(self.bot, "lavalink"):
+            self.bot.lavalink._ready = True
+        if getattr(self.bot, "_lavalink_reconnect_task", None):
+            task = self.bot._lavalink_reconnect_task
+            if task and not task.done():
+                task.cancel()
+        if hasattr(self.bot, "_lavalink_reconnect_attempt"):
+            self.bot._lavalink_reconnect_attempt = 0
+
         logger.info(
             "Wavelink node ready: %s | Resumed: %s",
             payload.node.uri,
@@ -131,11 +190,18 @@ class WavelinkEvents(commands.Cog):
         Args:
             payload: Node disconnected event payload.
         """
+        if hasattr(self.bot, "lavalink"):
+            self.bot.lavalink._ready = False
+
         logger.warning(
             "Wavelink node disconnected: %s | Code: %s",
             payload.node.uri,
             payload.code,
         )
+
+        scheduler = getattr(self.bot, "_schedule_lavalink_reconnect", None)
+        if scheduler:
+            scheduler()
 
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload) -> None:
@@ -221,7 +287,8 @@ class WavelinkEvents(commands.Cog):
         )
 
         # Skip to next track
-        await self._play_next(player)
+        if player:
+            await self._play_next(player)
 
     @commands.Cog.listener()
     async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload) -> None:
@@ -239,7 +306,8 @@ class WavelinkEvents(commands.Cog):
         )
 
         # Skip to next track
-        await self._play_next(player)
+        if player:
+            await self._play_next(player)
 
     async def _handle_autoplay(self, player: Player, guild_id: int) -> None:
         """Handle autoplay logic when a track ends.
@@ -266,33 +334,70 @@ class WavelinkEvents(commands.Cog):
                 await self._play_next(player)
 
     async def _play_next(self, player: Player) -> None:
-        """Play the next track in the queue.
+        """Play the next playable track in the queue.
+
+        Invalid or unavailable queued entries are skipped so one bad URL does
+        not stall the entire queue.
 
         Args:
             player: The guild's player.
         """
         guild_id = player.guild.id
-        next_track_data = self.bot.queue_manager.get_next(guild_id)
+        max_attempts = max(1, self.bot.queue_manager.get_length(guild_id) + 1)
 
-        if next_track_data is None:
-            logger.info("Queue empty for guild %s, playback stopped", guild_id)
-            mgr = getattr(self.bot, "player_messages", None)
-            if mgr:
-                try:
-                    await mgr.set_idle(guild_id)
-                except Exception:
-                    pass
+        for _ in range(max_attempts):
+            next_track_data = self.bot.queue_manager.get_next(guild_id)
+
+            if next_track_data is None:
+                logger.info("Queue empty for guild %s, playback stopped", guild_id)
+                mgr = getattr(self.bot, "player_messages", None)
+                if mgr:
+                    try:
+                        await mgr.set_idle(guild_id)
+                    except Exception:
+                        pass
+                return
+
+            uri = next_track_data.get("uri")
+            if not uri:
+                logger.warning("Skipping queued track without URI in guild %s: %s", guild_id, next_track_data)
+                self._discard_queued_track(guild_id, next_track_data)
+                continue
+
+            # Search for the track by URL or identifier.
+            try:
+                tracks = await wavelink.Playable.search(uri)
+            except Exception as e:
+                logger.error("Failed to resolve queued track in guild %s: %s", guild_id, e)
+                continue
+
+            if not tracks:
+                logger.warning("Queued track no longer found in guild %s: %s", guild_id, uri)
+                self._discard_queued_track(guild_id, next_track_data)
+                continue
+
+            track = tracks[0]
+            await player.play(track)
+            self.bot.queue_manager.add_history(guild_id, next_track_data)
+            logger.info("Playing next track: %s in guild %s", track.title, guild_id)
             return
 
-        # Search for the track by URL or identifier
+        logger.warning("No playable queued tracks found for guild %s after %d attempt(s)", guild_id, max_attempts)
+        mgr = getattr(self.bot, "player_messages", None)
+        if mgr:
+            try:
+                await mgr.set_idle(guild_id)
+            except Exception:
+                pass
+
+    def _discard_queued_track(self, guild_id: int, track_data: dict) -> None:
+        """Remove a bad queued track if loop-queue reinserted it."""
         try:
-            tracks = await wavelink.Playable.search(next_track_data["uri"])
-            if tracks:
-                track = tracks[0]
-                await player.play(track)
-                logger.info("Playing next track: %s in guild %s", track.title, guild_id)
+            self.bot.queue_manager.get_queue(guild_id).remove(track_data)
+        except ValueError:
+            pass
         except Exception as e:
-            logger.error("Failed to play next track in guild %s: %s", guild_id, e)
+            logger.debug("Failed to discard bad queued track in guild %s: %s", guild_id, e)
 
     def _save_playback_history(self, guild_id: int, track: wavelink.Playable, player: Player) -> None:
         """Save track playback to database.

@@ -4,8 +4,6 @@ Provides functions to get and update per-guild configuration.
 """
 
 import logging
-from typing import Optional
-
 from bot.database.database import get_connection
 
 logger = logging.getLogger(__name__)

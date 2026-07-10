@@ -11,7 +11,6 @@ from bot.music.emoji import (
     COLOR_ERROR,
     COLOR_FAVORITE,
     COLOR_IDLE,
-    COLOR_INFO,
     COLOR_PAUSED,
     COLOR_PLAYING,
     COLOR_SUCCESS,

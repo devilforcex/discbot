@@ -122,7 +122,7 @@ Edit `.env` and set at minimum:
 | `MUSIC_CHANNEL_ID` | ✅ | - | Channel ID where music commands are allowed |
 | `OWNER_ID` | ✅ | - | Bot owner (super-admin, bypasses all checks) |
 | `LAVALINK_HOST` | ✅ | 127.0.0.1 | Lavalink server host |
-| `LAVALINK_PORT` | ✅ | 2333 | Lavalink server port |
+| `LAVALINK_PORT` | ✅ | 12333 | Lavalink server port |
 | `LAVALINK_PASSWORD` | ✅ | youshallnotpass | Lavalink server password |
 | `SPOTIFY_CLIENT_ID` | ❌ | - | For Spotify URL support |
 | `SPOTIFY_CLIENT_SECRET` | ❌ | - | For Spotify URL support |
@@ -175,6 +175,51 @@ Ensure Lavalink is running first, then:
 ```bash
 python bot/main.py
 ```
+
+### 7. Development Checks
+
+Run the lightweight stdlib test suite before production changes:
+
+```bash
+python -m unittest discover -v
+```
+
+Static syntax check:
+
+```bash
+python -m compileall -q bot tests
+```
+
+### 8. Docker Compose Deployment
+
+The repository includes a Compose stack for the bot and Lavalink:
+
+```bash
+cp .env.example .env
+# edit .env: DISCORD_BOT_TOKEN, GUILD_ID, MUSIC_CHANNEL_ID, OWNER_ID, etc.
+docker compose up -d --build
+docker compose logs -f bot
+```
+
+Services:
+
+| Service | Purpose | Notes |
+|---------|---------|-------|
+| `bot` | Python Discord bot | Uses `.env`, stores SQLite under `./data` |
+| `lavalink` | Lavalink v4 audio backend | Config: `docker/lavalink/application.yml` |
+
+Compose overrides `LAVALINK_HOST=lavalink` because containers talk over the internal Docker network. Keep `LAVALINK_PASSWORD` in `.env` matched with `docker/lavalink/application.yml`.
+
+Useful commands:
+
+```bash
+docker compose ps
+docker compose logs -f lavalink
+docker compose restart bot
+docker compose down
+```
+
+If the dashboard is enabled with `DASHBOARD_ENABLED=true`, it is exposed at `http://localhost:18080`.
 
 ## 📋 Commands
 
@@ -341,7 +386,7 @@ The dashboard is **optional** and **isolated**. Enable it by setting:
 ```env
 DASHBOARD_ENABLED=true
 DASHBOARD_HOST=127.0.0.1
-DASHBOARD_PORT=8080
+DASHBOARD_PORT=18080
 ```
 
 ### API Endpoints
@@ -431,7 +476,7 @@ WantedBy=multi-user.target
 ### "Lavalink not connected" error
 - Ensure Lavalink is running: `java -jar Lavalink.jar`
 - Check `application.yml` password matches `.env`
-- Verify port `2333` is not blocked by firewall
+- Verify port `12333` is not blocked by firewall
 - Check Lavalink logs for errors
 
 ### No audio playback
@@ -447,7 +492,7 @@ WantedBy=multi-user.target
 ### Dashboard not working
 - Install dashboard dependencies: `pip install fastapi uvicorn jinja2 aiofiles python-multipart`
 - Ensure `DASHBOARD_ENABLED=true` in `.env`
-- Check port `8080` is not in use
+- Check port `18080` is not in use
 
 ### Database errors
 - Ensure the `data/` directory exists (created automatically)
