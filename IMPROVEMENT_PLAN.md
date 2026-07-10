@@ -4,7 +4,7 @@
 **База:** текущ работещ bot (prefix `!`, Lavalink v4, SQLite, FastAPI dashboard)  
 **Източници:** кодът в repo, [Discord Bots Overview](https://docs.discord.com/developers/bots/overview), [Interactions](https://docs.discord.com/developers/interactions/overview), [Message Components](https://docs.discord.com/developers/components/overview)
 
-> **Branch бележка:** тази Arena сесия е фиксирана към `arena/019f4c0b-discbot` (от master `e2531ae`). Не се създават допълнителни разклонения; работата остава тук и може да се merge-не към master след review.
+> **Branch бележка:** предишна сесия `arena/019f4c0b-discbot` merge-ната в master `28856e2`. Текуща сесия е `arena/019f4c1f-discbot` — продължение Фаза 2.
 
 ---
 
@@ -238,23 +238,29 @@ class PlayerMessageManager:
 
 ---
 
-### Фаза 2 — Embed & visual polish (0.5–1 ден)
+### Фаза 2 — Embed & visual polish (0.5–1 ден) — ✅ ГОТОВО в `arena/019f4c1f-discbot`
 
-| # | Задача |
-|---|--------|
-| 2.1 | Цветова схема по state: playing=green, paused=orange, stopped=dark, error=red |
-| 2.2 | Status line: `▶️ Playing · 🔁 Queue · 🔊 70% · 🤖 Autoplay` |
-| 2.3 | Thumbnail artwork + fallback bot avatar |
-| 2.4 | Queue embed: pagination buttons (◀️ ▶️) вместо `!queue 2` only |
-| 2.5 | Search results: select menu (top 5 tracks) при `!play query` без exact URL |
-| 2.6 | Favorites / playlist embeds с play buttons |
+| # | Задача | Статус |
+|---|--------|--------|
+| 2.1 | Цветова схема по state: playing=green, paused=orange, stopped=dark, error=red | ✅ done (COLOR_PLAYING etc) |
+| 2.2 | Status line: `▶️ Playing · 🔁 Queue · 🔊 70% · 🤖 Autoplay` | ✅ done |
+| 2.3 | Thumbnail artwork + fallback bot avatar | ✅ done |
+| 2.4 | Queue embed: pagination buttons (◀️ ▶️) вместо `!queue 2` only | ✅ done → `QueuePaginatorView` (Prev/Next/Shuffle/Refresh/Close) |
+| 2.5 | Search results: select menu (top 5 tracks) при `!play query` без exact URL | ✅ done → `SearchView` + `TrackSelect` + `search_results_embed` |
+| 2.6 | Favorites / playlist embeds с play buttons | ✅ done → `FavoritesPaginatorView` + `FavoriteSelect`, `PlaylistListView`, `PlaylistDetailView` + `PlaylistTrackSelect` + Play All |
 
-**Search Select Menu (UX win):**
+**Search Select Menu (UX win) — имплементирано:**
 ```
 !play never gonna
-→ embed "Select a track" + StringSelect (5 options)
-→ user picks → play
+→ embed "Search results for: never gonna" + StringSelect (5 options)
+→ user picks → _play_wavelink_track → queue or play → disable view
+→ URL queries skip select and play directly
 ```
+
+**Implementation files (new):**
+- `bot/music/views.py` — all Phase 2 interactive views (Search, Queue, Favorites, Playlists) + shared helpers `_auth_ok`, `_ensure_voice_player`, `_play_wavelink_track`, `_is_url`
+- `bot/music/embed_manager.py` — added `search_results_embed()` + updated `help_embed()` to document new menus
+- `bot/cogs/music_commands.py` — rewired `!play` to use search select, `!queue` to use `QueuePaginatorView`, `!favorites` to use `FavoritesPaginatorView`, new commands `!playlists` and `!playlist_show` with interactive browsing + play
 
 ---
 
@@ -400,9 +406,18 @@ Week 3 (optional)
 - [ ] Progress bar updates while playing
 
 ### Commands / emoji
-- [ ] `!help` показва `!` commands + button legend
-- [ ] Aliases `!np`, `!p`, `!q`, `!vol` работят
-- [ ] Единен emoji vocabulary
+- [x] `!help` показва `!` commands + button legend (обновено за Phase2 menus)
+- [x] Aliases `!np`, `!p`, `!q`, `!vol` работят
+- [x] Единен emoji vocabulary (`emoji.py`)
+
+### Phase 2 — Search & pagination
+- [x] `!play <keywords>` → Top 5 select menu (SearchView) с 60s timeout
+- [x] URL detection: http/youtube/spotify → директен play без select
+- [x] `!queue` pagination buttons ◀️▶️ + Shuffle/Refresh/Close (QueuePaginatorView)
+- [x] `!favorites` → select ⭐ за play + pagination (FavoritesPaginatorView)
+- [x] `!playlists` + `!playlist_show` → playlist browse + track select + Play All
+- [x] Auth checks на всички select/button interactions (owner > blacklist > whitelist)
+- [x] Voice channel checks при play от view
 
 ### Dashboard / landing
 - [x] Dark glass UI (Nightmare tokens)
@@ -450,7 +465,11 @@ Week 3 (optional)
 | CREATE | `docs/reference-nightmare-bots.html` ✅ |
 | CREATE | `docs/DESIGN_SYSTEM.md` ✅ |
 | MODIFY | `README.md` |
-| TODO | embed player modules (Фаза 0–1) |
+| CREATE | `bot/music/views.py` ✅ Phase2 — Search/Queue/Favorites/Playlist interactive views |
+| MODIFY | `bot/music/embed_manager.py` ✅ Phase2 — search_results_embed + help update |
+| MODIFY | `bot/cogs/music_commands.py` ✅ Phase2 — play select, queue pagination, favorites & playlists |
+| TODO | embed player modules (Фаза 0–1) ✅ done in previous branch PR #1 |
+| TODO | Phase 2 ✅ done in this branch `arena/019f4c1f-discbot` |
 
 ---
 
@@ -468,21 +487,25 @@ Week 3 (optional)
 
 | Област | Статус |
 |--------|--------|
-| Design system + landing | ✅ готово |
-| Live dashboard UI shell + control API | ✅ готово |
-| Discord embed player + buttons | ✅ готово |
-| Help / aliases / emoji polish | ✅ готово |
-| Persistent NP message + progress refresh | ✅ готово |
-| Search select menu / queue page buttons | ⏳ Фаза 2 |
+| Design system + landing | ✅ готово (Phase 4) |
+| Live dashboard UI shell + control API | ✅ готово (Phase 3) |
+| Discord embed player + buttons | ✅ готово (Phase 1) |
+| Help / aliases / emoji polish | ✅ готово (Phase 0) |
+| Persistent NP message + progress refresh | ✅ готово (Phase 1) |
+| Search select menu / queue pagination | ✅ готово (Phase 2 — this branch) |
+| Favorites / playlists play via select | ✅ готово (Phase 2 — this branch) |
 | Docker / tests | ⏳ Фаза 5 |
 
-**Как да тестваш player-а:**
+**Как да тестваш Phase 2:**
 1. Стартирай Lavalink + `python bot/main.py`
-2. `!play <song>` в music channel → появява се NP message с бутони
-3. Натисни ⏯️ / ⏭️ / 🔁 / 🔊 — ephemeral feedback + embed update
-4. Restart bot → бутоните трябва да работят (restore_views)
-5. `DASHBOARD_ENABLED=true` → отвори dashboard UI
+2. `!play never gonna give you up` — трябва да покаже embed + dropdown с Top 5 → избор → play
+3. `!play https://youtube.com/...` — директен play без селект (URL detection)
+4. `!queue` — embed + бутони ◀️ Prev / ▶️ Next / 🔀 Shuffle / 🔄 Refresh / ❌ Close — pagination работи
+5. `!favorites` — ако има фаворити, select ⭐ + Prev/Nextpagination → избор пуска track
+6. `!playlists` — списък playlists с 📀 select → `PlaylistDetailView` с track select + Play All
+7. `!playlist_show <id>` — директен детайлен view с pagination
+8. Restart bot → persistent player view (Phase1) още работи; Phase2 views са timeout-based (90-180s)
 
 ---
 
-*Работата е на branch `arena/019f4c0b-discbot` (без допълнителни branches). Merge към master след review.*
+*Предишна сесия `arena/019f4c0b-discbot` merge-ната в master `28856e2`. Текуща работа на `arena/019f4c1f-discbot` — Фаза 2 завършена.*

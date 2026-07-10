@@ -9,6 +9,7 @@ from typing import Optional, Union
 import discord
 
 from bot.music.emoji import (
+    COLOR_ERROR,
     COLOR_FAVORITE,
     COLOR_IDLE,
     COLOR_INFO,
@@ -324,7 +325,7 @@ class EmbedManager:
         embed.add_field(
             name=f"{EMOJI['play']} Playback",
             value=(
-                "`!play <query>` — Search / play URL\n"
+                "`!play <query>` — Search (+ select menu) / URL\n"
                 "`!pause` / `!resume` — Pause or resume\n"
                 "`!skip` — Skip track\n"
                 "`!stop` — Stop & clear queue\n"
@@ -336,7 +337,7 @@ class EmbedManager:
         embed.add_field(
             name=f"{EMOJI['queue']} Queue",
             value=(
-                "`!queue` (`!q`) — View queue\n"
+                "`!queue` (`!q`) — View queue (◀️▶️ buttons)\n"
                 "`!nowplaying` (`!np`) — Player + buttons\n"
                 "`!shuffle` — Shuffle queue\n"
                 "`!loop <none|track|queue>`\n"
@@ -360,7 +361,8 @@ class EmbedManager:
             name=f"{EMOJI['favorite']} Favorites",
             value=(
                 "`!favorite` — Save current track\n"
-                "`!favorites [page]` — List favorites"
+                "`!favorites [page]` — List + play via ⭐ menu\n"
+                "*(select + ◀️▶️ pagination)*"
             ),
             inline=True,
         )
@@ -368,10 +370,11 @@ class EmbedManager:
         embed.add_field(
             name="📀 Playlists",
             value=(
+                "`!playlists` — Your playlists (📀 menu)\n"
+                "`!playlist_show <id>` — View + play via menu\n"
                 "`!playlist_create <name>`\n"
-                "`!playlist_add <id>`\n"
-                "`!playlist_remove <id> <pos>`\n"
-                "`!playlist_play <id>`"
+                "`!playlist_add <id>` / `remove`\n"
+                "`!playlist_play <id>` — Queue all"
             ),
             inline=True,
         )
@@ -401,6 +404,36 @@ class EmbedManager:
         )
 
         embed.set_footer(text="Music commands work in the designated music channel")
+        return embed
+
+    @staticmethod
+    def search_results_embed(query: str, tracks: list) -> discord.Embed:
+        """Build an embed for track selection (top 5 results)."""
+        embed = discord.Embed(
+            title=f"{EMOJI['music']} Search results for: {query[:100]}",
+            description="Select a track from the menu below. Only the requester can pick.",
+            color=COLOR_PLAYING,
+        )
+        if not tracks:
+            embed.description = f"No results for **{query}**."
+            embed.color = COLOR_ERROR
+            return embed
+
+        lines = []
+        for idx, t in enumerate(tracks[:5], start=1):
+            dur = EmbedManager._format_duration(getattr(t, "length", 0) or 0)
+            title = getattr(t, "title", "Unknown")
+            author = getattr(t, "author", "Unknown")
+            uri = getattr(t, "uri", "")
+            # Markdown link
+            lines.append(f"`{idx}.` [**{title}**]({uri}) — *{author}* `[{dur}]`")
+
+        embed.add_field(
+            name=f"Top {min(5, len(tracks))} tracks",
+            value="\n".join(lines) if lines else "No tracks",
+            inline=False,
+        )
+        embed.set_footer(text="Pick from the dropdown • 60s timeout")
         return embed
 
     @staticmethod
