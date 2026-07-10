@@ -43,3 +43,7 @@ Thumbs.db
 # Dashboard runtime cache only (keep templates/static in repo)
 # bot/dashboard/static/
 # bot/dashboard/templates/
+# Docker deployment templates
+!docker/
+!docker/lavalink/
+!docker/lavalink/application.yml

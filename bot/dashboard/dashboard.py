@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 # Check if FastAPI and uvicorn are available
 try:
     from fastapi import FastAPI, Request, HTTPException, Depends
-    from fastapi.responses import HTMLResponse, JSONResponse
+    from fastapi.responses import HTMLResponse
     from fastapi.staticfiles import StaticFiles
     from fastapi.templating import Jinja2Templates
     from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
@@ -140,7 +140,7 @@ class DashboardServer:
         async def api_lavalink_status():
             try:
                 node = wavelink.Pool.get_node()
-                if node:
+                if node and getattr(node, "is_connected", False):
                     return {
                         "connected": True,
                         "uri": node.uri,

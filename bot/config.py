@@ -3,7 +3,6 @@ Configuration module for the Discord Music Bot.
 Loads and validates environment variables using pydantic-settings.
 """
 
-import os
 from pathlib import Path
 from typing import Optional
 
@@ -40,7 +39,7 @@ class Config(BaseSettings):
         description="Lavalink server hostname",
     )
     lavalink_port: int = Field(
-        default=2333,
+        default=12333,
         description="Lavalink server port",
         ge=1,
         le=65535,
@@ -51,7 +50,7 @@ class Config(BaseSettings):
     )
     lavalink_secure: bool = Field(
         default=False,
-        description="Use secure WebSocket (wss) for Lavalink",
+        description="Use HTTPS for the Lavalink node URI",
     )
 
     # Spotify (optional)
@@ -86,7 +85,7 @@ class Config(BaseSettings):
         description="Dashboard server host",
     )
     dashboard_port: int = Field(
-        default=8080,
+        default=18080,
         description="Dashboard server port",
         ge=1,
         le=65535,

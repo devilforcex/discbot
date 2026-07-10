@@ -13,9 +13,7 @@ import discord
 
 from bot.database.database import get_connection
 from bot.music.embed_manager import EmbedManager
-from bot.music.emoji import EMOJI
 from bot.music.player_view import PlayerView
-from bot.music.queue_manager import LoopMode
 
 logger = logging.getLogger(__name__)
 

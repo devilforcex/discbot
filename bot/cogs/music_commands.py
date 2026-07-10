@@ -11,17 +11,13 @@ from discord.ext import commands
 
 from bot.core.errors import (
     DifferentVoiceChannel,
-    LavalinkNotConnected,
-    NoPlayer,
     NotInVoiceChannel,
-    NothingPlaying,
-    QueueEmpty,
     TrackNotFound,
     build_error_embed,
 )
-from bot.database import favorites_manager, guild_settings, history_manager, playlist_manager
+from bot.database import favorites_manager, guild_settings, playlist_manager
 from bot.database.database import get_connection
-from bot.music.audio_filters import FILTER_INFO, VALID_FILTERS, get_filter_choices
+from bot.music.audio_filters import get_filter_choices
 from bot.music.embed_manager import EmbedManager
 from bot.music.emoji import EMOJI
 from bot.music.player import Player
@@ -179,7 +175,11 @@ class MusicCommands(commands.Cog):
 
     async def _check_guild_and_channel(self, ctx: commands.Context) -> bool:
         config = self.bot.config
+        if ctx.guild is None:
+            await ctx.send("❌ Music commands can only be used inside the configured server.")
+            return False
         if ctx.guild.id != config.guild_id:
+            await ctx.send("❌ This bot is restricted to its configured server.")
             return False
         command_name = ctx.command.name if ctx.command else ""
         if command_name in ALLOWED_OUTSIDE_MUSIC_CHANNEL:
@@ -604,7 +604,7 @@ class MusicCommands(commands.Cog):
         lavalink_latency = "N/A"
         try:
             node = wavelink.Pool.get_node()
-            if node:
+            if node and getattr(node, "is_connected", False):
                 lavalink_latency = f"{round(node.latency)}ms"
         except Exception:
             pass

@@ -9,7 +9,6 @@ from dataclasses import dataclass
 from typing import Optional
 
 import discord
-import wavelink
 
 from bot.database import favorites_manager, guild_settings
 from bot.database.database import get_connection
@@ -76,9 +75,11 @@ class PlayerController:
         """Return error message if voice check fails, else None."""
         if soft:
             return None
-        if not member.voice or not member.voice.channel:
+        voice_state = getattr(member, "voice", None)
+        voice_channel = getattr(voice_state, "channel", None)
+        if not voice_channel:
             return f"{EMOJI['error']} You must be in a voice channel."
-        if player and player.channel and member.voice.channel != player.channel:
+        if player and player.channel and voice_channel != player.channel:
             return f"{EMOJI['error']} You must be in the same voice channel as the bot."
         return None
 

@@ -14,6 +14,13 @@ logger = logging.getLogger(__name__)
 _local = threading.local()
 
 
+def _connection_cache() -> dict[str, sqlite3.Connection]:
+    """Return the thread-local connection cache keyed by resolved DB path."""
+    if not hasattr(_local, "connections") or _local.connections is None:
+        _local.connections = {}
+    return _local.connections
+
+
 def get_connection(db_path: str) -> sqlite3.Connection:
     """Get a thread-local database connection.
 
@@ -23,27 +30,47 @@ def get_connection(db_path: str) -> sqlite3.Connection:
     Returns:
         A SQLite connection object with row factory set.
     """
-    if not hasattr(_local, "conn") or _local.conn is None:
-        # Ensure directory exists
-        db_path_obj = Path(db_path)
-        db_path_obj.parent.mkdir(parents=True, exist_ok=True)
+    # Resolve the path so equivalent inputs (e.g. ./data/db.sqlite and
+    # data/db.sqlite) share one connection, while different databases don't
+    # accidentally reuse the first connection opened in this thread.
+    db_path_obj = Path(db_path).expanduser().resolve()
+    db_path_obj.parent.mkdir(parents=True, exist_ok=True)
+    cache = _connection_cache()
+    cache_key = str(db_path_obj)
 
+    conn = cache.get(cache_key)
+    if conn is None:
         conn = sqlite3.connect(str(db_path_obj))
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         conn.execute("PRAGMA busy_timeout=5000")
-        _local.conn = conn
-        logger.debug("Database connection established: %s", db_path)
-    return _local.conn
+        cache[cache_key] = conn
+        logger.debug("Database connection established: %s", db_path_obj)
+    return conn
 
 
-def close_connection() -> None:
-    """Close the thread-local database connection if open."""
-    if hasattr(_local, "conn") and _local.conn is not None:
-        _local.conn.close()
-        _local.conn = None
-        logger.debug("Database connection closed")
+def close_connection(db_path: Optional[str] = None) -> None:
+    """Close thread-local database connection(s).
+
+    Args:
+        db_path: Optional database path. If provided, only that connection is
+            closed; otherwise all connections opened in the current thread are
+            closed.
+    """
+    cache = _connection_cache()
+    if db_path is not None:
+        cache_key = str(Path(db_path).expanduser().resolve())
+        conn = cache.pop(cache_key, None)
+        if conn is not None:
+            conn.close()
+            logger.debug("Database connection closed: %s", cache_key)
+        return
+
+    for cache_key, conn in list(cache.items()):
+        conn.close()
+        logger.debug("Database connection closed: %s", cache_key)
+    cache.clear()
 
 
 def initialize_database(db_path: str) -> sqlite3.Connection:

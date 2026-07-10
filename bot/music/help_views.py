@@ -9,11 +9,10 @@ Interactive Help Menu — inspired by Cortex help menu screenshot.
 from __future__ import annotations
 
 import logging
-from typing import Dict, List
+from typing import Dict
 
 import discord
 
-from bot.music.emoji import EMOJI
 
 logger = logging.getLogger(__name__)
 

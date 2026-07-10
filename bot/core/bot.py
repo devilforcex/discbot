@@ -5,9 +5,7 @@ Manages subsystem lifecycle, cog loading, and global state.
 
 import asyncio
 import logging
-import time
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Optional
 
 import discord
@@ -71,13 +69,23 @@ class Bot(commands.Bot):
         """Initialize subsystems and load cogs on startup."""
         logger.info("Starting bot setup...")
 
-        # Setup Lavalink
-        await self.lavalink.setup(self._config)
-        logger.info("Lavalink client initialized")
+        # Setup Lavalink.  A missing Lavalink server should not prevent the
+        # Discord bot from coming online; commands can fail gracefully while
+        # the background reconnect task keeps trying.
+        try:
+            await self.lavalink.setup(self._config)
+            logger.info("Lavalink client initialized")
+        except Exception as e:
+            logger.warning(
+                "Initial Lavalink connection failed; bot will retry in the background: %s",
+                e,
+            )
+            self._schedule_lavalink_reconnect()
 
         # Load cogs
         cogs_to_load = [
             "bot.core.errors",
+            "bot.music.lavalink_client",
             "bot.cogs.admin_commands",
             "bot.cogs.music_commands",
             "bot.cogs.events",
@@ -115,7 +123,6 @@ class Bot(commands.Bot):
             self._dashboard = DashboardServer(self)
 
             # Start dashboard in background
-            import asyncio
             asyncio.create_task(self._dashboard.start())
             logger.info(
                 "Dashboard starting at http://%s:%s",
@@ -202,6 +209,12 @@ class Bot(commands.Bot):
 
         logger.info("24/7 mode enabled but no voice channel with members found")
 
+    def _schedule_lavalink_reconnect(self) -> None:
+        """Start a single Lavalink reconnect task if one is not already running."""
+        if self._lavalink_reconnect_task and not self._lavalink_reconnect_task.done():
+            return
+        self._lavalink_reconnect_task = asyncio.create_task(self._auto_reconnect_lavalink())
+
     async def _auto_reconnect_lavalink(self) -> None:
         """Background task to reconnect to Lavalink with exponential backoff."""
         max_delay = 60  # Maximum delay in seconds
@@ -258,6 +271,14 @@ class Bot(commands.Bot):
     async def close(self) -> None:
         """Clean shutdown of all subsystems."""
         logger.info("Shutting down bot...")
+
+        # Stop reconnect loop first so shutdown doesn't spawn a new node task.
+        if self._lavalink_reconnect_task and not self._lavalink_reconnect_task.done():
+            self._lavalink_reconnect_task.cancel()
+            try:
+                await self._lavalink_reconnect_task
+            except asyncio.CancelledError:
+                pass
 
         # Stop dashboard if running
         if self._dashboard:

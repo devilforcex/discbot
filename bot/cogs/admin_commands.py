@@ -622,7 +622,7 @@ class AdminCommands(commands.Cog):
         try:
             import wavelink
             node = wavelink.Pool.get_node()
-            if node:
+            if node and getattr(node, "is_connected", False):
                 lavalink_status = f"Connected ({round(node.latency)}ms)"
         except Exception:
             pass

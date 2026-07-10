@@ -4,12 +4,8 @@ Handles guild join/leave, voice state updates, and bot lifecycle events.
 """
 
 import logging
-from typing import Optional
-
 import discord
 from discord.ext import commands
-
-from bot.music.player import Player
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +15,20 @@ class EventCog(commands.Cog):
 
     def __init__(self, bot: commands.Bot):
         self.bot = bot
+
+    def _is_247_enabled(self) -> bool:
+        """Return whether 24/7 mode is enabled in persistent settings."""
+        try:
+            from bot.database.database import get_connection
+
+            conn = get_connection(self.bot.config.database_path)
+            cursor = conn.cursor()
+            cursor.execute("SELECT value FROM bot_settings WHERE key = '247_enabled'")
+            row = cursor.fetchone()
+            return bool(row and row["value"] == "true")
+        except Exception as e:
+            logger.debug("Failed to read 24/7 setting: %s", e)
+            return False
 
     @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
@@ -88,7 +98,11 @@ class EventCog(commands.Cog):
         if not voice_client or not voice_client.channel:
             return
 
-        # Auto-disconnect if the bot is alone in the voice channel
+        # Auto-disconnect if the bot is alone in the voice channel.
+        # 24/7 mode intentionally keeps the player connected while idle.
+        if self._is_247_enabled():
+            return
+
         voice_channel = voice_client.channel
         if len(voice_channel.members) <= 1:  # Only the bot
             logger.info(
@@ -101,8 +115,8 @@ class EventCog(commands.Cog):
             import asyncio
             await asyncio.sleep(30)
 
-            # Re-check if still alone
-            if voice_channel and len(voice_channel.members) <= 1:
+            # Re-check if still alone and 24/7 was not enabled while waiting.
+            if voice_channel and len(voice_channel.members) <= 1 and not self._is_247_enabled():
                 await voice_client.disconnect()
                 self.bot.queue_manager.cleanup(member.guild.id)
                 logger.info("Auto-disconnected from guild %s (alone)", member.guild.name)
