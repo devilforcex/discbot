@@ -1,0 +1,56 @@
+"""Utility cog — ping, help."""
+import discord
+import wavelink
+from discord.ext import commands
+
+from .base import check_guild_and_channel, is_authorized
+
+
+class UtilityCog(commands.Cog):
+    def __init__(self, bot):
+        self.bot = bot
+
+    async def _check_guild_and_channel(self, ctx):
+        return await check_guild_and_channel(ctx, self.bot.config)
+
+    async def _require_authorized(self, ctx):
+        return await is_authorized(ctx, self.bot)
+
+    @commands.command(name="ping")
+    async def ping(self, ctx):
+        if not await self._check_guild_and_channel(ctx):
+            return
+        if not await self._require_authorized(ctx):
+            return
+        bot_latency = round(self.bot.latency * 1000)
+        lavalink_latency = "N/A"
+        try:
+            node = wavelink.Pool.get_node()
+            if node and getattr(node, "is_connected", False):
+                lavalink_latency = f"{round(node.latency)}ms"
+        except Exception:
+            pass
+        embed = discord.Embed(title="🏓 Pong!", color=discord.Color.green())
+        embed.add_field(name="Bot Latency", value=f"{bot_latency}ms", inline=True)
+        embed.add_field(name="Lavalink Latency", value=lavalink_latency, inline=True)
+        await ctx.send(embed=embed)
+
+    @commands.command(name="help")
+    async def help_command(self, ctx):
+        if not await self._check_guild_and_channel(ctx):
+            return
+        from bot.music.help_views import HelpView, build_main_help_embed
+
+        support_url = getattr(self.bot.config, "support_server_url", None) or getattr(
+            self.bot.config, "discord_invite_url", None
+        )
+        invite_url = getattr(self.bot.config, "bot_invite_url", None)
+        vote_url = getattr(self.bot.config, "website_url", None)
+
+        embed = build_main_help_embed(bot_user=self.bot.user)
+        view = HelpView(bot=self.bot, support_url=support_url, invite_url=invite_url, vote_url=vote_url)
+        await ctx.send(embed=embed, view=view)
+
+
+async def setup(bot):
+    await bot.add_cog(UtilityCog(bot))

@@ -82,12 +82,21 @@ class Bot(commands.Bot):
             )
             self._schedule_lavalink_reconnect()
 
-        # Load cogs
+        # Load cogs — refactored into focused modules
         cogs_to_load = [
             "bot.core.errors",
             "bot.music.lavalink_client",
-            "bot.cogs.admin_commands",
-            "bot.cogs.music_commands",
+            # Admin (split from 695-line monolith)
+            "bot.cogs.admin.whitelist",
+            "bot.cogs.admin.blacklist",
+            "bot.cogs.admin.requests",
+            "bot.cogs.admin.misc",
+            # Music (split from 827-line monolith)
+            "bot.cogs.music.playback",
+            "bot.cogs.music.queue_cmds",
+            "bot.cogs.music.filters",
+            "bot.cogs.music.library",
+            "bot.cogs.music.utility",
             "bot.cogs.events",
         ]
 
