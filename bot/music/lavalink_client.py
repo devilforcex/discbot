@@ -152,6 +152,14 @@ class WavelinkEvents(commands.Cog):
             guild_id = player.guild.id
             logger.info("Started playing: %s in guild %s", track.title, guild_id)
 
+            # Refresh persistent Now Playing message + buttons
+            mgr = getattr(self.bot, "player_messages", None)
+            if mgr:
+                try:
+                    await mgr.update_now_playing(guild_id)
+                except Exception as e:
+                    logger.debug("Player message update on track_start failed: %s", e)
+
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload) -> None:
         """Handle track end event.
@@ -171,9 +179,31 @@ class WavelinkEvents(commands.Cog):
         # Save to database history
         self._save_playback_history(guild_id, track, player)
 
-        # Handle autoplay
-        if player.autoplay_enabled and not payload.reason == "replaced":
+        # Handle loop track — replay same track
+        loop_mode = self.bot.queue_manager.get_loop(guild_id)
+        from bot.music.queue_manager import LoopMode
+
+        if loop_mode == LoopMode.TRACK and payload.reason != "replaced":
+            try:
+                await player.play(track)
+                return
+            except Exception as e:
+                logger.error("Loop track replay failed: %s", e)
+
+        # Handle autoplay / next
+        if player.autoplay_enabled and payload.reason != "replaced":
             await self._handle_autoplay(player, guild_id)
+        elif payload.reason != "replaced":
+            await self._play_next(player)
+
+        # If nothing left playing, set idle player message
+        if not player.playing:
+            mgr = getattr(self.bot, "player_messages", None)
+            if mgr:
+                try:
+                    await mgr.set_idle(guild_id)
+                except Exception as e:
+                    logger.debug("Player idle update failed: %s", e)
 
     @commands.Cog.listener()
     async def on_wavelink_track_stuck(self, payload: wavelink.TrackStuckEventPayload) -> None:
@@ -246,6 +276,12 @@ class WavelinkEvents(commands.Cog):
 
         if next_track_data is None:
             logger.info("Queue empty for guild %s, playback stopped", guild_id)
+            mgr = getattr(self.bot, "player_messages", None)
+            if mgr:
+                try:
+                    await mgr.set_idle(guild_id)
+                except Exception:
+                    pass
             return
 
         # Search for the track by URL or identifier

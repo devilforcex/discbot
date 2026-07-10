@@ -10,8 +10,9 @@ A production-ready private Discord music bot with **Lavalink v4** audio backend,
 - **Queue Management** — Add, remove, shuffle, loop (track/queue)
 - **Autoplay** — Automatic recommendations when queue is empty
 - **Volume Control** — Per-guild volume persistence
-- **Rich Embeds** — Now Playing with progress bar, paginated queue, help menu
-- **Favorites System** — Save and manage favorite tracks per user
+- **Interactive Embed Player** — Persistent Now Playing message with working buttons (pause, skip, stop, shuffle, loop, volume, favorite, queue)
+- **Rich Embeds** — Progress bar, status line, paginated queue, updated help menu
+- **Web Dashboard** — Nightmare-style glass UI (FastAPI) + static landing in `docs/`- **Favorites System** — Save and manage favorite tracks per user
 - **Playlists** — Create, manage, and play user-created playlists
 - **Playback History** — Track listening statistics
 - **Persistent Storage** — SQLite database for all settings and data
@@ -40,12 +41,18 @@ discbot/
 │   │   ├── history_manager.py   # Playback history & statistics
 │   │   └── playlist_manager.py  # Playlist CRUD operations
 │   ├── music/
-│   │   ├── embed_manager.py     # Rich embed builders
+│   │   ├── embed_manager.py     # Rich embed builders (player + help)
+│   │   ├── emoji.py             # Shared emoji + accent colors
+│   │   ├── player_controller.py # Shared actions (commands + buttons)
+│   │   ├── player_view.py       # Discord UI buttons (persistent)
+│   │   ├── player_message.py    # Persistent Now Playing message
 │   │   ├── lavalink_client.py   # Wavelink node management & events
 │   │   ├── player.py            # Custom Wavelink Player with volume/autoplay
 │   │   └── queue_manager.py     # Per-guild queue with loop/shuffle
 │   ├── dashboard/
-│   │   └── dashboard.py         # Optional FastAPI dashboard
+│   │   ├── dashboard.py         # FastAPI API + control endpoints
+│   │   ├── templates/           # Nightmare glass UI
+│   │   └── static/              # CSS / JS assets
 │   ├── config.py                # pydantic-settings configuration
 │   └── main.py                  # Entry point
 ├── .env.example                 # Environment variable template
@@ -176,18 +183,18 @@ All commands use the `!` prefix.
 ### Playback
 | Command | Description |
 |---------|-------------|
-| `!play <query>` | Search YouTube/Spotify or play from URL |
+| `!play <query>` (`!p`) | Search YouTube/Spotify or play from URL |
 | `!pause` | Pause current playback |
 | `!resume` | Resume paused playback |
-| `!skip` | Skip to next track |
+| `!skip` (`!s`) | Skip to next track |
 | `!stop` | Stop playback and clear queue |
-| `!disconnect` | Disconnect from voice channel |
+| `!disconnect` (`!dc`) | Disconnect from voice channel |
+| `!nowplaying` (`!np`) | Refresh persistent player + buttons |
 
 ### Queue
 | Command | Description |
 |---------|-------------|
-| `!queue [page]` | View the current queue |
-| `!nowplaying` | Show currently playing track |
+| `!queue [page]` (`!q`) | View the current queue |
 | `!shuffle` | Shuffle the queue |
 | `!loop <none\|track\|queue>` | Set loop mode |
 | `!autoplay [on\|off\|toggle]` | Toggle automatic recommendations |
@@ -195,9 +202,25 @@ All commands use the `!` prefix.
 ### Settings
 | Command | Description |
 |---------|-------------|
-| `!volume <0-100>` | Set playback volume |
+| `!volume <0-100>` (`!vol`) | Set playback volume |
 | `!ping` | Check bot and Lavalink latency |
-| `!help` | Show all commands |
+| `!help` | Show all commands + player button legend |
+
+### Player buttons (on Now Playing message)
+
+| Button | Action |
+|--------|--------|
+| ⏯️ | Pause / resume |
+| ⏭️ | Skip |
+| ⏹️ | Stop + clear queue |
+| 🔀 | Shuffle queue |
+| 🔁 | Cycle loop (none → track → queue) |
+| 🔉 / 🔊 | Volume −10 / +10 |
+| ⭐ | Favorite current track |
+| 📋 | Ephemeral queue view |
+| 🔌 | Disconnect from voice |
+
+Buttons require whitelist (or owner). User should be in the same voice channel for transport controls.
 
 ### User Info
 | Command | Description |
