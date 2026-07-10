@@ -28,6 +28,8 @@ class Player(wavelink.Player):
         self.last_track: Optional[wavelink.Playable] = None
         self.previous_track: Optional[wavelink.Playable] = None
         self._volume: int = 50
+        self.active_filter: str = "off"  # reset / off = no filter
+        self._last_position: int = 0
 
     async def set_volume(self, volume: int) -> None:
         """Set the player volume.
@@ -100,3 +102,40 @@ class Player(wavelink.Player):
         """
         self.previous_track = self.last_track
         self.last_track = track
+
+    async def set_audio_filter(self, filter_name: str) -> str:
+        """Apply an audio filter via audio_filters module."""
+        from bot.music.audio_filters import apply_filter_to_player
+
+        applied = await apply_filter_to_player(self, filter_name)
+        self.active_filter = applied if applied != "reset" else "off"
+        return self.active_filter
+
+    async def seek_forward(self, milliseconds: int = 10000) -> int:
+        """Seek forward by ms, returns new position."""
+        if not self.playing or not self.last_track:
+            raise ValueError("Nothing is playing.")
+        # position is property? In wavelink, self.position is current pos
+        try:
+            current = self.position
+        except Exception:
+            current = self._last_position
+        new_pos = min(current + milliseconds, self.last_track.length - 500 if self.last_track.length else current + milliseconds)
+        await self.seek(new_pos)
+        return new_pos
+
+    async def seek_backward(self, milliseconds: int = 10000) -> int:
+        if not self.playing or not self.last_track:
+            raise ValueError("Nothing is playing.")
+        try:
+            current = self.position
+        except Exception:
+            current = self._last_position
+        new_pos = max(0, current - milliseconds)
+        await self.seek(new_pos)
+        return new_pos
+
+    async def replay(self) -> None:
+        if not self.playing:
+            raise ValueError("Nothing is playing.")
+        await self.seek(0)

@@ -1,6 +1,5 @@
 """
-Rich embed builder for the Discord Music Bot.
-Provides styled discord.Embed objects for all music-related features.
+Rich embed builder for the Discord Music Bot — polished Nightmare / Boogie style.
 """
 
 import math
@@ -24,6 +23,10 @@ from bot.music.queue_manager import LoopMode
 class EmbedManager:
     """Static methods for building rich Discord embeds."""
 
+    # ------------------------------------------------------------
+    # Now playing / Player
+    # ------------------------------------------------------------
+
     @staticmethod
     def now_playing(
         title: str,
@@ -38,8 +41,8 @@ class EmbedManager:
         loop: Optional[Union[LoopMode, str]] = None,
         autoplay: bool = False,
         queue_len: int = 0,
+        active_filter: str = "off",
     ) -> discord.Embed:
-        """Build a now-playing embed with progress bar."""
         return EmbedManager.player_now_playing_embed(
             title=title,
             author=author,
@@ -53,6 +56,7 @@ class EmbedManager:
             loop=loop,
             autoplay=autoplay,
             queue_len=queue_len,
+            active_filter=active_filter,
         )
 
     @staticmethod
@@ -69,8 +73,10 @@ class EmbedManager:
         loop: Optional[Union[LoopMode, str]] = None,
         autoplay: bool = False,
         queue_len: int = 0,
+        active_filter: str = "off",
     ) -> discord.Embed:
-        """Full player embed used by the persistent player message."""
+        """Full player embed used by the persistent player message — Boogie + Nightmare style."""
+        # Better progress bar: ━ filled + ● head + ─ empty
         progress = EmbedManager._build_progress_bar(position, length, bar_len=18)
         color = COLOR_PAUSED if paused else COLOR_PLAYING
         state_icon = EMOJI["pause"] if paused else EMOJI["play"]
@@ -93,34 +99,49 @@ class EmbedManager:
         loop_icon = loop_icons.get(loop_mode, EMOJI["loop_none"])
         loop_label = loop_mode.value if isinstance(loop_mode, LoopMode) else str(loop_mode)
 
-        status = (
-            f"{state_icon} **{state_label}** · "
-            f"{loop_icon} `{loop_label}` · "
-            f"{EMOJI['volume']} `{volume}%` · "
-            f"{EMOJI['queue']} `{queue_len}`"
-        )
+        # Status line: Playing · Loop · Volume · Queue · Autoplay · Filter
+        status_parts = [
+            f"{state_icon} **{state_label}**",
+            f"{loop_icon} `{loop_label}`",
+            f"{EMOJI['volume']} `{volume}%`",
+            f"{EMOJI['queue']} `{queue_len}`",
+        ]
         if autoplay:
-            status += f" · {EMOJI['autoplay']} Autoplay"
+            status_parts.append(f"{EMOJI['autoplay']} Autoplay")
+        if active_filter and active_filter != "off":
+            # Try to get friendly name
+            try:
+                from bot.music.audio_filters import FILTER_INFO
 
+                finfo = FILTER_INFO.get(active_filter, {})
+                fname = finfo.get("label", active_filter)
+                femoji = finfo.get("emoji", "🎛️")
+                status_parts.append(f"{femoji} `{fname}`")
+            except Exception:
+                status_parts.append(f"🎛️ `{active_filter}`")
+
+        status = " · ".join(status_parts)
+
+        # Boogie-inspired description: Title linked, author below, status below
         embed = discord.Embed(
             title=f"{EMOJI['music']} {state_label}",
             description=f"[**{title}**]({uri})\n*{author}*\n\n{status}",
             color=color,
         )
+
+        # Progress field like screenshot: bar + times
+        pos_str = EmbedManager._format_duration(position)
+        len_str = EmbedManager._format_duration(length)
         embed.add_field(
             name="Progress",
-            value=(
-                f"`{progress}`\n"
-                f"`{EmbedManager._format_duration(position)}` / "
-                f"`{EmbedManager._format_duration(length)}`"
-            ),
+            value=f"`{progress}`\n`{pos_str}` / `{len_str}`",
             inline=False,
         )
 
         if thumbnail_url:
             embed.set_thumbnail(url=thumbnail_url)
 
-        footer = "Use the buttons below to control playback"
+        footer = "Use the buttons below to control playback • Filter in dropdown"
         if requester:
             footer = f"Requested by {requester} · {footer}"
         embed.set_footer(text=footer)
@@ -131,7 +152,6 @@ class EmbedManager:
         queue_len: int = 0,
         loop: Optional[Union[LoopMode, str]] = None,
     ) -> discord.Embed:
-        """Idle state for the persistent player message."""
         loop_label = "none"
         if isinstance(loop, LoopMode):
             loop_label = loop.value
@@ -143,12 +163,17 @@ class EmbedManager:
             description=(
                 f"Queue is empty — use `!play <song>` to start.\n\n"
                 f"{EMOJI['queue']} Queue: `{queue_len}` · "
-                f"{EMOJI['loop_none']} Loop: `{loop_label}`"
+                f"{EMOJI['loop_none']} Loop: `{loop_label}`\n"
+                f"🎛️ Filter: `off` — use filter dropdown when playing"
             ),
             color=COLOR_IDLE,
         )
-        embed.set_footer(text="Player buttons work once a track is playing")
+        embed.set_footer(text="Player controls appear once music starts • !help for commands")
         return embed
+
+    # ------------------------------------------------------------
+    # Queue
+    # ------------------------------------------------------------
 
     @staticmethod
     def queue_embed(
@@ -158,37 +183,31 @@ class EmbedManager:
         page_size: int = 10,
         guild_name: str = "Server",
     ) -> discord.Embed:
-        """Build a paginated queue display embed.
-
-        Args:
-            queue: List of queued track dicts.
-            current_track: Currently playing track dict (optional).
-            page: Current page number.
-            page_size: Items per page.
-            guild_name: Guild name for the embed title.
-
-        Returns:
-            A styled queue embed.
-        """
         total_tracks = len(queue) + (1 if current_track else 0)
         total_pages = max(1, math.ceil(len(queue) / page_size))
+        # Total duration
+        total_ms = sum(t.get("length", 0) for t in queue)
+        if current_track:
+            total_ms += current_track.get("length", 0)
+        total_dur = EmbedManager._format_duration(total_ms) if total_ms else "0:00"
 
         embed = discord.Embed(
-            title=f"📋 Queue — {guild_name}",
-            description=f"**{total_tracks}** track(s) in queue",
-            color=discord.Color.blue(),
+            title=f"{EMOJI['queue']} Queue — {guild_name}",
+            description=f"**{total_tracks}** track(s) • Total: `{total_dur}` • Use ◀️▶️ to navigate",
+            color=COLOR_PLAYING,
         )
 
-        # Currently playing
         if current_track:
+            cur_dur = EmbedManager._format_duration(current_track.get("length", 0))
+            req = current_track.get("requester_id")
+            req_str = f"<@{req}>" if req else "Unknown"
             embed.add_field(
                 name="▶️ Now Playing",
                 value=f"[**{current_track['title']}**]({current_track['uri']})\n"
-                      f"Requested by <@{current_track.get('requester_id', 'unknown')}>",
+                f"*{current_track.get('author','Unknown')}* — `{cur_dur}` • {req_str}",
                 inline=False,
             )
 
-        # Queued tracks
         if queue:
             start_idx = (page - 1) * page_size
             end_idx = start_idx + page_size
@@ -198,22 +217,33 @@ class EmbedManager:
                 queue_lines = []
                 for i, track in enumerate(page_queue, start=start_idx + 1):
                     duration = EmbedManager._format_duration(track.get("length", 0))
-                    queue_lines.append(
-                        f"`{i}.` [**{track['title']}**]({track['uri']}) — `{duration}`\n"
-                        f"└ Requested by <@{track.get('requester_id', 'unknown')}>"
-                    )
+                    title = track.get("title", "Unknown")[:60]
+                    author = track.get("author", "Unknown")[:40]
+                    req_id = track.get("requester_id")
+                    req = f"<@{req_id}>" if req_id else ""
+                    # Cleaner single-line: 1. Title — Author [dur] • @user
+                    line = f"`{i}.` [**{title}**]({track['uri']}) — *{author}* `[{duration}]`"
+                    if req:
+                        line += f" • {req}"
+                    queue_lines.append(line)
                 embed.add_field(
                     name=f"⏭️ Up Next (Page {page}/{total_pages})",
                     value="\n".join(queue_lines),
                     inline=False,
                 )
         else:
-            embed.add_field(name="Queue", value="The queue is empty.", inline=False)
+            embed.add_field(name="Queue", value="The queue is empty. Add songs with `!play <song>`.", inline=False)
 
         if total_pages > 1:
-            embed.set_footer(text=f"Page {page}/{total_pages} • {len(queue)} queued tracks")
+            embed.set_footer(text=f"Page {page}/{total_pages} • {len(queue)} queued • {total_dur} total — Buttons below to navigate")
+        else:
+            embed.set_footer(text=f"{len(queue)} queued • {total_dur} total — Shuffle/Refresh buttons")
 
         return embed
+
+    # ------------------------------------------------------------
+    # Playlists / Favorites
+    # ------------------------------------------------------------
 
     @staticmethod
     def playlist_embed(
@@ -221,27 +251,19 @@ class EmbedManager:
         page: int = 1,
         page_size: int = 15,
     ) -> discord.Embed:
-        """Build a playlist detail embed.
-
-        Args:
-            playlist: Playlist dict with tracks list.
-            page: Current page number.
-            page_size: Items per page.
-
-        Returns:
-            A styled playlist embed.
-        """
         tracks = playlist.get("tracks", [])
         total_pages = max(1, math.ceil(len(tracks) / page_size))
+        total_ms = sum(t.get("length", 0) for t in tracks)
+        total_dur = EmbedManager._format_duration(total_ms)
 
         embed = discord.Embed(
             title=f"📀 {playlist['name']}",
-            description=playlist.get("description", "") or "No description",
-            color=discord.Color.purple(),
+            description=(playlist.get("description", "") or "No description") + f"\n\n**{len(tracks)}** tracks • `{total_dur}` total",
+            color=COLOR_PLAYING,
         )
 
         embed.add_field(name="Owner", value=f"<@{playlist['user_id']}>", inline=True)
-        embed.add_field(name="Tracks", value=str(len(tracks)), inline=True)
+        embed.add_field(name="Tracks", value=f"{len(tracks)} • {total_dur}", inline=True)
 
         if tracks:
             start_idx = (page - 1) * page_size
@@ -251,17 +273,16 @@ class EmbedManager:
             track_lines = []
             for t in page_tracks:
                 duration = EmbedManager._format_duration(t.get("length", 0))
-                track_lines.append(
-                    f"`{t['position']}.` [**{t['title']}**]({t['uri']}) — `{duration}`"
-                )
+                title = t.get("title", "Unknown")[:50]
+                track_lines.append(f"`{t['position']}.` [**{title}**]({t['uri']}) `[{duration}]`")
 
             embed.add_field(
-                name=f"Tracks (Page {page}/{total_pages})",
+                name=f"Tracks (Page {page}/{total_pages}) — Select menu to play",
                 value="\n".join(track_lines),
                 inline=False,
             )
 
-        embed.set_footer(text=f"Playlist ID: {playlist['playlist_id']}")
+        embed.set_footer(text=f"Playlist ID: {playlist['playlist_id']} • Use dropdown + Play All")
         return embed
 
     @staticmethod
@@ -271,23 +292,14 @@ class EmbedManager:
         total: int = 0,
         page_size: int = 10,
     ) -> discord.Embed:
-        """Build a favorites list embed.
-
-        Args:
-            favorites: List of favorite track dicts.
-            page: Current page number.
-            total: Total number of favorites.
-            page_size: Items per page.
-
-        Returns:
-            A styled favorites embed.
-        """
         total_pages = max(1, math.ceil(total / page_size))
+        total_ms = sum(f.get("length", 0) for f in favorites)
+        # Note: favorites page only, but show approximate
 
         embed = discord.Embed(
             title="⭐ Your Favorites",
-            description=f"**{total}** favorite track(s)" if total else "You have no favorites yet.",
-            color=discord.Color.gold(),
+            description=f"**{total}** favorite track(s)" + (f" • Page {page}/{total_pages}" if total else "") + "\nSelect a track from the menu below to play.",
+            color=COLOR_FAVORITE,
         )
 
         if favorites:
@@ -295,29 +307,31 @@ class EmbedManager:
             track_lines = []
             for i, fav in enumerate(favorites, start=start_idx + 1):
                 duration = EmbedManager._format_duration(fav.get("length", 0))
-                track_lines.append(
-                    f"`{i}.` [**{fav['title']}**]({fav['uri']}) — `{duration}`\n"
-                    f"└ {fav['author']}"
-                )
+                title = fav.get("title", "Unknown")[:60]
+                author = fav.get("author", "Unknown")[:40]
+                track_lines.append(f"`{i}.` [**{title}**]({fav['uri']}) — *{author}* `[{duration}]`")
             embed.add_field(
                 name=f"Saved Tracks (Page {page}/{total_pages})",
                 value="\n".join(track_lines),
                 inline=False,
             )
+        else:
+            embed.description = "You have no favorites yet. Use `!favorite` while a track is playing."
 
-        if total_pages > 1:
-            embed.set_footer(text=f"Page {page}/{total_pages}")
-
+        embed.set_footer(text=f"Page {page}/{total_pages} • Use ⭐ dropdown to play • ◀️▶️ to navigate")
         return embed
+
+    # ------------------------------------------------------------
+    # Help
+    # ------------------------------------------------------------
 
     @staticmethod
     def help_embed() -> discord.Embed:
-        """Build a comprehensive help embed with all commands."""
         embed = discord.Embed(
             title=f"{EMOJI['music']} Music Bot Commands",
             description=(
                 "Prefix: `!` · Aliases: `!p` `!np` `!q` `!vol` `!dc`\n"
-                "Player buttons on the Now Playing message also control playback."
+                "Player has persistent buttons + filter dropdown + seek (+10/-10/Replay)."
             ),
             color=COLOR_PLAYING,
         )
@@ -325,11 +339,12 @@ class EmbedManager:
         embed.add_field(
             name=f"{EMOJI['play']} Playback",
             value=(
-                "`!play <query>` — Search (+ select menu) / URL\n"
-                "`!pause` / `!resume` — Pause or resume\n"
+                "`!play <query>` — Search (Top 5 select) / URL\n"
+                "`!pause` / `!resume` — Pause/resume\n"
                 "`!skip` — Skip track\n"
                 "`!stop` — Stop & clear queue\n"
-                "`!disconnect` (`!dc`) — Leave voice"
+                "`!disconnect` (`!dc`) — Leave voice\n"
+                "`!seek <seconds>` / `!forward` / `!rewind` / `!replay`"
             ),
             inline=True,
         )
@@ -353,6 +368,20 @@ class EmbedManager:
                 "`!ping` — Latency\n"
                 "`!help` — This menu\n"
                 "`!status` / `!whoami`"
+            ),
+            inline=True,
+        )
+
+        embed.add_field(
+            name="🎛️ Filters (new)",
+            value=(
+                "`!filter <name>` — Apply audio filter\n"
+                "`!filters` — List filters + select menu\n"
+                "`!filter reset` — Clear filters\n"
+                "Presets: `bassboost`, `nightcore`,\n"
+                "`vaporwave`, `pop`, `8d`, `lofi`,\n"
+                "`karaoke`, `tremolo`\n"
+                "*Also in player dropdown*"
             ),
             inline=True,
         )
@@ -391,27 +420,32 @@ class EmbedManager:
         )
 
         embed.add_field(
-            name="🎛️ Player buttons",
+            name="🎛️ Player components",
             value=(
-                f"{EMOJI['play_pause']} pause/resume · {EMOJI['skip']} skip · "
+                "**Dropdown Row 0:** Select A Filter To Apply.\n"
+                f"**Row 1:** {EMOJI['play_pause']} pause/resume · {EMOJI['skip']} skip · "
                 f"{EMOJI['stop']} stop · {EMOJI['shuffle']} shuffle · "
-                f"{EMOJI['loop_queue']} loop cycle\n"
-                f"{EMOJI['vol_down']}/{EMOJI['vol_up']} volume · "
-                f"{EMOJI['favorite']} favorite · {EMOJI['queue']} queue · "
-                f"{EMOJI['disconnect']} disconnect"
+                f"{EMOJI['loop_queue']} loop\n"
+                f"**Row 2:** {EMOJI['vol_down']}/{EMOJI['vol_up']} volume · "
+                f"{EMOJI['favorite']} fav · {EMOJI['queue']} queue · "
+                f"{EMOJI['disconnect']} disconnect\n"
+                "**Row 3:** ⏮️ replay · ⏪ -10s · ⏩ +10s"
             ),
             inline=False,
         )
 
-        embed.set_footer(text="Music commands work in the designated music channel")
+        embed.set_footer(text="Music commands work in the designated music channel • Filters require playing track")
         return embed
+
+    # ------------------------------------------------------------
+    # Search / track added
+    # ------------------------------------------------------------
 
     @staticmethod
     def search_results_embed(query: str, tracks: list) -> discord.Embed:
-        """Build an embed for track selection (top 5 results)."""
         embed = discord.Embed(
             title=f"{EMOJI['music']} Search results for: {query[:100]}",
-            description="Select a track from the menu below. Only the requester can pick.",
+            description="Select a track from the dropdown below. Only authorized users can pick.",
             color=COLOR_PLAYING,
         )
         if not tracks:
@@ -419,21 +453,47 @@ class EmbedManager:
             embed.color = COLOR_ERROR
             return embed
 
+        # Thumbnail from first track if available
+        first_art = getattr(tracks[0], "artwork_url", None) if tracks else None
+        if first_art:
+            embed.set_thumbnail(url=first_art)
+
         lines = []
         for idx, t in enumerate(tracks[:5], start=1):
             dur = EmbedManager._format_duration(getattr(t, "length", 0) or 0)
-            title = getattr(t, "title", "Unknown")
-            author = getattr(t, "author", "Unknown")
+            title = getattr(t, "title", "Unknown")[:60]
+            author = getattr(t, "author", "Unknown")[:50]
             uri = getattr(t, "uri", "")
-            # Markdown link
             lines.append(f"`{idx}.` [**{title}**]({uri}) — *{author}* `[{dur}]`")
 
         embed.add_field(
-            name=f"Top {min(5, len(tracks))} tracks",
+            name=f"Top {min(5, len(tracks))} tracks — dropdown below",
             value="\n".join(lines) if lines else "No tracks",
             inline=False,
         )
-        embed.set_footer(text="Pick from the dropdown • 60s timeout")
+        embed.set_footer(text="Pick from the dropdown • 60s timeout • URL skips search")
+        return embed
+
+    @staticmethod
+    def filter_embed(active_filter: str = "off") -> discord.Embed:
+        from bot.music.audio_filters import FILTER_INFO, get_filter_choices
+
+        embed = discord.Embed(
+            title="🎛️ Audio Filters",
+            description="Select a filter from the dropdown below to enhance audio.\n"
+            f"**Active:** `{active_filter}`",
+            color=COLOR_PLAYING,
+        )
+
+        for value, label, desc, emoji in get_filter_choices():
+            active_mark = " **(active)**" if value == active_filter else ""
+            embed.add_field(
+                name=f"{emoji} {label}{active_mark}",
+                value=f"`{value}` — {desc}",
+                inline=True,
+            )
+
+        embed.set_footer(text="Filters use Lavalink — Reset to clear • Works only while playing")
         return embed
 
     @staticmethod
@@ -443,19 +503,8 @@ class EmbedManager:
         position: int,
         queue_length: int,
         duration: Optional[int] = None,
+        thumbnail_url: Optional[str] = None,
     ) -> discord.Embed:
-        """Build a track-added confirmation embed.
-
-        Args:
-            title: Track title.
-            uri: Track URL.
-            position: Position in queue.
-            queue_length: Total tracks in queue.
-            duration: Track duration in milliseconds (optional).
-
-        Returns:
-            A styled confirmation embed.
-        """
         embed = discord.Embed(
             title=f"{EMOJI['ok']} Added to Queue",
             description=f"[**{title}**]({uri})",
@@ -472,7 +521,14 @@ class EmbedManager:
                 inline=True,
             )
 
+        if thumbnail_url:
+            embed.set_thumbnail(url=thumbnail_url)
+
         return embed
+
+    # ------------------------------------------------------------
+    # Helpers
+    # ------------------------------------------------------------
 
     @staticmethod
     def _build_progress_bar(
@@ -481,34 +537,36 @@ class EmbedManager:
         length: int = 18,
         bar_len: Optional[int] = None,
     ) -> str:
-        """Build a text-based progress bar like '████████░░░░░░░░░░'."""
+        """Build a text-based progress bar with dot indicator: ──●── style inspired by screenshot."""
         size = bar_len if bar_len is not None else length
         if total <= 0:
-            return "░" * size
+            return "─" * size
 
-        progress_ratio = current / total
-        filled = min(size, max(0, round(progress_ratio * size)))
-        empty = size - filled
-        return "█" * filled + "░" * empty
+        # Ratio 0-1
+        ratio = max(0.0, min(1.0, current / total)) if total else 0
+        # Position of dot (0 .. size-1)
+        dot_pos = min(size - 1, max(0, int(ratio * (size - 1))))
+
+        # Use ─ for base, ● for head, ━ for filled before head maybe
+        # Let's do: ━ for filled, ● dot, ─ for empty
+        bar_chars = []
+        for i in range(size):
+            if i == dot_pos:
+                bar_chars.append("●")
+            elif i < dot_pos:
+                bar_chars.append("━")
+            else:
+                bar_chars.append("─")
+        return "".join(bar_chars)
 
     @staticmethod
     def _format_duration(milliseconds: int) -> str:
-        """Format milliseconds to a human-readable time string.
-
-        Args:
-            milliseconds: Duration in milliseconds.
-
-        Returns:
-            Formatted string like '3:45' or '1:02:15' for longer durations.
-        """
         if not milliseconds or milliseconds <= 0:
             return "0:00"
-
         total_seconds = milliseconds // 1000
         hours = total_seconds // 3600
         minutes = (total_seconds % 3600) // 60
         seconds = total_seconds % 60
-
         if hours > 0:
             return f"{hours}:{minutes:02d}:{seconds:02d}"
         return f"{minutes}:{seconds:02d}"

@@ -1,6 +1,5 @@
 """
-Music command cog for the Discord Music Bot.
-Implements all prefix commands with Phase 2 interactive UI: search select, queue pagination, favorites, playlists.
+Music command cog — Phase 2 + Filters & Seek enhancements.
 """
 
 import logging
@@ -22,6 +21,7 @@ from bot.core.errors import (
 )
 from bot.database import favorites_manager, guild_settings, history_manager, playlist_manager
 from bot.database.database import get_connection
+from bot.music.audio_filters import FILTER_INFO, VALID_FILTERS, get_filter_choices
 from bot.music.embed_manager import EmbedManager
 from bot.music.emoji import EMOJI
 from bot.music.player import Player
@@ -57,13 +57,125 @@ def _get_player(ctx: commands.Context) -> Optional[Player]:
     return discord.utils.get(ctx.bot.voice_clients, guild__id=ctx.guild.id)
 
 
+class FilterSelectView(discord.ui.View):
+    """View for !filters command — dropdown to apply filter."""
+
+    def __init__(self, bot, guild_id: int, requester_id: int, active_filter: str = "off"):
+        super().__init__(timeout=60)
+        self.bot = bot
+        self.guild_id = guild_id
+        self.requester_id = requester_id
+        self.active_filter = active_filter
+
+        options = []
+        for value, label, desc, emoji in get_filter_choices():
+            is_active = value == active_filter
+            # Mark active
+            desc_display = (desc + (" (active)" if is_active else ""))[:100]
+            options.append(
+                discord.SelectOption(label=label[:100], description=desc_display, value=value, emoji=emoji, default=is_active)
+            )
+
+        select = discord.ui.Select(
+            placeholder="Select A Filter To Apply.",
+            min_values=1,
+            max_values=1,
+            options=options[:25],
+            row=0,
+        )
+        select.callback = self.select_callback
+        self.add_item(select)
+
+    async def select_callback(self, interaction: discord.Interaction):
+        # Auth
+        from bot.music.player_controller import PlayerController
+
+        controller = getattr(self.bot, "player_controller", None)
+        if controller is None:
+            controller = PlayerController(self.bot)
+            self.bot.player_controller = controller
+
+        ok, err = controller.check_authorized(interaction.user.id)
+        if not ok:
+            await interaction.response.send_message(err, ephemeral=True)
+            return
+
+        if interaction.user.id != self.requester_id and interaction.user.id != self.bot.config.owner_id:
+            # Allow any authorized for collaborative but warn? Allow.
+            pass
+
+        filter_name = interaction.data["values"][0]
+        await interaction.response.defer(ephemeral=True)
+
+        guild = self.bot.get_guild(self.guild_id)
+        member = guild.get_member(interaction.user.id) if guild else None
+        if not member:
+            member = interaction.user  # type: ignore
+
+        result = await controller.set_filter(self.guild_id, member, filter_name)
+        await interaction.followup.send(result.message, ephemeral=True)
+
+        # Refresh player message
+        if result.refresh_player and hasattr(self.bot, "player_messages"):
+            try:
+                await self.bot.player_messages.update_now_playing(self.guild_id)
+            except Exception:
+                pass
+
+        # Update embed to show new active filter
+        try:
+            embed = EmbedManager.filter_embed(active_filter=filter_name if filter_name != "reset" else "off")
+            await interaction.message.edit(embed=embed, view=self)
+        except Exception:
+            pass
+
+    @discord.ui.button(label="Reset", style=discord.ButtonStyle.secondary, emoji="🔄", row=1)
+    async def reset_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        from bot.music.player_controller import PlayerController
+
+        controller = getattr(self.bot, "player_controller", None)
+        if controller is None:
+            controller = PlayerController(self.bot)
+            self.bot.player_controller = controller
+
+        ok, err = controller.check_authorized(interaction.user.id)
+        if not ok:
+            await interaction.response.send_message(err, ephemeral=True)
+            return
+
+        await interaction.response.defer(ephemeral=True)
+        guild = self.bot.get_guild(self.guild_id)
+        member = guild.get_member(interaction.user.id) if guild else interaction.user  # type: ignore
+        result = await controller.set_filter(self.guild_id, member, "reset")
+        await interaction.followup.send(result.message, ephemeral=True)
+        if hasattr(self.bot, "player_messages"):
+            try:
+                await self.bot.player_messages.update_now_playing(self.guild_id)
+            except Exception:
+                pass
+        try:
+            embed = EmbedManager.filter_embed(active_filter="off")
+            await interaction.message.edit(embed=embed, view=self)
+        except Exception:
+            pass
+
+    @discord.ui.button(label="Close", style=discord.ButtonStyle.danger, emoji="❌", row=1)
+    async def close_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
+        for child in self.children:
+            child.disabled = True
+        self.stop()
+        try:
+            await interaction.message.delete()
+        except Exception:
+            try:
+                await interaction.response.edit_message(view=self)
+            except Exception:
+                pass
+
+
 class MusicCommands(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-
-    # ============================================================
-    # Authorization & Gatekeeping Helpers
-    # ============================================================
 
     async def _check_guild_and_channel(self, ctx: commands.Context) -> bool:
         config = self.bot.config
@@ -99,22 +211,13 @@ class MusicCommands(commands.Cog):
     async def _require_authorized(self, ctx: commands.Context) -> bool:
         return await self._is_authorized(ctx)
 
-    # ============================================================
-    # Voice & Playback Helpers
-    # ============================================================
-
     async def _ensure_voice(self, ctx: commands.Context) -> tuple:
         voice_channel, player = _voice_check(ctx)
         if player is None:
             player = await self.bot.lavalink.get_player(ctx.guild.id, voice_channel)
         return voice_channel, player
 
-    async def _play_track(
-        self,
-        ctx: commands.Context,
-        player: Player,
-        track: wavelink.Playable,
-    ) -> None:
+    async def _play_track(self, ctx: commands.Context, player: Player, track: wavelink.Playable) -> None:
         settings = guild_settings.get(str(ctx.guild.id), self.bot.config.database_path)
         await player.set_volume(settings.get("volume", 50))
         if player.playing:
@@ -136,6 +239,7 @@ class MusicCommands(commands.Cog):
                 position=position,
                 queue_length=self.bot.queue_manager.get_length(ctx.guild.id),
                 duration=track.length,
+                thumbnail_url=getattr(track, "artwork_url", None),
             )
             await ctx.send(embed=embed, delete_after=10)
             if hasattr(self.bot, "player_messages"):
@@ -164,21 +268,16 @@ class MusicCommands(commands.Cog):
                     thumbnail_url=getattr(track, "artwork_url", None),
                     requester=ctx.author.mention,
                     volume=settings.get("volume", 50),
+                    active_filter=getattr(player, "active_filter", "off"),
                 )
                 await ctx.send(embed=embed)
 
-    # ============================================================
-    # Playback Commands
-    # ============================================================
-
     @commands.command(name="play", aliases=["p"])
     async def play(self, ctx: commands.Context, *, query: str) -> None:
-        """Search for a track or play from URL. With select menu if multiple results."""
         if not await self._check_guild_and_channel(ctx):
             return
         if not await self._require_authorized(ctx):
             return
-
         async with ctx.typing():
             try:
                 voice_channel, player = await self._ensure_voice(ctx)
@@ -186,13 +285,10 @@ class MusicCommands(commands.Cog):
                 embed = build_error_embed(description=e.user_message)
                 await ctx.send(embed=embed)
                 return
-
             if not player:
                 embed = build_error_embed(description="Failed to connect to voice channel.")
                 await ctx.send(embed=embed)
                 return
-
-            # Search for tracks
             try:
                 tracks = await wavelink.Playable.search(query)
             except Exception as e:
@@ -200,13 +296,10 @@ class MusicCommands(commands.Cog):
                 embed = build_error_embed(description="Failed to search for tracks. Is Lavalink running?")
                 await ctx.send(embed=embed)
                 return
-
             if not tracks:
                 embed = TrackNotFound(query).user_message
                 await ctx.send(embed=build_error_embed(description=embed))
                 return
-
-            # Handle playlist results (YouTube/Spotify playlist URL)
             if isinstance(tracks, wavelink.Playlist):
                 await ctx.send(
                     embed=discord.Embed(
@@ -218,14 +311,10 @@ class MusicCommands(commands.Cog):
                 for playlist_track in tracks:
                     await self._play_track(ctx, player, playlist_track)
                 return
-
-            # If query is URL or single exact match, play directly
             if _is_url(query) or len(tracks) == 1:
                 track = tracks[0]
                 await self._play_track(ctx, player, track)
                 return
-
-            # Otherwise show search select menu with top 5
             top_tracks = list(tracks)[:5]
             embed = EmbedManager.search_results_embed(query, top_tracks)
             view = SearchView(top_tracks, requester_id=ctx.author.id, bot=self.bot, guild_id=ctx.guild.id, query=query)
@@ -280,18 +369,16 @@ class MusicCommands(commands.Cog):
             return
         await self._run_controller(ctx, self.bot.player_controller.disconnect(ctx.guild.id, ctx.author))
 
-    # ============================================================
-    # Queue Commands — now with pagination buttons
-    # ============================================================
+    # ------------------------------------------------------------
+    # Queue
+    # ------------------------------------------------------------
 
     @commands.command(name="queue", aliases=["q"])
     async def queue(self, ctx: commands.Context, page: int = 1) -> None:
-        """Display the current music queue with pagination buttons."""
         if not await self._check_guild_and_channel(ctx):
             return
         if not await self._require_authorized(ctx):
             return
-
         player = _get_player(ctx)
         current_track = None
         if player and player.playing and player.last_track:
@@ -302,22 +389,14 @@ class MusicCommands(commands.Cog):
                 "length": player.last_track.length,
                 "requester_id": getattr(player.last_track, "requester_id", ctx.author.id),
             }
-
         queue_list = self.bot.queue_manager.get_all(ctx.guild.id)
-
         if not queue_list and not current_track:
             embed = build_error_embed(description="The queue is empty.")
             await ctx.send(embed=embed)
             return
-
-        # Build embed
         embed = EmbedManager.queue_embed(
-            queue=queue_list,
-            current_track=current_track,
-            page=page,
-            guild_name=ctx.guild.name if ctx.guild else "Server",
+            queue=queue_list, current_track=current_track, page=page, guild_name=ctx.guild.name if ctx.guild else "Server"
         )
-        # Paginated view with buttons
         view = QueuePaginatorView(
             bot=self.bot,
             guild_id=ctx.guild.id,
@@ -333,25 +412,19 @@ class MusicCommands(commands.Cog):
             return
         if not await self._require_authorized(ctx):
             return
-
         if hasattr(self.bot, "player_messages"):
             msg = await self.bot.player_messages.ensure_message(ctx.guild.id, channel=ctx.channel)
             await self.bot.player_messages.update_now_playing(ctx.guild.id)
             if msg:
-                await ctx.send(
-                    f"{EMOJI['music']} Player updated — use the buttons on the Now Playing message.",
-                    delete_after=6,
-                )
+                await ctx.send(f"{EMOJI['music']} Player updated — use buttons + filter dropdown.", delete_after=6)
             else:
                 await ctx.send(embed=build_error_embed(description="Could not create player message."))
             return
-
         player = _get_player(ctx)
         if not player or not player.playing or not player.last_track:
             embed = build_error_embed(description="Nothing is currently playing.")
             await ctx.send(embed=embed)
             return
-
         track = player.last_track
         embed = EmbedManager.now_playing(
             title=track.title,
@@ -361,6 +434,7 @@ class MusicCommands(commands.Cog):
             position=player.position if hasattr(player, "position") else 0,
             thumbnail_url=getattr(track, "artwork_url", None),
             volume=player.get_volume(),
+            active_filter=getattr(player, "active_filter", "off"),
         )
         await ctx.send(embed=embed)
 
@@ -401,9 +475,7 @@ class MusicCommands(commands.Cog):
         }
         emoji = mode_emojis.get(loop_mode, EMOJI["loop_none"])
         embed = discord.Embed(
-            title=f"{emoji} Loop Mode",
-            description=f"Loop mode set to **{loop_mode.value}**.",
-            color=discord.Color.blue(),
+            title=f"{emoji} Loop Mode", description=f"Loop mode set to **{loop_mode.value}**.", color=discord.Color.blue()
         )
         await ctx.send(embed=embed)
         if hasattr(self.bot, "player_messages"):
@@ -440,10 +512,6 @@ class MusicCommands(commands.Cog):
         )
         await ctx.send(embed=embed)
 
-    # ============================================================
-    # Settings Commands
-    # ============================================================
-
     @commands.command(name="volume", aliases=["vol", "v"])
     async def volume(self, ctx: commands.Context, volume: int = 50) -> None:
         if not await self._check_guild_and_channel(ctx):
@@ -454,6 +522,77 @@ class MusicCommands(commands.Cog):
             await ctx.send(embed=build_error_embed(description="Volume must be between 0 and 100."))
             return
         await self._run_controller(ctx, self.bot.player_controller.set_volume(ctx.guild.id, ctx.author, volume))
+
+    # ------------------------------------------------------------
+    # Seek / Replay
+    # ------------------------------------------------------------
+
+    @commands.command(name="seek", aliases=["seekto"])
+    async def seek(self, ctx: commands.Context, seconds: int) -> None:
+        if not await self._check_guild_and_channel(ctx):
+            return
+        if not await self._require_authorized(ctx):
+            return
+        player = _get_player(ctx)
+        if not player or not player.playing:
+            await ctx.send(embed=build_error_embed(description="Nothing is currently playing."))
+            return
+        try:
+            # seconds can be absolute position if provided > current? We'll treat as absolute if 0 <= seconds <= length/1000 else forward?
+            # For simplicity, seek to seconds
+            ms = seconds * 1000
+            await player.seek(ms)
+            await ctx.send(embed=discord.Embed(description=f"⏩ Seeked to `{EmbedManager._format_duration(ms)}`.", color=discord.Color.green()))
+        except Exception as e:
+            await ctx.send(embed=build_error_embed(description=f"Seek failed: {e}"))
+
+    @commands.command(name="forward", aliases=["fwd", "seekfwd"])
+    async def forward(self, ctx: commands.Context, seconds: int = 10) -> None:
+        if not await self._check_guild_and_channel(ctx):
+            return
+        if not await self._require_authorized(ctx):
+            return
+        await self._run_controller(ctx, self.bot.player_controller.seek_forward(ctx.guild.id, ctx.author, seconds))
+
+    @commands.command(name="rewind", aliases=["rew", "seekback"])
+    async def rewind(self, ctx: commands.Context, seconds: int = 10) -> None:
+        if not await self._check_guild_and_channel(ctx):
+            return
+        if not await self._require_authorized(ctx):
+            return
+        await self._run_controller(ctx, self.bot.player_controller.seek_backward(ctx.guild.id, ctx.author, seconds))
+
+    @commands.command(name="replay", aliases=["restart"])
+    async def replay(self, ctx: commands.Context) -> None:
+        if not await self._check_guild_and_channel(ctx):
+            return
+        if not await self._require_authorized(ctx):
+            return
+        await self._run_controller(ctx, self.bot.player_controller.replay(ctx.guild.id, ctx.author))
+
+    # ------------------------------------------------------------
+    # Filters
+    # ------------------------------------------------------------
+
+    @commands.command(name="filter", aliases=["filterset", "audiofilter"])
+    async def filter_cmd(self, ctx: commands.Context, *, filter_name: str = "off") -> None:
+        if not await self._check_guild_and_channel(ctx):
+            return
+        if not await self._require_authorized(ctx):
+            return
+        await self._run_controller(ctx, self.bot.player_controller.set_filter(ctx.guild.id, ctx.author, filter_name))
+
+    @commands.command(name="filters", aliases=["filterlist", "listfilters"])
+    async def filters(self, ctx: commands.Context) -> None:
+        if not await self._check_guild_and_channel(ctx):
+            return
+        if not await self._require_authorized(ctx):
+            return
+        player = _get_player(ctx)
+        active = getattr(player, "active_filter", "off") if player else "off"
+        embed = EmbedManager.filter_embed(active_filter=active)
+        view = FilterSelectView(bot=self.bot, guild_id=ctx.guild.id, requester_id=ctx.author.id, active_filter=active)
+        await ctx.send(embed=embed, view=view)
 
     @commands.command(name="ping")
     async def ping(self, ctx: commands.Context) -> None:
@@ -481,9 +620,9 @@ class MusicCommands(commands.Cog):
         embed = EmbedManager.help_embed()
         await ctx.send(embed=embed)
 
-    # ============================================================
-    # Favorites Commands — now with select menu + pagination
-    # ============================================================
+    # ------------------------------------------------------------
+    # Favorites / Playlists
+    # ------------------------------------------------------------
 
     @commands.command(name="favorite", aliases=["fav", "like"])
     async def favorite(self, ctx: commands.Context) -> None:
@@ -495,33 +634,21 @@ class MusicCommands(commands.Cog):
 
     @commands.command(name="favorites")
     async def favorites(self, ctx: commands.Context, page: int = 1) -> None:
-        """List your favorite tracks with pagination and play select."""
         if not await self._check_guild_and_channel(ctx):
             return
         if not await self._require_authorized(ctx):
             return
-
         favs, total = favorites_manager.get_favorites(
             user_id=str(ctx.author.id), page=page, db_path=self.bot.config.database_path
         )
         embed = EmbedManager.favorites_embed(favorites=favs, page=page, total=total)
-        # If no favorites, just send embed
         if total == 0:
             await ctx.send(embed=embed)
             return
-
         view = FavoritesPaginatorView(
-            bot=self.bot,
-            guild_id=ctx.guild.id,
-            user_id=ctx.author.id,
-            initial_page=page,
-            page_size=10,
+            bot=self.bot, guild_id=ctx.guild.id, user_id=ctx.author.id, initial_page=page, page_size=10
         )
         await ctx.send(embed=embed, view=view)
-
-    # ============================================================
-    # Playlist Commands — enhanced with views
-    # ============================================================
 
     @commands.command(name="playlist_create")
     async def playlist_create(self, ctx: commands.Context, name: str, *, description: str = "") -> None:
@@ -538,9 +665,7 @@ class MusicCommands(commands.Cog):
         )
         if playlist_id:
             embed = discord.Embed(
-                title="📀 Playlist Created",
-                description=f"**{name}** has been created.",
-                color=discord.Color.green(),
+                title="📀 Playlist Created", description=f"**{name}** has been created.", color=discord.Color.green()
             )
             embed.set_footer(text=f"ID: {playlist_id}")
         else:
@@ -549,21 +674,17 @@ class MusicCommands(commands.Cog):
 
     @commands.command(name="playlists")
     async def playlists(self, ctx: commands.Context) -> None:
-        """List your playlists with interactive select."""
         if not await self._check_guild_and_channel(ctx):
             return
         if not await self._require_authorized(ctx):
             return
-
         playlists = playlist_manager.list_user_playlists(
             user_id=str(ctx.author.id), db_path=self.bot.config.database_path
         )
-
         if not playlists:
             embed = build_error_embed(description="You have no playlists. Create one with `!playlist_create <name>`.")
             await ctx.send(embed=embed)
             return
-
         embed = discord.Embed(
             title=f"{EMOJI['music']} Your Playlists",
             description=f"You have **{len(playlists)}** playlist(s). Select one to view tracks and play.",
@@ -575,30 +696,24 @@ class MusicCommands(commands.Cog):
         if lines:
             embed.add_field(name="Playlists", value="\n".join(lines), inline=False)
         embed.set_footer(text="Use the dropdown to browse • !playlist_show <id> for direct view")
-
         view = PlaylistListView(bot=self.bot, guild_id=ctx.guild.id, user_id=ctx.author.id, playlists=playlists)
         await ctx.send(embed=embed, view=view)
 
     @commands.command(name="playlist_show", aliases=["playlist_view", "pl_show"])
     async def playlist_show(self, ctx: commands.Context, playlist_id: str, page: int = 1) -> None:
-        """Show a playlist with pagination and play buttons."""
         if not await self._check_guild_and_channel(ctx):
             return
         if not await self._require_authorized(ctx):
             return
-
         playlist = playlist_manager.get_playlist(playlist_id=playlist_id, db_path=self.bot.config.database_path)
-
         if not playlist:
             embed = build_error_embed(description="Playlist not found.")
             await ctx.send(embed=embed)
             return
-
         if not playlist.get("tracks"):
             embed = build_error_embed(description="This playlist has no tracks.")
             await ctx.send(embed=embed)
             return
-
         view = PlaylistDetailView(
             bot=self.bot, guild_id=ctx.guild.id, user_id=ctx.author.id, playlist=playlist, page=page, page_size=10
         )
@@ -630,9 +745,7 @@ class MusicCommands(commands.Cog):
         )
         if success:
             embed = discord.Embed(
-                title="✅ Track Added",
-                description=f"Added **{track.title}** to the playlist.",
-                color=discord.Color.green(),
+                title="✅ Track Added", description=f"Added **{track.title}** to the playlist.", color=discord.Color.green()
             )
         else:
             embed = build_error_embed(description="Could not add track. Check the playlist ID or track limit.")
@@ -649,9 +762,7 @@ class MusicCommands(commands.Cog):
         )
         if success:
             embed = discord.Embed(
-                title="✅ Track Removed",
-                description=f"Removed track at position {position}.",
-                color=discord.Color.green(),
+                title="✅ Track Removed", description=f"Removed track at position {position}.", color=discord.Color.green()
             )
         else:
             embed = build_error_embed(description="Could not remove track. Check permissions or position.")
@@ -701,4 +812,4 @@ class MusicCommands(commands.Cog):
 
 async def setup(bot: commands.Bot) -> None:
     await bot.add_cog(MusicCommands(bot))
-    logger.info("Music commands cog loaded with Phase 2 interactive views")
+    logger.info("Music commands cog loaded with filters & seek")

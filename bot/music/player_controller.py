@@ -13,6 +13,7 @@ import wavelink
 
 from bot.database import favorites_manager, guild_settings
 from bot.database.database import get_connection
+from bot.music.audio_filters import FILTER_INFO, VALID_FILTERS
 from bot.music.emoji import EMOJI
 from bot.music.queue_manager import LoopMode
 
@@ -319,3 +320,104 @@ class PlayerController:
             f"{EMOJI['disconnect']} Disconnected.",
             refresh_player=False,
         )
+
+    # ------------------------------------------------------------------
+    # Filters
+    # ------------------------------------------------------------------
+
+    async def set_filter(self, guild_id: int, user: discord.Member, filter_name: str) -> ActionResult:
+        ok, err = self.check_authorized(user.id)
+        if not ok:
+            return ActionResult(False, err)
+
+        player = self.get_player(guild_id)
+        if not player or not player.playing:
+            return ActionResult(False, f"{EMOJI['error']} Nothing is currently playing.")
+
+        vc_err = self._require_same_voice(user, player)
+        if vc_err:
+            return ActionResult(False, vc_err)
+
+        normalized = filter_name.lower().strip()
+        if normalized not in VALID_FILTERS:
+            valid = ", ".join(sorted(VALID_FILTERS))
+            return ActionResult(False, f"{EMOJI['error']} Unknown filter. Valid: `{valid}`", refresh_player=False)
+
+        try:
+            await player.set_audio_filter(normalized)
+        except ValueError as ve:
+            return ActionResult(False, f"{EMOJI['error']} {ve}", refresh_player=False)
+        except Exception as e:
+            logger.exception("Failed to apply filter %s", normalized)
+            return ActionResult(False, f"{EMOJI['error']} Failed to apply filter: {e}", refresh_player=False)
+
+        info = FILTER_INFO.get(normalized, {})
+        label = info.get("label", normalized)
+        emoji = info.get("emoji", "🎛️")
+        if normalized in ("reset", "off"):
+            return ActionResult(True, f"{emoji} Filters cleared — back to normal audio.")
+        return ActionResult(True, f"{emoji} Filter applied: **{label}**.")
+
+    async def get_filter(self, guild_id: int) -> str:
+        player = self.get_player(guild_id)
+        if not player:
+            return "off"
+        return getattr(player, "active_filter", "off")
+
+    # ------------------------------------------------------------------
+    # Seeking
+    # ------------------------------------------------------------------
+
+    async def seek_forward(self, guild_id: int, user: discord.Member, seconds: int = 10) -> ActionResult:
+        ok, err = self.check_authorized(user.id)
+        if not ok:
+            return ActionResult(False, err)
+        player = self.get_player(guild_id)
+        if not player or not player.playing:
+            return ActionResult(False, f"{EMOJI['error']} Nothing is currently playing.")
+        vc_err = self._require_same_voice(user, player)
+        if vc_err:
+            return ActionResult(False, vc_err)
+        try:
+            new_pos = await player.seek_forward(seconds * 1000)
+            from bot.music.embed_manager import EmbedManager
+
+            pos_str = EmbedManager._format_duration(new_pos)
+            return ActionResult(True, f"⏩ Seeked +{seconds}s → `{pos_str}`.")
+        except Exception as e:
+            return ActionResult(False, f"{EMOJI['error']} Seek failed: {e}")
+
+    async def seek_backward(self, guild_id: int, user: discord.Member, seconds: int = 10) -> ActionResult:
+        ok, err = self.check_authorized(user.id)
+        if not ok:
+            return ActionResult(False, err)
+        player = self.get_player(guild_id)
+        if not player or not player.playing:
+            return ActionResult(False, f"{EMOJI['error']} Nothing is currently playing.")
+        vc_err = self._require_same_voice(user, player)
+        if vc_err:
+            return ActionResult(False, vc_err)
+        try:
+            new_pos = await player.seek_backward(seconds * 1000)
+            from bot.music.embed_manager import EmbedManager
+
+            pos_str = EmbedManager._format_duration(new_pos)
+            return ActionResult(True, f"⏪ Seeked -{seconds}s → `{pos_str}`.")
+        except Exception as e:
+            return ActionResult(False, f"{EMOJI['error']} Seek failed: {e}")
+
+    async def replay(self, guild_id: int, user: discord.Member) -> ActionResult:
+        ok, err = self.check_authorized(user.id)
+        if not ok:
+            return ActionResult(False, err)
+        player = self.get_player(guild_id)
+        if not player or not player.playing:
+            return ActionResult(False, f"{EMOJI['error']} Nothing is currently playing.")
+        vc_err = self._require_same_voice(user, player)
+        if vc_err:
+            return ActionResult(False, vc_err)
+        try:
+            await player.replay()
+            return ActionResult(True, f"⏮️ Replaying current track.")
+        except Exception as e:
+            return ActionResult(False, f"{EMOJI['error']} Replay failed: {e}")
