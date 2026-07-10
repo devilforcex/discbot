@@ -457,11 +457,64 @@ copy data\musicbot.db data\musicbot_backup.db
 4. **Dashboard** — Keep bound to `127.0.0.1` or use a reverse proxy with auth
 5. **Database** — Set up periodic backups
 
-### Windows (as service)
+### Windows (easy mode)
 
-Use `nssm` to run the bot as a Windows service:
+Ботът живее в **`E:\discbot`** — всичко се инсталира и работи само там
+(код, `.venv`, `Lavalink.jar`, `.env`, `data/`, `logs/`).
+
+Отвори **PowerShell** (Win+R → `powershell`) и постави един ред:
+
+```powershell
+# 🚀 ПЪРВА ИНСТАЛАЦИЯ — сваля и инсталира всичко в E:\discbot
+irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/install.ps1 | iex
+
+# ⬆️ ЪПДЕЙТ — сваля нов код в E:\discbot и рестартира бота
+irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
+```
+
+> Ако искаш друга папка, сетни променлива преди one-liner-а:
+> ```powershell
+> $env:DISCBOT_DIR = 'D:\my-stuff\discbot'
+> ```
+
+Инсталаторът ще (всичко в `E:\discbot`):
+- клонира repo-то
+- провери/отвори download страниците за Python 3.12+ и Java 17+
+- създаде `.venv` и инсталира pip зависимостите
+- направи `.env` и `application.yml` от шаблоните и отвори `.env` за редакция
+- свали автоматично последния `Lavalink.jar`
+- по желание стартира бота веднага
+
+Алтернативно (без PowerShell one-liner):
+1. Клонирай/разархивирай repo-то в `E:\discbot`
+2. Двойно кликни `E:\discbot\scripts\windows\setup.bat`
+3. Попълни `DISCORD_BOT_TOKEN`, `GUILD_ID`, `MUSIC_CHANNEL_ID`, `OWNER_ID` в `.env`
+4. Двойно кликни `E:\discbot\scripts\windows\start.bat`
+
+Помощни скриптове в `scripts\windows\`:
+| Файл | Какво прави |
+|------|-------------|
+| `install.ps1` | PowerShell one-liner инсталатор (`irm ... \| iex`) |
+| `update.ps1` | PowerShell one-liner ъпдейтър (`irm ... \| iex`) |
+| `setup.bat` | Първоначална инсталация с batch |
+| `start.bat` / `start.ps1` | Стартират Lavalink и бота в отделни прозорци |
+| `stop.bat` / `stop.ps1` | Спират двата процеса |
+| `update.bat` | `git pull` + обновяване на pip пакетите (batch) |
+| `DiscBot.iss` | Inno Setup скрипт за компилиране на `DiscBotSetup.exe` |
+| `README-windows.md` | Пълно ръководство + често срещани проблеми |
+
+> 💡 Ако `irm | iex` ти гърми с "execution of scripts is disabled", пусни веднъж:
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` и отговори `Y`.
+
+#### Windows (като сервиз)
+
+За автостарт при boot ползвай `nssm` или сложи shortcut на `start.bat`/`start.ps1` в
+`shell:startup`. С `nssm` (пример с инсталация в `E:\discbot`):
 ```bash
-nssm install DiscBot "C:\Python312\python.exe" "E:\discbot\bot\main.py"
+nssm install DiscBot "E:\discbot\.venv\Scripts\python.exe" "E:\discbot\bot\main.py"
+nssm set DiscBot AppDirectory "E:\discbot"
+nssm set DiscBot Start SERVICE_AUTO_START
+nssm start DiscBot
 ```
 
 ### Linux (systemd)

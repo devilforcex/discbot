@@ -54,3 +54,10 @@ Thumbs.db
 bot/music/lavalink/__pycache__/
 **/__pycache__/
 __pycache__/
+
+# Windows installer build output
+scripts/windows/Output/
+scripts/windows/*.exe
+scripts/windows/*.ico
+# Profile (PowerShell may leave this around)
+*.ps1.bak
