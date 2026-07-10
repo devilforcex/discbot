@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiscBot Dashboard · Nightmare Music</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+  <link rel="stylesheet" href="/static/css/dashboard.css">
+</head>
+<body class="bg-[#050505] text-zinc-300 antialiased min-h-screen">
+  <!-- Ambient glows -->
+  <div class="fixed top-0 left-1/4 w-96 h-96 bg-violet-900/20 rounded-full blur-[128px] pointer-events-none -z-10"></div>
+  <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-fuchsia-900/10 rounded-full blur-[128px] pointer-events-none -z-10"></div>
+
+  <div class="flex min-h-screen">
+    <!-- Sidebar -->
+    <aside class="hidden md:flex w-64 flex-col border-r border-white/5 glass-solid sticky top-0 h-screen">
+      <div class="p-5 flex items-center gap-2 border-b border-white/5">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white text-xs font-bold">NM</div>
+        <div>
+          <div class="text-sm font-medium text-white tracking-tight">DiscBot</div>
+          <div class="text-[10px] text-zinc-500 uppercase tracking-wider">Nightmare Music</div>
+        </div>
+      </div>
+      <nav class="flex-1 p-3 space-y-1 text-sm">
+        <a href="#overview" class="nav-link active flex items-center gap-2 px-3 py-2 rounded-lg">
+          <iconify-icon icon="solar:widget-2-linear" width="18"></iconify-icon> Overview
+        </a>
+        <a href="#player" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg">
+          <iconify-icon icon="solar:music-note-slider-linear" width="18"></iconify-icon> Player
+        </a>
+        <a href="#queue" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg">
+          <iconify-icon icon="solar:playlist-linear" width="18"></iconify-icon> Queue
+        </a>
+        <a href="#settings" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg">
+          <iconify-icon icon="solar:settings-linear" width="18"></iconify-icon> Settings
+        </a>
+        <a href="#api" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg">
+          <iconify-icon icon="solar:code-linear" width="18"></iconify-icon> API
+        </a>
+      </nav>
+      <div class="p-4 border-t border-white/5 text-xs space-y-2">
+        <div class="flex items-center justify-between">
+          <span class="text-zinc-500">Bot</span>
+          <span id="side-bot-status" class="flex items-center gap-1.5 text-emerald-400">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span> —
+          </span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-zinc-500">Lavalink</span>
+          <span id="side-ll-status" class="text-zinc-400">—</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main -->
+    <main class="flex-1 min-w-0">
+      <!-- Top bar -->
+      <header class="sticky top-0 z-20 glass border-b border-white/5 px-4 md:px-8 h-14 flex items-center justify-between">
+        <div class="md:hidden flex items-center gap-2">
+          <div class="w-7 h-7 rounded-md bg-gradient-to-br from-violet-600 to-fuchsia-600"></div>
+          <span class="text-sm font-medium text-white">DiscBot</span>
+        </div>
+        <h1 class="hidden md:block text-sm font-medium text-white">Dashboard</h1>
+        <div class="flex items-center gap-3 text-xs">
+          <span id="latency-pill" class="px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-zinc-400">— ms</span>
+          <span id="uptime-pill" class="hidden sm:inline px-2.5 py-1 rounded-full border border-white/10 bg-white/5 text-zinc-400">uptime —</span>
+        </div>
+      </header>
+
+      <div class="p-4 md:p-8 space-y-6 max-w-6xl">
+        <!-- Overview stats -->
+        <section id="overview" class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
+          <div class="glass rounded-2xl p-4 glass-hover transition-all">
+            <div class="flex items-center gap-2 text-zinc-500 text-xs mb-2">
+              <iconify-icon icon="solar:server-square-linear" class="text-violet-400" width="16"></iconify-icon> Bot
+            </div>
+            <div id="stat-bot" class="text-lg font-medium text-white">—</div>
+            <div id="stat-bot-sub" class="text-xs text-zinc-500 mt-0.5">—</div>
+          </div>
+          <div class="glass rounded-2xl p-4 glass-hover transition-all">
+            <div class="flex items-center gap-2 text-zinc-500 text-xs mb-2">
+              <iconify-icon icon="solar:bolt-circle-linear" class="text-fuchsia-400" width="16"></iconify-icon> Lavalink
+            </div>
+            <div id="stat-ll" class="text-lg font-medium text-white">—</div>
+            <div id="stat-ll-sub" class="text-xs text-zinc-500 mt-0.5">—</div>
+          </div>
+          <div class="glass rounded-2xl p-4 glass-hover transition-all">
+            <div class="flex items-center gap-2 text-zinc-500 text-xs mb-2">
+              <iconify-icon icon="solar:users-group-rounded-linear" class="text-blue-400" width="16"></iconify-icon> Guilds
+            </div>
+            <div id="stat-guilds" class="text-lg font-medium text-white">—</div>
+            <div id="stat-vc" class="text-xs text-zinc-500 mt-0.5">— voice</div>
+          </div>
+          <div class="glass rounded-2xl p-4 glass-hover transition-all">
+            <div class="flex items-center gap-2 text-zinc-500 text-xs mb-2">
+              <iconify-icon icon="solar:playlist-linear" class="text-violet-400" width="16"></iconify-icon> Queue
+            </div>
+            <div id="stat-queue" class="text-lg font-medium text-white">—</div>
+            <div class="text-xs text-zinc-500 mt-0.5">tracks waiting</div>
+          </div>
+        </section>
+
+        <!-- Player -->
+        <section id="player" class="glass rounded-2xl border border-white/10 overflow-hidden">
+          <div class="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+            <h2 class="text-sm font-medium text-white flex items-center gap-2">
+              <iconify-icon icon="solar:music-note-slider-linear" class="text-violet-400" width="18"></iconify-icon>
+              Now Playing
+            </h2>
+            <span id="play-state" class="text-xs px-2 py-0.5 rounded-full border border-white/10 text-zinc-500">Idle</span>
+          </div>
+          <div class="p-5 md:p-6">
+            <div class="flex flex-col sm:flex-row gap-5 items-start">
+              <div id="art" class="w-28 h-28 rounded-xl bg-zinc-900 border border-violet-500/20 flex items-center justify-center flex-shrink-0 overflow-hidden shadow-[0_0_40px_-10px_rgba(139,92,246,0.35)]">
+                <iconify-icon icon="solar:music-note-2-linear" class="text-violet-500/40" width="40"></iconify-icon>
+              </div>
+              <div class="flex-1 min-w-0 w-full">
+                <h3 id="np-title" class="text-xl font-medium text-white truncate">Nothing playing</h3>
+                <p id="np-artist" class="text-sm text-zinc-400 mt-1 truncate">Use !play in Discord</p>
+                <div class="mt-4">
+                  <div class="h-1.5 w-full bg-zinc-800 rounded-full overflow-hidden">
+                    <div id="np-progress" class="h-full w-0 bg-gradient-to-r from-violet-500 to-fuchsia-500 rounded-full transition-all duration-500"></div>
+                  </div>
+                  <div class="flex justify-between mt-1.5 text-[11px] font-mono text-zinc-500">
+                    <span id="np-pos">0:00</span>
+                    <span id="np-len">0:00</span>
+                  </div>
+                </div>
+                <div class="mt-4 flex flex-wrap items-center gap-2">
+                  <button data-action="pause" class="ctrl-btn" title="Pause / Resume"><iconify-icon icon="solar:play-pause-linear" width="20"></iconify-icon></button>
+                  <button data-action="skip" class="ctrl-btn" title="Skip"><iconify-icon icon="solar:skip-next-linear" width="20"></iconify-icon></button>
+                  <button data-action="stop" class="ctrl-btn" title="Stop"><iconify-icon icon="solar:stop-linear" width="20"></iconify-icon></button>
+                  <button data-action="shuffle" class="ctrl-btn" title="Shuffle"><iconify-icon icon="solar:shuffle-linear" width="20"></iconify-icon></button>
+                  <div class="flex items-center gap-2 ml-2 pl-2 border-l border-white/10">
+                    <iconify-icon icon="solar:volume-loud-linear" class="text-zinc-500" width="16"></iconify-icon>
+                    <input id="vol-slider" type="range" min="0" max="100" value="50" class="vol-slider w-24 md:w-32">
+                    <span id="vol-label" class="text-xs text-zinc-500 w-8">50%</span>
+                  </div>
+                </div>
+                <p id="ctrl-feedback" class="text-xs text-zinc-500 mt-3 min-h-[1rem]"></p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Queue + Settings row -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <section id="queue" class="lg:col-span-3 glass rounded-2xl border border-white/10 overflow-hidden">
+            <div class="px-5 py-4 border-b border-white/5 flex items-center justify-between">
+              <h2 class="text-sm font-medium text-white">Queue</h2>
+              <span id="queue-count" class="text-xs text-zinc-500">0 tracks</span>
+            </div>
+            <div id="queue-list" class="divide-y divide-white/5 max-h-80 overflow-y-auto">
+              <div class="p-6 text-center text-sm text-zinc-600">Queue is empty</div>
+            </div>
+          </section>
+
+          <section id="settings" class="lg:col-span-2 glass rounded-2xl border border-white/10 p-5 space-y-4">
+            <h2 class="text-sm font-medium text-white mb-2">Controls auth</h2>
+            <p class="text-xs text-zinc-500 leading-relaxed">
+              Write actions need <code class="text-violet-400">DASHBOARD_SECRET_KEY</code> as Bearer token.
+              Leave empty for local read-only.
+            </p>
+            <div>
+              <label class="text-xs text-zinc-400 ml-0.5">API token</label>
+              <input id="api-token" type="password" placeholder="Bearer secret…" class="mt-1 w-full bg-zinc-950 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-violet-500/50">
+            </div>
+            <div>
+              <label class="text-xs text-zinc-400 ml-0.5">Guild ID</label>
+              <input id="guild-id" type="text" value="{{ guild_id }}" class="mt-1 w-full bg-zinc-950 border border-white/10 rounded-lg py-2 px-3 text-sm text-white font-mono focus:outline-none focus:border-violet-500/50">
+            </div>
+            <button id="save-settings" class="w-full py-2.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors">
+              Save locally
+            </button>
+          </section>
+        </div>
+
+        <!-- API links -->
+        <section id="api" class="glass rounded-2xl border border-white/10 p-5">
+          <h2 class="text-sm font-medium text-white mb-3">Quick API</h2>
+          <ul class="grid sm:grid-cols-2 gap-2 text-xs">
+            <li><a class="text-violet-400 hover:text-violet-300" href="/api/status">GET /api/status</a></li>
+            <li><a class="text-violet-400 hover:text-violet-300" href="/api/lavalink">GET /api/lavalink</a></li>
+            <li><a class="text-violet-400 hover:text-violet-300" href="/api/nowplaying/{{ guild_id }}">GET /api/nowplaying/{{ guild_id }}</a></li>
+            <li><a class="text-violet-400 hover:text-violet-300" href="/api/queue/{{ guild_id }}">GET /api/queue/{{ guild_id }}</a></li>
+          </ul>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <script>
+    window.DASHBOARD_DEFAULT_GUILD = "{{ guild_id }}";
+  </script>
+  <script src="/static/js/dashboard.js"></script>
+</body>
+</html>

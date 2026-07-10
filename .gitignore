@@ -40,6 +40,6 @@ env/
 .DS_Store
 Thumbs.db
 
-# Dashboard generated
-bot/dashboard/static/
-bot/dashboard/templates/
+# Dashboard runtime cache only (keep templates/static in repo)
+# bot/dashboard/static/
+# bot/dashboard/templates/

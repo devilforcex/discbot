@@ -48,6 +48,13 @@ class Bot(commands.Bot):
         self.lavalink = LavalinkClient(self)
         self._dashboard = None
 
+        # Interactive player (controller + persistent NP message)
+        from bot.music.player_controller import PlayerController
+        from bot.music.player_message import PlayerMessageManager
+
+        self.player_controller = PlayerController(self)
+        self.player_messages = PlayerMessageManager(self)
+
         # Uptime tracking
         self._start_time: Optional[datetime] = None
 
@@ -134,9 +141,15 @@ class Bot(commands.Bot):
         # Set bot presence
         activity = discord.Activity(
             type=discord.ActivityType.listening,
-            name="!help | Music Bot",
+            name="!help · player buttons",
         )
         await self.change_presence(activity=activity)
+
+        # Restore persistent player button views after restart
+        try:
+            await self.player_messages.restore_views()
+        except Exception as e:
+            logger.warning("Failed to restore player views: %s", e)
 
         # Auto-join music channel if 24/7 mode is enabled
         await self._auto_join_music_channel()

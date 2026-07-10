@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en" class="scroll-smooth">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nightmare Bots | Premium Discord Automation</title>
+<!-- Fonts: Inter -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<!-- Tailwind CSS -->
+<script src="https://cdn.tailwindcss.com"></script>
+<!-- Iconify -->
+<script src="https://code.iconify.design/iconify-icon/1.0.7/iconify-icon.min.js"></script>
+<style>
+/* Custom Scrollbar */
+::-webkit-scrollbar { width: 8px; }
+::-webkit-scrollbar-track { background: #09090b; }
+::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #3f3f46; }
+
+/* Glassmorphism Utilities */
+.glass {
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+.glass-hover:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(139, 92, 246, 0.3);
+  box-shadow: 0 0 30px -5px rgba(139, 92, 246, 0.15);
+}
+
+/* Custom Selection */
+::selection { background: rgba(139, 92, 246, 0.3); color: #fff; }
+
+/* Glow Animation */
+@keyframes subtle-float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float { animation: subtle-float 6s ease-in-out infinite; }
+
+input[type="text"], input[type="email"], textarea {
+  -webkit-appearance: none;
+  appearance: none;
+}
+</style>
+</head>
+<body class="bg-[#050505] text-zinc-300 font-sans antialiased selection:bg-violet-500/30">
+
+    <!-- Background Ambient Glows -->
+    <div class="fixed top-0 left-1/4 w-96 h-96 bg-violet-900/20 rounded-full blur-[128px] pointer-events-none -z-10"></div>
+    <div class="fixed bottom-0 right-1/4 w-96 h-96 bg-fuchsia-900/10 rounded-full blur-[128px] pointer-events-none -z-10"></div>
+
+    <!-- Navigation -->
+    <nav class="fixed top-0 w-full z-50 glass border-b border-white/5">
+        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-2 group">
+                <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-violet-600 to-fuchsia-600 flex items-center justify-center text-white group-hover:shadow-[0_0_15px_rgba(139,92,246,0.5)] transition-shadow duration-300">
+                    <span class="font-bold tracking-tighter text-sm">NB</span>
+                </div>
+                <span class="text-lg font-medium tracking-tight text-white">Steel</span>
+            </a>
+
+            <div class="hidden md:flex items-center gap-8 text-sm font-medium text-zinc-400">
+                <a href="#bots" class="hover:text-white transition-colors">Our Bots</a>
+                <a href="#commands" class="hover:text-white transition-colors">Commands</a>
+                <a href="#custom" class="hover:text-white transition-colors">Custom Services</a>
+                <a href="#legal" class="hover:text-white transition-colors">Legal</a>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <a href="https://discord.com" target="_blank" class="hidden sm:flex text-zinc-400 hover:text-white transition-colors">
+                    <iconify-icon icon="solar:chat-round-line-linear" width="24" stroke-width="1.5"></iconify-icon>
+                </a>
+                <a href="#add-bot" class="bg-white text-black px-4 py-2 rounded-lg text-xs font-semibold tracking-wide hover:bg-zinc-200 transition-all transform hover:scale-105 active:scale-95">
+                    Dashboard
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="relative pt-32 pb-20 md:pt-48 md:pb-32 px-6 overflow-hidden">
+        <div class="max-w-7xl mx-auto text-center relative z-10">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-violet-500/30 bg-violet-500/10 text-violet-300 text-xs font-medium mb-8">
+                <span class="relative flex h-2 w-2">
+                  <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
+                  <span class="relative inline-flex rounded-full h-2 w-2 bg-violet-500"></span>
+                </span>
+                Nightmare Music v2.0 is now live
+            </div>
+
+            <h1 class="text-5xl md:text-7xl lg:text-8xl font-medium tracking-tight text-white mb-6">
+                Powerful Bots. <br>
+                <span class="text-transparent bg-clip-text bg-gradient-to-r from-violet-400 via-fuchsia-400 to-white">Built for Performance.</span>
+            </h1>
+
+            <p class="text-lg md:text-xl text-zinc-400 max-w-2xl mx-auto mb-10 font-light leading-relaxed">
+                Elevate your Discord server with high-fidelity music streaming, advanced moderation tools, and fully customizable automation systems.
+            </p>
+
+            <div class="flex flex-col sm:flex-row items-center justify-center gap-4">
+                <a href="#bots" class="w-full sm:w-auto px-8 py-3.5 rounded-lg bg-white text-black font-semibold text-sm hover:bg-zinc-200 transition-all flex items-center justify-center gap-2 group">
+                    Add to Server
+                    <iconify-icon icon="solar:arrow-right-linear" width="18" class="group-hover:translate-x-1 transition-transform"></iconify-icon>
+                </a>
+                <a href="#custom" class="w-full sm:w-auto px-8 py-3.5 rounded-lg border border-zinc-800 text-zinc-300 hover:text-white hover:border-zinc-600 bg-zinc-900/50 backdrop-blur font-medium text-sm transition-all">
+                    Get Custom Bot
+                </a>
+            </div>
+
+            <!-- Dashboard Preview Abstract -->
+            <div class="mt-20 relative mx-auto max-w-5xl">
+                <div class="absolute inset-0 bg-gradient-to-t from-[#050505] via-transparent to-transparent z-10 h-full w-full"></div>
+                <div class="glass rounded-xl border border-white/10 p-2 md:p-4">
+                    <div class="bg-zinc-900/80 rounded-lg overflow-hidden border border-white/5 aspect-[16/9] flex items-center justify-center relative">
+                        <div class="absolute inset-0 flex">
+                            <div class="w-16 md:w-64 border-r border-white/5 p-4 hidden md:block">
+                                <div class="w-full h-8 bg-zinc-800/50 rounded mb-4"></div>
+                                <div class="w-3/4 h-4 bg-zinc-800/30 rounded mb-2"></div>
+                                <div class="w-full h-4 bg-zinc-800/30 rounded mb-2"></div>
+                                <div class="w-5/6 h-4 bg-zinc-800/30 rounded mb-2"></div>
+                            </div>
+                            <div class="flex-1 p-4 md:p-8">
+                                <div class="flex justify-between mb-8">
+                                    <div class="w-32 h-8 bg-zinc-800/50 rounded"></div>
+                                    <div class="w-8 h-8 rounded-full bg-zinc-800/50"></div>
+                                </div>
+                                <div class="grid grid-cols-3 gap-4">
+                                    <div class="h-24 bg-violet-500/10 border border-violet-500/20 rounded-lg"></div>
+                                    <div class="h-24 bg-zinc-800/30 rounded-lg"></div>
+                                    <div class="h-24 bg-zinc-800/30 rounded-lg"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="absolute inset-0 flex items-center justify-center">
+                            <iconify-icon icon="solar:bolt-circle-linear" class="text-violet-500/20 text-9xl animate-pulse"></iconify-icon>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Bots Showcase -->
+    <section id="bots" class="py-24 px-6 relative">
+        <div class="max-w-7xl mx-auto">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-12">
+                <div>
+                    <h2 class="text-3xl md:text-4xl font-medium tracking-tight text-white mb-4">Our Products</h2>
+                    <p class="text-zinc-400 max-w-md">Choose the perfect bot for your community needs. Scalable, fast, and always online.</p>
+                </div>
+                <a href="#commands" class="hidden md:flex items-center gap-2 text-violet-400 hover:text-violet-300 text-sm font-medium mt-4 md:mt-0">
+                    View Documentation <iconify-icon icon="solar:alt-arrow-right-linear"></iconify-icon>
+                </a>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Bot 1: Music -->
+                <div class="glass p-8 rounded-2xl group glass-hover transition-all duration-300">
+                    <div class="w-12 h-12 rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center mb-6 text-violet-400 group-hover:scale-110 transition-transform">
+                        <iconify-icon icon="solar:music-note-slider-linear" width="28"></iconify-icon>
+                    </div>
+                    <h3 class="text-xl font-medium text-white mb-2">Nightmare Music</h3>
+                    <p class="text-zinc-400 text-sm leading-relaxed mb-6">
+                        High-fidelity music streaming from Spotify, SoundCloud, and more. Features include bass boost, autoplay, and 24/7 radio mode.
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-8">
+                        <span class="px-2 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-zinc-400">Low Latency</span>
+                        <span class="px-2 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-zinc-400">Filters</span>
+                        <span class="px-2 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-zinc-400">Lyrics</span>
+                    </div>
+                    <button class="w-full py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                        Add to Discord
+                        <iconify-icon icon="solar:add-circle-linear" width="18"></iconify-icon>
+                    </button>
+                </div>
+
+                <!-- Bot 2: Support -->
+                <div class="glass p-8 rounded-2xl group glass-hover transition-all duration-300">
+                    <div class="w-12 h-12 rounded-lg bg-zinc-900 border border-white/10 flex items-center justify-center mb-6 text-fuchsia-400 group-hover:scale-110 transition-transform">
+                        <iconify-icon icon="solar:shield-check-linear" width="28"></iconify-icon>
+                    </div>
+                    <h3 class="text-xl font-medium text-white mb-2">Nightmare Support</h3>
+                    <p class="text-zinc-400 text-sm leading-relaxed mb-6">
+                        Complete server management solution. Ticket systems with transcripts, advanced auto-moderation, and verification flows.
+                    </p>
+                    <div class="flex flex-wrap gap-2 mb-8">
+                        <span class="px-2 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-zinc-400">Tickets</span>
+                        <span class="px-2 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-zinc-400">Logging</span>
+                        <span class="px-2 py-1 rounded-md bg-white/5 border border-white/5 text-xs text-zinc-400">Anti-Raid</span>
+                    </div>
+                    <button class="w-full py-3 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 text-white text-sm font-medium transition-colors flex items-center justify-center gap-2">
+                        Add to Discord
+                        <iconify-icon icon="solar:add-circle-linear" width="18"></iconify-icon>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Info / Why Us -->
+    <section class="py-24 px-6 bg-zinc-900/20 border-y border-white/5">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-12">
+                <div class="text-center md:text-left">
+                    <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-violet-500/10 text-violet-400 mb-4">
+                        <iconify-icon icon="solar:server-square-linear" width="20"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium text-white mb-2">99.9% Uptime</h3>
+                    <p class="text-sm text-zinc-400 leading-relaxed">
+                        Hosted on premium dedicated nodes to ensure your bots are always online when you need them.
+                    </p>
+                </div>
+                <div class="text-center md:text-left">
+                    <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-fuchsia-500/10 text-fuchsia-400 mb-4">
+                        <iconify-icon icon="solar:lock-password-linear" width="20"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium text-white mb-2">Privacy Focused</h3>
+                    <p class="text-sm text-zinc-400 leading-relaxed">
+                        We collect minimal data. Your server's privacy and security are our top priority.
+                    </p>
+                </div>
+                <div class="text-center md:text-left">
+                    <div class="inline-flex items-center justify-center w-10 h-10 rounded-full bg-blue-500/10 text-blue-400 mb-4">
+                        <iconify-icon icon="solar:tuning-square-2-linear" width="20"></iconify-icon>
+                    </div>
+                    <h3 class="text-lg font-medium text-white mb-2">Easy Configuration</h3>
+                    <p class="text-sm text-zinc-400 leading-relaxed">
+                        Manage settings through our intuitive web dashboard or simple slash commands.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Commands Section -->
+    <section id="commands" class="py-24 px-6">
+        <div class="max-w-5xl mx-auto">
+            <div class="text-center mb-16">
+                <h2 class="text-3xl md:text-4xl font-medium tracking-tight text-white mb-4">Commands</h2>
+                <p class="text-zinc-400">Browse the full list of available commands.</p>
+            </div>
+
+            <div class="glass rounded-2xl overflow-hidden border border-white/10">
+                <div class="p-6 border-b border-white/5 bg-zinc-900/50">
+                    <div class="flex flex-col md:flex-row gap-4 justify-between items-center">
+                        <div class="relative w-full md:w-96">
+                            <iconify-icon icon="solar:magnifer-linear" class="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500"></iconify-icon>
+                            <input type="text" id="cmd-search" placeholder="Search commands..." class="w-full bg-zinc-950 border border-white/10 rounded-lg py-2.5 pl-10 pr-4 text-sm text-zinc-300 placeholder-zinc-600 focus:outline-none focus:border-violet-500/50 transition-colors">
+                        </div>
+                        <div class="flex gap-2" id="cmd-filters">
+                            <button data-filter="all" class="filter-btn active px-4 py-1.5 rounded-full bg-violet-500/10 text-violet-300 text-xs font-medium border border-violet-500/20">All</button>
+                            <button data-filter="music" class="filter-btn px-4 py-1.5 rounded-full bg-zinc-800/50 text-zinc-400 text-xs font-medium border border-white/5 hover:text-white transition-colors">Music</button>
+                            <button data-filter="admin" class="filter-btn px-4 py-1.5 rounded-full bg-zinc-800/50 text-zinc-400 text-xs font-medium border border-white/5 hover:text-white transition-colors">Admin</button>
+                            <button data-filter="utility" class="filter-btn px-4 py-1.5 rounded-full bg-zinc-800/50 text-zinc-400 text-xs font-medium border border-white/5 hover:text-white transition-colors">Utility</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="divide-y divide-white/5" id="cmd-list">
+                    <div class="cmd-row p-4 hover:bg-white/5 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4" data-cat="music" data-cmd="!play">
+                        <div class="flex items-start gap-4">
+                            <div class="mt-1"><span class="font-mono text-violet-400 bg-violet-500/10 px-2 py-1 rounded text-xs">!play</span></div>
+                            <div>
+                                <h4 class="text-sm font-medium text-white">Play Music</h4>
+                                <p class="text-xs text-zinc-500 mt-1">Plays a track from a URL or search query.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-zinc-600 uppercase tracking-wider font-semibold">Music</span>
+                    </div>
+                    <div class="cmd-row p-4 hover:bg-white/5 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4" data-cat="music" data-cmd="!skip">
+                        <div class="flex items-start gap-4">
+                            <div class="mt-1"><span class="font-mono text-violet-400 bg-violet-500/10 px-2 py-1 rounded text-xs">!skip</span></div>
+                            <div>
+                                <h4 class="text-sm font-medium text-white">Skip Track</h4>
+                                <p class="text-xs text-zinc-500 mt-1">Skips the currently playing track.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-zinc-600 uppercase tracking-wider font-semibold">Music</span>
+                    </div>
+                    <div class="cmd-row p-4 hover:bg-white/5 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4" data-cat="music" data-cmd="!queue">
+                        <div class="flex items-start gap-4">
+                            <div class="mt-1"><span class="font-mono text-violet-400 bg-violet-500/10 px-2 py-1 rounded text-xs">!queue</span></div>
+                            <div>
+                                <h4 class="text-sm font-medium text-white">View Queue</h4>
+                                <p class="text-xs text-zinc-500 mt-1">Shows the current music queue.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-zinc-600 uppercase tracking-wider font-semibold">Music</span>
+                    </div>
+                    <div class="cmd-row p-4 hover:bg-white/5 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4" data-cat="admin" data-cmd="!adduser">
+                        <div class="flex items-start gap-4">
+                            <div class="mt-1"><span class="font-mono text-fuchsia-400 bg-fuchsia-500/10 px-2 py-1 rounded text-xs">!adduser</span></div>
+                            <div>
+                                <h4 class="text-sm font-medium text-white">Add User</h4>
+                                <p class="text-xs text-zinc-500 mt-1">Adds a user to the music bot whitelist.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-zinc-600 uppercase tracking-wider font-semibold">Admin</span>
+                    </div>
+                    <div class="cmd-row p-4 hover:bg-white/5 transition-colors flex flex-col md:flex-row md:items-center justify-between gap-4" data-cat="utility" data-cmd="!status">
+                        <div class="flex items-start gap-4">
+                            <div class="mt-1"><span class="font-mono text-blue-400 bg-blue-500/10 px-2 py-1 rounded text-xs">!status</span></div>
+                            <div>
+                                <h4 class="text-sm font-medium text-white">Bot Status</h4>
+                                <p class="text-xs text-zinc-500 mt-1">Shows bot uptime, Lavalink, and queue info.</p>
+                            </div>
+                        </div>
+                        <span class="text-xs text-zinc-600 uppercase tracking-wider font-semibold">Utility</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Custom Bots Service -->
+    <section id="custom" class="py-24 px-6 relative overflow-hidden">
+        <div class="absolute right-0 top-1/2 -translate-y-1/2 w-1/3 h-full bg-gradient-to-l from-violet-900/10 to-transparent pointer-events-none"></div>
+
+        <div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-16 items-center relative z-10">
+            <div>
+                <div class="inline-block px-3 py-1 mb-6 rounded-lg bg-zinc-900 border border-zinc-800 text-xs font-medium text-zinc-400">
+                    Shadow.Devs Exclusive
+                </div>
+                <h2 class="text-4xl md:text-5xl font-medium tracking-tight text-white mb-6">
+                    Need something <br>
+                    <span class="text-violet-400 italic">unique?</span>
+                </h2>
+                <p class="text-lg text-zinc-400 mb-8 font-light leading-relaxed">
+                    We don't just host bots; we engineer experiences. Hire Shadow.Devs to build a fully custom Discord bot tailored to your specific community or business needs.
+                </p>
+                <ul class="space-y-4 mb-10">
+                    <li class="flex items-center gap-3 text-sm text-zinc-300">
+                        <iconify-icon icon="solar:check-circle-linear" class="text-violet-400"></iconify-icon>
+                        Custom Economy Systems
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-zinc-300">
+                        <iconify-icon icon="solar:check-circle-linear" class="text-violet-400"></iconify-icon>
+                        API Integrations &amp; Web Dashboards
+                    </li>
+                    <li class="flex items-center gap-3 text-sm text-zinc-300">
+                        <iconify-icon icon="solar:check-circle-linear" class="text-violet-400"></iconify-icon>
+                        Advanced Role Management
+                    </li>
+                </ul>
+                <a href="#contact" class="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-violet-600 to-fuchsia-600 text-white font-medium text-sm shadow-lg shadow-violet-500/20 hover:shadow-violet-500/40 transition-all">
+                    Request a Custom Bot
+                    <iconify-icon icon="solar:stars-minimalistic-linear" width="18"></iconify-icon>
+                </a>
+            </div>
+
+            <div class="relative">
+                <div class="glass p-8 rounded-2xl border border-white/10 relative z-10">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-16 h-16 rounded-full bg-zinc-800 border-2 border-violet-500 flex items-center justify-center text-2xl text-white">S</div>
+                        <div>
+                            <h4 class="text-lg font-semibold text-white">Shadow.Devs</h4>
+                            <p class="text-sm text-zinc-500">Lead Developer &amp; Automation Expert</p>
+                        </div>
+                    </div>
+                    <p class="text-sm text-zinc-400 italic mb-6">
+                        "I believe automation should feel like magic. Every bot I build is crafted with precision, optimized for speed, and designed to look beautiful."
+                    </p>
+                    <div class="flex gap-3">
+                        <button class="flex-1 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-white transition-colors">Portfolio</button>
+                        <button class="flex-1 py-2 rounded bg-zinc-800 hover:bg-zinc-700 text-xs font-medium text-white transition-colors">Contact</button>
+                    </div>
+                </div>
+                <div class="absolute -top-4 -right-4 w-full h-full border border-zinc-800 rounded-2xl -z-10 bg-zinc-950/50"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact & Footer -->
+    <footer id="contact" class="bg-zinc-950 border-t border-white/5 pt-20 pb-10 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 mb-16">
+                <div class="col-span-1 md:col-span-2">
+                    <a href="#" class="flex items-center gap-2 mb-6">
+                        <div class="w-6 h-6 rounded bg-zinc-800 flex items-center justify-center text-white">
+                            <span class="font-bold text-[10px]">NB</span>
+                        </div>
+                        <span class="text-lg font-medium tracking-tight text-white">Nightmare Bots</span>
+                    </a>
+                    <p class="text-zinc-500 text-sm max-w-sm mb-6">
+                        Building the next generation of Discord automation tools. Sleek, fast, and reliable.
+                    </p>
+                    <div class="flex gap-4">
+                        <a href="#" class="text-zinc-400 hover:text-white transition-colors"><iconify-icon icon="solar:chat-round-line-linear" width="20"></iconify-icon></a>
+                        <a href="#" class="text-zinc-400 hover:text-white transition-colors"><iconify-icon icon="solar:global-linear" width="20"></iconify-icon></a>
+                        <a href="https://github.com/devilforcex/discbot" class="text-zinc-400 hover:text-white transition-colors"><iconify-icon icon="solar:code-linear" width="20"></iconify-icon></a>
+                    </div>
+                </div>
+                <div>
+                    <h4 class="text-white font-medium mb-6">Product</h4>
+                    <ul class="space-y-4 text-sm text-zinc-500">
+                        <li><a href="#bots" class="hover:text-violet-400 transition-colors">Music Bot</a></li>
+                        <li><a href="#bots" class="hover:text-violet-400 transition-colors">Support Bot</a></li>
+                        <li><a href="#" class="hover:text-violet-400 transition-colors">Premium</a></li>
+                        <li><a href="#" class="hover:text-violet-400 transition-colors">Changelog</a></li>
+                    </ul>
+                </div>
+                <div id="legal">
+                    <h4 class="text-white font-medium mb-6">Legal</h4>
+                    <ul class="space-y-4 text-sm text-zinc-500">
+                        <li><a href="#" class="hover:text-violet-400 transition-colors">Terms of Service</a></li>
+                        <li><a href="#" class="hover:text-violet-400 transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-violet-400 transition-colors">Data Usage</a></li>
+                        <li><a href="#" class="hover:text-violet-400 transition-colors">Cookie Policy</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="border-t border-white/5 pt-12">
+                <div class="glass p-8 rounded-2xl max-w-3xl mx-auto">
+                    <h3 class="text-xl font-medium text-white mb-6 text-center">Get in Touch</h3>
+                    <form class="space-y-4" onsubmit="return false;">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div class="space-y-2">
+                                <label class="text-xs font-medium text-zinc-400 ml-1">Discord Username</label>
+                                <input type="text" placeholder="user" class="w-full bg-zinc-900 border border-white/10 rounded-lg p-3 text-sm text-white focus:border-violet-500 focus:outline-none transition-colors">
+                            </div>
+                            <div class="space-y-2">
+                                <label class="text-xs font-medium text-zinc-400 ml-1">Email</label>
+                                <input type="email" placeholder="you@example.com" class="w-full bg-zinc-900 border border-white/10 rounded-lg p-3 text-sm text-white focus:border-violet-500 focus:outline-none transition-colors">
+                            </div>
+                        </div>
+                        <div class="space-y-2">
+                            <label class="text-xs font-medium text-zinc-400 ml-1">Message</label>
+                            <textarea rows="4" placeholder="How can we help?" class="w-full bg-zinc-900 border border-white/10 rounded-lg p-3 text-sm text-white focus:border-violet-500 focus:outline-none transition-colors resize-none"></textarea>
+                        </div>
+                        <button type="button" class="w-full py-3 bg-white text-black font-semibold text-sm rounded-lg hover:bg-zinc-200 transition-colors">
+                            Send Message
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="mt-12 text-center text-xs text-zinc-600">
+                © 2026 Nightmare Bots. Designed by Shadow.Devs. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+<script>
+// Command search + filter (client-side)
+(function () {
+  const search = document.getElementById('cmd-search');
+  const rows = Array.from(document.querySelectorAll('.cmd-row'));
+  const filters = document.querySelectorAll('.filter-btn');
+  let active = 'all';
+
+  function apply() {
+    const q = (search.value || '').toLowerCase().trim();
+    rows.forEach(row => {
+      const cat = row.dataset.cat;
+      const text = row.textContent.toLowerCase();
+      const catOk = active === 'all' || cat === active;
+      const qOk = !q || text.includes(q);
+      row.style.display = catOk && qOk ? '' : 'none';
+    });
+  }
+
+  search.addEventListener('input', apply);
+  filters.forEach(btn => {
+    btn.addEventListener('click', () => {
+      active = btn.dataset.filter;
+      filters.forEach(b => {
+        b.classList.remove('bg-violet-500/10', 'text-violet-300', 'border-violet-500/20');
+        b.classList.add('bg-zinc-800/50', 'text-zinc-400', 'border-white/5');
+      });
+      btn.classList.remove('bg-zinc-800/50', 'text-zinc-400', 'border-white/5');
+      btn.classList.add('bg-violet-500/10', 'text-violet-300', 'border-violet-500/20');
+      apply();
+    });
+  });
+})();
+</script>
+</body>
+</html>

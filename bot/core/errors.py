@@ -47,7 +47,7 @@ class NoPlayer(MusicBotError):
     def __init__(self):
         super().__init__(
             message="No active player in guild",
-            user_message="There is no active music session. Use /play to start one.",
+            user_message="There is no active music session. Use `!play` to start one.",
         )
 
 

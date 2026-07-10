@@ -4,9 +4,20 @@ Provides styled discord.Embed objects for all music-related features.
 """
 
 import math
-from typing import Optional
+from typing import Optional, Union
 
 import discord
+
+from bot.music.emoji import (
+    COLOR_FAVORITE,
+    COLOR_IDLE,
+    COLOR_INFO,
+    COLOR_PAUSED,
+    COLOR_PLAYING,
+    COLOR_SUCCESS,
+    EMOJI,
+)
+from bot.music.queue_manager import LoopMode
 
 
 class EmbedManager:
@@ -22,51 +33,120 @@ class EmbedManager:
         thumbnail_url: Optional[str] = None,
         requester: Optional[str] = None,
         volume: int = 50,
+        paused: bool = False,
+        loop: Optional[Union[LoopMode, str]] = None,
+        autoplay: bool = False,
+        queue_len: int = 0,
     ) -> discord.Embed:
-        """Build a now-playing embed with progress bar.
+        """Build a now-playing embed with progress bar."""
+        return EmbedManager.player_now_playing_embed(
+            title=title,
+            author=author,
+            uri=uri,
+            length=length,
+            position=position,
+            thumbnail_url=thumbnail_url,
+            requester=requester,
+            volume=volume,
+            paused=paused,
+            loop=loop,
+            autoplay=autoplay,
+            queue_len=queue_len,
+        )
 
-        Args:
-            title: Track title.
-            author: Track author/artist.
-            uri: Track URL.
-            length: Track duration in milliseconds.
-            position: Current playback position in milliseconds.
-            thumbnail_url: Optional thumbnail URL.
-            requester: Discord user mention who requested the track.
-            volume: Current volume level.
+    @staticmethod
+    def player_now_playing_embed(
+        title: str,
+        author: str,
+        uri: str,
+        length: int,
+        position: int = 0,
+        thumbnail_url: Optional[str] = None,
+        requester: Optional[str] = None,
+        volume: int = 50,
+        paused: bool = False,
+        loop: Optional[Union[LoopMode, str]] = None,
+        autoplay: bool = False,
+        queue_len: int = 0,
+    ) -> discord.Embed:
+        """Full player embed used by the persistent player message."""
+        progress = EmbedManager._build_progress_bar(position, length, bar_len=18)
+        color = COLOR_PAUSED if paused else COLOR_PLAYING
+        state_icon = EMOJI["pause"] if paused else EMOJI["play"]
+        state_label = "Paused" if paused else "Now Playing"
 
-        Returns:
-            A styled now-playing embed.
-        """
-        # Calculate progress bar
-        progress = EmbedManager._build_progress_bar(position, length, length=18)
+        loop_mode = loop
+        if isinstance(loop, str):
+            try:
+                loop_mode = LoopMode(loop.lower())
+            except ValueError:
+                loop_mode = LoopMode.NONE
+        if loop_mode is None:
+            loop_mode = LoopMode.NONE
+
+        loop_icons = {
+            LoopMode.NONE: EMOJI["loop_none"],
+            LoopMode.TRACK: EMOJI["loop_track"],
+            LoopMode.QUEUE: EMOJI["loop_queue"],
+        }
+        loop_icon = loop_icons.get(loop_mode, EMOJI["loop_none"])
+        loop_label = loop_mode.value if isinstance(loop_mode, LoopMode) else str(loop_mode)
+
+        status = (
+            f"{state_icon} **{state_label}** · "
+            f"{loop_icon} `{loop_label}` · "
+            f"{EMOJI['volume']} `{volume}%` · "
+            f"{EMOJI['queue']} `{queue_len}`"
+        )
+        if autoplay:
+            status += f" · {EMOJI['autoplay']} Autoplay"
 
         embed = discord.Embed(
-            title="🎵 Now Playing",
-            description=f"[**{title}**]({uri})",
-            color=discord.Color.brand_green(),
+            title=f"{EMOJI['music']} {state_label}",
+            description=f"[**{title}**]({uri})\n*{author}*\n\n{status}",
+            color=color,
         )
-
-        embed.add_field(name="Artist", value=author, inline=True)
-        embed.add_field(
-            name="Duration",
-            value=f"{EmbedManager._format_duration(position)} / {EmbedManager._format_duration(length)}",
-            inline=True,
-        )
-        embed.add_field(name="Volume", value=f"{volume}%", inline=True)
-
         embed.add_field(
             name="Progress",
-            value=f"`{progress}`",
+            value=(
+                f"`{progress}`\n"
+                f"`{EmbedManager._format_duration(position)}` / "
+                f"`{EmbedManager._format_duration(length)}`"
+            ),
             inline=False,
         )
 
         if thumbnail_url:
             embed.set_thumbnail(url=thumbnail_url)
 
+        footer = "Use the buttons below to control playback"
         if requester:
-            embed.set_footer(text=f"Requested by {requester}")
+            footer = f"Requested by {requester} · {footer}"
+        embed.set_footer(text=footer)
+        return embed
 
+    @staticmethod
+    def player_idle_embed(
+        queue_len: int = 0,
+        loop: Optional[Union[LoopMode, str]] = None,
+    ) -> discord.Embed:
+        """Idle state for the persistent player message."""
+        loop_label = "none"
+        if isinstance(loop, LoopMode):
+            loop_label = loop.value
+        elif isinstance(loop, str):
+            loop_label = loop
+
+        embed = discord.Embed(
+            title=f"{EMOJI['idle']} Nothing Playing",
+            description=(
+                f"Queue is empty — use `!play <song>` to start.\n\n"
+                f"{EMOJI['queue']} Queue: `{queue_len}` · "
+                f"{EMOJI['loop_none']} Loop: `{loop_label}`"
+            ),
+            color=COLOR_IDLE,
+        )
+        embed.set_footer(text="Player buttons work once a track is playing")
         return embed
 
     @staticmethod
@@ -231,78 +311,96 @@ class EmbedManager:
 
     @staticmethod
     def help_embed() -> discord.Embed:
-        """Build a comprehensive help embed with all commands.
-
-        Returns:
-            A styled help embed.
-        """
+        """Build a comprehensive help embed with all commands."""
         embed = discord.Embed(
-            title="🎶 Music Bot Commands",
-            description="Control music playback with these slash commands.",
-            color=discord.Color.blurple(),
+            title=f"{EMOJI['music']} Music Bot Commands",
+            description=(
+                "Prefix: `!` · Aliases: `!p` `!np` `!q` `!vol` `!dc`\n"
+                "Player buttons on the Now Playing message also control playback."
+            ),
+            color=COLOR_PLAYING,
         )
 
-        # Playback commands
         embed.add_field(
-            name="▶️ Playback",
+            name=f"{EMOJI['play']} Playback",
             value=(
-                "`/play` — Search and play music\n"
-                "`/pause` — Pause playback\n"
-                "`/resume` — Resume playback\n"
-                "`/skip` — Skip current track\n"
-                "`/stop` — Stop playback\n"
-                "`/disconnect` — Disconnect from voice"
+                "`!play <query>` — Search / play URL\n"
+                "`!pause` / `!resume` — Pause or resume\n"
+                "`!skip` — Skip track\n"
+                "`!stop` — Stop & clear queue\n"
+                "`!disconnect` (`!dc`) — Leave voice"
             ),
             inline=True,
         )
 
-        # Queue commands
         embed.add_field(
-            name="📋 Queue",
+            name=f"{EMOJI['queue']} Queue",
             value=(
-                "`/queue` — View the queue\n"
-                "`/nowplaying` — Show current track\n"
-                "`/shuffle` — Shuffle the queue\n"
-                "`/loop` — Set loop mode\n"
-                "`/autoplay` — Toggle autoplay"
+                "`!queue` (`!q`) — View queue\n"
+                "`!nowplaying` (`!np`) — Player + buttons\n"
+                "`!shuffle` — Shuffle queue\n"
+                "`!loop <none|track|queue>`\n"
+                "`!autoplay [on|off|toggle]`"
             ),
             inline=True,
         )
 
-        # Settings commands
         embed.add_field(
-            name="⚙️ Settings",
+            name="⚙️ Settings & utility",
             value=(
-                "`/volume` — Set volume (0-100)\n"
-                "`/ping` — Check latency\n"
-                "`/help` — Show this help"
+                "`!volume <0-100>` (`!vol`)\n"
+                "`!ping` — Latency\n"
+                "`!help` — This menu\n"
+                "`!status` / `!whoami`"
             ),
             inline=True,
         )
 
-        # Favorites commands
         embed.add_field(
-            name="⭐ Favorites",
+            name=f"{EMOJI['favorite']} Favorites",
             value=(
-                "`/favorite` — Save current track\n"
-                "`/favorites` — List your favorites"
+                "`!favorite` — Save current track\n"
+                "`!favorites [page]` — List favorites"
             ),
             inline=True,
         )
 
-        # Playlist commands
         embed.add_field(
             name="📀 Playlists",
             value=(
-                "`/playlist-create` — Create a playlist\n"
-                "`/playlist-add` — Add current track\n"
-                "`/playlist-remove` — Remove track\n"
-                "`/playlist-play` — Play a playlist"
+                "`!playlist_create <name>`\n"
+                "`!playlist_add <id>`\n"
+                "`!playlist_remove <id> <pos>`\n"
+                "`!playlist_play <id>`"
             ),
             inline=True,
         )
 
-        embed.set_footer(text="Use / before each command")
+        embed.add_field(
+            name="🔒 Owner",
+            value=(
+                "`!adduser` / `!removeuser` / `!listusers`\n"
+                "`!approve` / `!deny` / `!pendingrequests`\n"
+                "`!blacklist` / `!unblacklist`\n"
+                "`!247 on|off`"
+            ),
+            inline=True,
+        )
+
+        embed.add_field(
+            name="🎛️ Player buttons",
+            value=(
+                f"{EMOJI['play_pause']} pause/resume · {EMOJI['skip']} skip · "
+                f"{EMOJI['stop']} stop · {EMOJI['shuffle']} shuffle · "
+                f"{EMOJI['loop_queue']} loop cycle\n"
+                f"{EMOJI['vol_down']}/{EMOJI['vol_up']} volume · "
+                f"{EMOJI['favorite']} favorite · {EMOJI['queue']} queue · "
+                f"{EMOJI['disconnect']} disconnect"
+            ),
+            inline=False,
+        )
+
+        embed.set_footer(text="Music commands work in the designated music channel")
         return embed
 
     @staticmethod
@@ -326,9 +424,9 @@ class EmbedManager:
             A styled confirmation embed.
         """
         embed = discord.Embed(
-            title="✅ Added to Queue",
+            title=f"{EMOJI['ok']} Added to Queue",
             description=f"[**{title}**]({uri})",
-            color=discord.Color.green(),
+            color=COLOR_SUCCESS,
         )
 
         embed.add_field(name="Position", value=f"#{position}", inline=True)
@@ -348,23 +446,16 @@ class EmbedManager:
         current: int,
         total: int,
         length: int = 18,
+        bar_len: Optional[int] = None,
     ) -> str:
-        """Build a text-based progress bar.
-
-        Args:
-            current: Current position in milliseconds.
-            total: Total length in milliseconds.
-            length: Total characters in the bar.
-
-        Returns:
-            A string progress bar like '████████░░░░░░░░░░'.
-        """
+        """Build a text-based progress bar like '████████░░░░░░░░░░'."""
+        size = bar_len if bar_len is not None else length
         if total <= 0:
-            return "░" * length
+            return "░" * size
 
         progress_ratio = current / total
-        filled = min(length, max(0, round(progress_ratio * length)))
-        empty = length - filled
+        filled = min(size, max(0, round(progress_ratio * size)))
+        empty = size - filled
         return "█" * filled + "░" * empty
 
     @staticmethod
