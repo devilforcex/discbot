@@ -8,18 +8,14 @@
     refreshes pip dependencies in .venv, and (optionally) restarts the running
     bot.
 
-    Safety model (matches update.sh):
+    Safety model:
       - Untracked / ignored files (e.g. generated-page.html, .env, data/) never block.
       - Tracked local edits block by default; you can stash, discard, or pass -Force.
       - Never overwrites .env, data/, logs/, or other gitignored runtime files.
 
 .PARAMETER InstallDir
-    Where DiscBot lives. Priority:
-      1. -InstallDir parameter
-      2. $env:DISCBOT_DIR
-      3. the folder this script lives in (if inside a clone)
-      4. E:\discbot
-      If the folder doesn't exist, delegates to install.ps1.
+    Backward-compatible parameter. Only E:\discbot is accepted. If E:\discbot
+    does not exist, the updater delegates to install.ps1.
 
 .PARAMETER Branch
     Git branch to update to. Defaults to the currently checked-out branch.
@@ -37,7 +33,7 @@
 .PARAMETER Force
     Discard tracked local modifications/deletions (git reset --hard + clean deleted
     tracked files) before pulling. Untracked and ignored files are left alone.
-    Useful when an old clone has stray edits like a deleted update.sh.
+    Useful when an old clone has stray tracked edits.
 
 .PARAMETER NoPrompt
     Non-interactive mode. With local tracked changes and without -Force, exits 1.
@@ -49,8 +45,7 @@
     # Force-clean tracked edits then update:
     $env:DISCBOT_FORCE='1'; irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
 
-    # Custom dir:
-    $env:DISCBOT_DIR='E:\discbot'; irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
+    # Fixed install dir: E:\discbot
 #>
 [CmdletBinding()]
 param(
@@ -96,21 +91,15 @@ if (-not $Force -and $env:DISCBOT_FORCE -match '^(?i:1|true|yes)$') {
     $Force = $true
 }
 
-# Resolve install dir — same precedence as install.ps1
-$defaultDir = "E:\discbot"
-if (-not $InstallDir) {
-    if ($env:DISCBOT_DIR) { $InstallDir = $env:DISCBOT_DIR }
-    else {
-        try {
-            if ($PSScriptRoot) {
-                $hereRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..") -ErrorAction Stop
-                if (Test-Path (Join-Path $hereRoot.Path ".git")) { $InstallDir = $hereRoot.Path }
-            }
-        } catch {}
-        if (-not $InstallDir) { $InstallDir = $defaultDir }
-    }
+# Hard requirement: every bot-related file must live under E:\discbot.
+$fixedDir = [IO.Path]::GetFullPath("E:\discbot")
+if ($InstallDir -and ([IO.Path]::GetFullPath($InstallDir).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Fail "DiscBot is locked to E:\discbot. Refusing custom InstallDir: $InstallDir"
 }
-$InstallDir = [IO.Path]::GetFullPath($InstallDir)
+if ($env:DISCBOT_DIR -and ([IO.Path]::GetFullPath($env:DISCBOT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Fail "DiscBot is locked to E:\discbot. Remove DISCBOT_DIR or set it to E:\discbot. Current: $env:DISCBOT_DIR"
+}
+$InstallDir = $fixedDir
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Magenta
@@ -146,7 +135,7 @@ Push-Location $InstallDir
 # ---------- Git sanity ----------
 Write-Step "Checking Git status"
 
-# Match update.sh: only tracked modifications/deletions block the update.
+# Only tracked modifications/deletions block the update.
 # Untracked files (generated-page.html, local notes, copied scripts, …) are fine.
 $trackedDirty = $false
 git diff --quiet 2>$null

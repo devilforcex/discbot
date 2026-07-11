@@ -61,6 +61,12 @@ async def play_or_queue_track(
                 logger.debug("player_messages update failed: %s", e)
         return False, embed, track
     else:
+        if hasattr(player, "store_track"):
+            player.store_track(track)
+        try:
+            setattr(track, "requester_id", member.id)
+        except Exception:
+            pass
         await player.play(track)
         bot.queue_manager.add_history(
             guild_id,

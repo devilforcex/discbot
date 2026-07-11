@@ -1,16 +1,23 @@
-# Lavalink v4 Configuration Example
-# Copy this file to application.yml in your Lavalink server directory
-# Download Lavalink v4 from: https://github.com/lavalink-devs/Lavalink/releases
+# Lavalink v4 Configuration Example — native Windows
+# Copy this file to E:\discbot\application.yml
+# Keep it next to E:\discbot\Lavalink.jar
 
 server:
   port: 12333
   address: 127.0.0.1
 
 lavalink:
+  # Lavalink v4 plugin dependencies.
+  # YouTube playback/search should use lavalink-devs/youtube-source.
+  plugins:
+    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.0"
+      snapshot: false
+
   server:
     password: "youshallnotpass"
     sources:
-      youtube: true
+      # Built-in YouTube source is deprecated/disabled when using youtube-source.
+      youtube: false
       bandcamp: true
       soundcloud: true
       twitch: true
@@ -40,20 +47,23 @@ lavalink:
     soundcloudSearchEnabled: true
     gc-warnings: true
 
+# Runtime plugin configuration.
 plugins:
-  # Spotify plugin configuration (optional)
-  # Download from: https://github.com/lavalink-devs/lava-spotify
-  # Place jar file in Lavalink's plugins/ directory
-  - name: spotify-plugin
-    dependency: "com.github.lavalink-devs:lavalink-spotify-plugin:v1.3.0"
-    repository: "https://jitpack.io"
-    spotify:
-      clientId: "your_spotify_client_id"
-      clientSecret: "your_spotify_client_secret"
-      countryCode: "US"
-      maxTracksPerRequest: 200
-      playlistPageSize: 200
-      albumPageSize: 200
+  youtube:
+    enabled: true
+    allowSearch: true
+    allowDirectVideoIds: true
+    allowDirectPlaylistIds: true
+    clients:
+      - MUSIC
+      - ANDROID_MUSIC
+      - WEB
+      - WEBEMBEDDED
+    # Optional cookies file. Uncomment only after placing ytcookies.txt next to Lavalink.jar.
+    # cookieFile: "ytcookies.txt"
+
+  # Spotify/LavaSrc is optional. Keep disabled until you intentionally install
+  # and configure a Spotify-capable Lavalink plugin with real credentials.
 
 metrics:
   prometheus:

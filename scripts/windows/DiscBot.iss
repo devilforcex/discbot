@@ -2,7 +2,7 @@
 ;  DiscBot — Inno Setup installer script
 ;  ------------------------------------------------------------
 ;  Builds a Windows setup.exe that:
-;    - Installs the bot to %LocalAppData%\DiscBot (per-user, no admin)
+;    - Installs the bot to E:\discbot (fixed native Windows path)
 ;    - Creates Start Menu + Desktop shortcuts to start.bat / stop.bat
 ;    - Optionally runs first-time setup after install
 ;
@@ -31,18 +31,17 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName={localappdata}\DiscBot
+DefaultDirName=E:\discbot
 DefaultGroupName=DiscBot
 AllowNoIcons=yes
+DisableDirPage=yes
 DisableProgramGroupPage=yes
 OutputDir=Output
 OutputBaseFilename=DiscBotSetup
-SetupIconFile=
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=lowest
-UninstallDisplayIcon={app}\scripts\windows\discbot.ico
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 
@@ -57,22 +56,25 @@ Name: "runsetup"; Description: "Launch first-time setup after install"; GroupDes
 [Files]
 ; Project source files
 Source: "..\..\bot\*"; DestDir: "{app}\bot"; Flags: recursesubdirs createallsubdirs
-Source: "..\..\docs\*"; DestDir: "{app}\docs"; Flags: recursesubdirs createallsubdirs; ExistsOnInstall: false
-Source: "..\..\docker\*"; DestDir: "{app}\docker"; Flags: recursesubdirs createallsubdirs; ExistsOnInstall: false
-Source: "..\..\tests\*"; DestDir: "{app}\tests"; Flags: recursesubdirs createallsubdirs; ExistsOnInstall: false
+Source: "..\..\docs\*"; DestDir: "{app}\docs"; Flags: recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\..\tests\*"; DestDir: "{app}\tests"; Flags: recursesubdirs createallsubdirs skipifsourcedoesntexist
 Source: "..\..\requirements.txt"; DestDir: "{app}"
 Source: "..\..\.env.example"; DestDir: "{app}"
 Source: "..\..\application.yml.example"; DestDir: "{app}"
 Source: "..\..\README.md"; DestDir: "{app}"
-Source: "..\..\Dockerfile"; DestDir: "{app}"; ExistsOnInstall: false
-Source: "..\..\docker-compose.yml"; DestDir: "{app}"; ExistsOnInstall: false
-Source: "..\..\update.sh"; DestDir: "{app}"; ExistsOnInstall: false
+Source: "..\..\install.bat"; DestDir: "{app}"
+Source: "..\..\start.bat"; DestDir: "{app}"
+Source: "..\..\docs\PROJECT_PLAN.md"; DestDir: "{app}\docs"; Flags: skipifsourcedoesntexist
 
 ; Windows scripts
 Source: "setup.bat"; DestDir: "{app}\scripts\windows"
 Source: "start.bat"; DestDir: "{app}\scripts\windows"
 Source: "stop.bat"; DestDir: "{app}\scripts\windows"
 Source: "update.bat"; DestDir: "{app}\scripts\windows"
+Source: "install.ps1"; DestDir: "{app}\scripts\windows"
+Source: "start.ps1"; DestDir: "{app}\scripts\windows"
+Source: "stop.ps1"; DestDir: "{app}\scripts\windows"
+Source: "update.ps1"; DestDir: "{app}\scripts\windows"
 Source: "README-windows.md"; DestDir: "{app}\scripts\windows"
 
 ; NOTE: Lavalink.jar is intentionally NOT bundled — it's large (~80 MB)

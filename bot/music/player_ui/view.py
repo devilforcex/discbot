@@ -105,7 +105,7 @@ class PlayerView(discord.ui.View):
             await interaction.response.defer(ephemeral=True)
             player = controller.get_player(guild_id)
             current = None
-            if player and player.playing and player.last_track:
+            if player and (getattr(player, "playing", False) or getattr(player, "paused", False)) and player.last_track:
                 t = player.last_track
                 current = {
                     "title": t.title,

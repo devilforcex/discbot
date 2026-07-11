@@ -7,6 +7,7 @@ import wavelink
 from discord.ext import commands
 
 from bot.music.player import Player
+from bot.music.search import search_tracks
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ class WavelinkEvents(commands.Cog):
                 self._discard_queued_track(guild_id, next_track_data)
                 continue
             try:
-                tracks = await wavelink.Playable.search(uri)
+                tracks = await search_tracks(uri, source=None, fallbacks=False)
             except Exception as e:
                 logger.error("Failed to resolve queued track in guild %s: %s", guild_id, e)
                 continue

@@ -40,7 +40,7 @@ class QueueCog(commands.Cog):
             return
         player = get_player_from_ctx(ctx)
         current_track = None
-        if player and player.playing and player.last_track:
+        if player and (getattr(player, "playing", False) or getattr(player, "paused", False)) and player.last_track:
             current_track = {
                 "title": player.last_track.title,
                 "author": player.last_track.author,

@@ -25,12 +25,15 @@ echo  ==========================================
 echo.
 
 REM ---------- Resolve repo root ----------
-REM If DISCBOT_DIR is set, use it; otherwise use the folder two levels up
-REM from this script (scripts/windows -> repo root).
-if defined DISCBOT_DIR (
-    cd /d "%DISCBOT_DIR%"
-) else (
-    cd /d "%~dp0..\.."
+REM Hard requirement: everything runs only from E:\discbot.
+if /I not "%CD%"=="E:\discbot" (
+    cd /d "E:\discbot" 2>nul
+)
+if errorlevel 1 (
+    echo  ❌ E:\discbot does not exist or is not accessible.
+    echo     Run install.ps1 first, or create E:\discbot and clone the repo there.
+    pause
+    exit /b 1
 )
 echo     Working in: %CD%
 echo.
@@ -54,8 +57,15 @@ if errorlevel 1 (
 )
 
 REM Python version check
-for /f "tokens=2 delims= " %%v in ('%PY% -c "import sys;print(sys.version_info[0],sys.version_info[1])" 2^>nul') do set "PYMAJ=%%v"
-for /f "tokens=3 delims= " %%v in ('%PY% -c "import sys;print(sys.version_info[0],sys.version_info[1])" 2^>nul') do set "PYMIN=%%v"
+for /f "tokens=1,2 delims=." %%a in ('%PY% -c "import sys;print(f'{sys.version_info[0]}.{sys.version_info[1]}')" 2^>nul') do (
+    set "PYMAJ=%%a"
+    set "PYMIN=%%b"
+)
+if not defined PYMAJ (
+    echo  ❌ Could not detect Python version.
+    pause
+    exit /b 1
+)
 if not "%PYMAJ%"=="3" (
     echo  ❌ Python 3 is required (found %PYMAJ%.%PYMIN%).
     pause
@@ -81,6 +91,11 @@ if errorlevel 1 (
 )
 for /f tokens^=2-5^ delims^=.-_+^" %%a in ('java -version 2^>^&1 ^| findstr /i "version"') do (
     set "JAVAVER=%%a"
+)
+if not defined JAVAVER (
+    echo  ❌ Could not detect Java version.
+    pause
+    exit /b 1
 )
 if %JAVAVER% LSS 17 (
     echo  ⚠️  Java 17+ is recommended (found %JAVAVER%). Lavalink v4 may not start.

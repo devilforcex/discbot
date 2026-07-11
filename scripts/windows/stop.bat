@@ -12,17 +12,17 @@ title DiscBot — Stop
 echo  🛑 Stopping DiscBot...
 echo.
 
-if defined DISCBOT_DIR (
-    cd /d "%DISCBOT_DIR%"
-) else (
-    cd /d "%~dp0..\.."
+cd /d "E:\discbot" 2>nul
+if errorlevel 1 (
+    echo  ⚠️  E:\discbot does not exist or is not accessible. Will still try to stop matching processes.
 )
 
-REM Kill Lavalink
-wmic process where "commandline like '%%Lavalink.jar%%'" call terminate >nul 2>&1
+REM Kill Lavalink launched from E:\discbot
+wmic process where "commandline like '%%E:\\discbot%%' and commandline like '%%Lavalink.jar%%'" call terminate >nul 2>&1
 
-REM Kill bot (python running bot\main.py under .venv)
-wmic process where "commandline like '%%bot\\main.py%%'" call terminate >nul 2>&1
+REM Kill bot (python running -m bot.main or bot\main.py under E:\discbot)
+wmic process where "commandline like '%%E:\\discbot%%' and commandline like '%%bot.main%%'" call terminate >nul 2>&1
+wmic process where "commandline like '%%E:\\discbot%%' and commandline like '%%bot\\main.py%%'" call terminate >nul 2>&1
 
 echo  ✅ Stop commands issued. If windows are still open, close them manually.
 timeout /t 3 >nul

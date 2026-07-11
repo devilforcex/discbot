@@ -13,6 +13,7 @@ bot/logs/
 # Lavalink
 Lavalink.jar
 application.yml
+ytcookies.txt
 plugins/
 lavalink/
 *.yml.bak
@@ -43,10 +44,6 @@ Thumbs.db
 # Dashboard runtime cache only (keep templates/static in repo)
 # bot/dashboard/static/
 # bot/dashboard/templates/
-# Docker deployment templates
-!docker/
-!docker/lavalink/
-!docker/lavalink/application.yml
 # Allow our refactored lavalink package (not the Lavalink server folder)
 !bot/music/lavalink/
 !bot/music/lavalink/**

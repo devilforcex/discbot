@@ -2,18 +2,18 @@
 REM ============================================================
 REM  DiscBot — Start Lavalink + Discord Bot
 REM  ------------------------------------------------------------
-REM  By default runs from the repo root (i.e. E:\discbot if you
-REM  installed there). Override with the DISCBOT_DIR env var.
+REM  Runs only from E:\discbot. All bot files/config/data/logs live there.
 REM  Opens two console windows: one for Lavalink, one for the bot.
 REM ============================================================
 setlocal
 chcp 65001 >nul
 title DiscBot Launcher
 
-if defined DISCBOT_DIR (
-    cd /d "%DISCBOT_DIR%"
-) else (
-    cd /d "%~dp0..\.."
+cd /d "E:\discbot" 2>nul
+if errorlevel 1 (
+    echo  ❌ E:\discbot does not exist or is not accessible. Run install.ps1 first.
+    pause
+    exit /b 1
 )
 
 echo  🎵 DiscBot @ %CD%
@@ -46,7 +46,7 @@ echo  Waiting for Lavalink to boot...
 timeout /t 8 /nobreak >nul
 
 echo  Starting bot (new window)...
-start "DiscBot — Bot" cmd /k "cd /d ""%CD%"" && .venv\Scripts\activate.bat && python bot\main.py"
+start "DiscBot — Bot" cmd /k "cd /d ""%CD%"" && .venv\Scripts\python.exe -m bot.main"
 
 echo.
 echo  ✅ Both processes launched in separate windows.
