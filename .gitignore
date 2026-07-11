@@ -61,3 +61,8 @@ scripts/windows/*.exe
 scripts/windows/*.ico
 # Profile (PowerShell may leave this around)
 *.ps1.bak
+
+# Local scratch / generated artifacts that must not block updates
+generated-page.html
+/update.bat
+
