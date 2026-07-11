@@ -21,6 +21,9 @@ python-multipart>=0.0.9
 # Test client support for FastAPI/Starlette route tests
 httpx2>=2.5.0
 
+# HTTP client for Lavalink API calls
+aiohttp>=3.9.0
+
 # Configuration
 pydantic>=2.7.0
 pydantic-settings>=2.3.0

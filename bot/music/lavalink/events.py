@@ -106,6 +106,66 @@ class WavelinkEvents(commands.Cog):
         if player:
             await self._play_next(player)
 
+    @commands.Cog.listener()
+    async def on_wavelink_track_load_failed(self, payload: wavelink.TrackLoadFailedEventPayload) -> None:
+        """Handle track load failures from Lavalink."""
+        player = payload.player
+        track = payload.track
+        error = payload.error
+        error_message = getattr(error, "message", str(error))
+        severity = getattr(error, "severity", "unknown")
+        cause = getattr(error, "cause", "unknown")
+
+        logger.error(
+            "Track load failed in guild %s: %s | Error: %s | Severity: %s | Cause: %s",
+            player.guild.id if player else "unknown",
+            track.title if track else "unknown",
+            error_message,
+            severity,
+            cause,
+        )
+
+        # Try to send a user-friendly error message to the music channel
+        if player and hasattr(self.bot, "player_messages"):
+            try:
+                guild_id = player.guild.id
+                mgr = self.bot.player_messages
+                # Get the channel where the player message is displayed
+                if hasattr(mgr, "_messages") and guild_id in mgr._messages:
+                    msg_data = mgr._messages[guild_id]
+                    if msg_data and "channel_id" in msg_data:
+                        channel = self.bot.get_channel(msg_data["channel_id"])
+                        if channel:
+                            friendly_msg = self._get_friendly_load_error(error_message, cause)
+                            await channel.send(f"❌ **Track load failed:** {friendly_msg}", delete_after=15)
+            except Exception as e:
+                logger.debug("Failed to send track load failure message: %s", e)
+
+        if player:
+            await self._play_next(player)
+
+    def _get_friendly_load_error(self, error_message: str, cause: str) -> str:
+        """Convert technical Lavalink errors to user-friendly messages."""
+        error_lower = error_message.lower()
+        cause_lower = str(cause).lower()
+
+        if "something went wrong while looking up the track" in error_lower:
+            return (
+                "Lavalink couldn't load this track. Common causes:\n"
+                "• YouTube plugin not installed/configured in Lavalink\n"
+                "• Track is age-restricted or region-locked\n"
+                "• Copyright restrictions\n\n"
+                "**Fix:** Ensure Lavalink has the YouTube plugin and cookies configured."
+            )
+        if "age" in error_lower or "restricted" in error_lower:
+            return "This track is age-restricted. Add YouTube cookies to Lavalink to play it."
+        if "copyright" in error_lower:
+            return "This track is copyrighted and cannot be played."
+        if "region" in error_lower or "geo" in error_lower:
+            return "This track is not available in your region."
+
+        return f"Technical error: {error_message}"
+
     async def _handle_autoplay(self, player: Player, guild_id: int) -> None:
         if not self.bot.queue_manager.is_empty(guild_id):
             await self._play_next(player)

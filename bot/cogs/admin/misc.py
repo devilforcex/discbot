@@ -57,11 +57,32 @@ class MiscAdminCog(commands.Cog):
     async def status(self, ctx):
         config = self.bot.config
         lavalink_status = "Disconnected"
+        lavalink_sources = "Unknown"
         try:
             import wavelink
             node = wavelink.Pool.get_node()
             if node and getattr(node, "is_connected", False):
                 lavalink_status = f"Connected ({round(node.latency)}ms)"
+                # Try to get available sources from Lavalink
+                try:
+                    # Query Lavalink's /info endpoint for available sources
+                    import aiohttp
+                    async with aiohttp.ClientSession() as session:
+                        # Get node info
+                        info_url = f"{node.uri.replace('ws', 'http').replace('wss', 'https')}/info"
+                        headers = {"Authorization": node.password} if hasattr(node, 'password') else {}
+                        async with session.get(info_url, headers=headers, timeout=aiohttp.ClientTimeout(total=5)) as resp:
+                            if resp.status == 200:
+                                import json
+                                info = await resp.json()
+                                sources = info.get("sourceManagers", [])
+                                lavalink_sources = ", ".join(sources) if sources else "None"
+                                # Check for YouTube source
+                                has_yt = any("youtube" in s.lower() for s in sources)
+                                if not has_yt:
+                                    lavalink_sources += " ⚠️ **YouTube source missing!**"
+                except Exception:
+                    lavalink_sources = "Could not fetch"
         except Exception:
             pass
 
@@ -80,9 +101,20 @@ class MiscAdminCog(commands.Cog):
         embed.add_field(name="Guild ID", value=f"`{config.guild_id}`", inline=True)
         embed.add_field(name="Music Channel ID", value=f"`{config.music_channel_id}`", inline=True)
         embed.add_field(name="Lavalink Status", value=lavalink_status, inline=False)
+        embed.add_field(name="Lavalink Sources", value=lavalink_sources, inline=False)
         embed.add_field(name="Queue Length", value=str(queue_length), inline=True)
         embed.add_field(name="Current Track", value=current_track or "None", inline=True)
         embed.add_field(name="Bot Uptime", value=uptime, inline=False)
+        
+        # Add troubleshooting tip if YouTube source is missing
+        if "YouTube source missing" in lavalink_sources:
+            embed.add_field(
+                name="⚠️ Troubleshooting",
+                value="YouTube source not detected in Lavalink. This causes 'Something went wrong while looking up the track' errors.\n"
+                      "Fix: Ensure `application.yml` has the YouTube plugin:\n"
+                      "`plugins:\n  - dependency: \"dev.lavalink.youtube:youtube-plugin:1.18.0\"`",
+                inline=False
+            )
         await ctx.send(embed=embed)
 
     @commands.command(name="247")

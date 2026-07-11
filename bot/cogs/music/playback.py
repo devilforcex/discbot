@@ -133,6 +133,21 @@ class PlaybackCog(commands.Cog):
                     await ctx.send(embed=build_error_embed(description="❌ Lavalink is not connected. Is the Lavalink server running?"))
                 elif "age" in error_str or "restricted" in error_str or "copyright" in error_str:
                     await ctx.send(embed=build_error_embed(description="❌ Cannot play this track. It may be age-restricted or region-locked. Try enabling YouTube cookies."))
+                elif "something went wrong while looking up the track" in error_str or "failed to load tracks" in error_str:
+                    # This is a common Lavalink error when YouTube plugin isn't configured properly
+                    # or the track is age-restricted/region-locked/copyrighted
+                    await ctx.send(embed=build_error_embed(
+                        description=(
+                            "❌ Failed to load track. This is usually caused by:\n"
+                            "• The Lavalink YouTube plugin is not installed/configured\n"
+                            "• The track is age-restricted, region-locked, or copyrighted\n"
+                            "• Network issues between Lavalink and YouTube\n\n"
+                            "**Fixes:**\n"
+                            "1. Ensure Lavalink has the YouTube plugin (dev.lavalink.youtube:youtube-plugin)\n"
+                            "2. Add YouTube cookies to Lavalink for age-restricted content\n"
+                            "3. Check Lavalink logs for more details"
+                        )
+                    ))
                 else:
                     await ctx.send(embed=build_error_embed(description=f"❌ Failed to load tracks: {e}"))
                 return
