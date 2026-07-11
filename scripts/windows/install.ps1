@@ -107,6 +107,7 @@ if (Test-Path $InstallDir) {
         $update = Join-Path $InstallDir "scripts\windows\update.ps1"
         if (Test-Path $update) {
             # Delegate to the local update.ps1 so any local fixes are honored.
+            # -NoStart maps to "don't restart"; -Force is honored via env DISCBOT_FORCE too.
             & $update -InstallDir $InstallDir -Branch $Branch -NoStart:$NoStart -NoPrompt:$NoPrompt
             return
         }

@@ -470,6 +470,10 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 
 # ⬆️ ЪПДЕЙТ — сваля нов код в E:\discbot и рестартира бота
 irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
+
+# Force update when you have stray tracked edits (keeps .env / data / untracked)
+$env:DISCBOT_FORCE = '1'
+irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
 ```
 
 > Ако искаш друга папка, сетни променлива преди one-liner-а:

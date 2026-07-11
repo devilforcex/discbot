@@ -26,16 +26,36 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Make sure we don't clobber local changes
+REM Only tracked edits block (same as update.sh / update.ps1).
+REM Untracked files (generated-page.html, local notes, …) are fine.
 git diff --quiet
-if errorlevel 1 (
-    echo  ⚠️  You have local uncommitted changes. Commit/stash them first,
-    echo     or delete the repo and re-run install.ps1 if you want a clean update.
-    pause
-    exit /b 1
+set TRACKED_DIRTY=0
+if errorlevel 1 set TRACKED_DIRTY=1
+git diff --cached --quiet
+if errorlevel 1 set TRACKED_DIRTY=1
+
+if "%TRACKED_DIRTY%"=="1" (
+    echo  ⚠️  Tracked local changes found:
+    git status --short --untracked-files=no
+    echo.
+    if /I "%DISCBOT_FORCE%"=="1" (
+        echo  DISCBOT_FORCE=1 — discarding tracked changes (keeps .env / data / untracked)...
+        git reset --hard HEAD
+        if errorlevel 1 (
+            echo  ❌ git reset failed.
+            pause
+            exit /b 1
+        )
+    ) else (
+        echo  Commit/stash them, set DISCBOT_FORCE=1, or delete the repo and re-run install.ps1.
+        echo  PowerShell one-liner force:  set DISCBOT_FORCE=1 ^& irm ...update.ps1 ^| iex
+        pause
+        exit /b 1
+    )
 )
 
 echo  Pulling latest code...
+git fetch --prune origin
 git pull --ff-only
 if errorlevel 1 (
     echo  ❌ git pull failed.

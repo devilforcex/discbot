@@ -43,7 +43,12 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 към `update.ps1`.
 
 ### Какво прави `update.ps1`?
-- `git fetch` + `git merge --ff-only` (отказва да презапише локални промени!)
+- `git fetch` + `git merge --ff-only`
+- Блокира **само tracked** локални промени (като `update.sh`). Untracked файлове
+  (`generated-page.html`, локални бележки и т.н.) **не** спират ъпдейта.
+- При tracked промени: interactive избор **S**tash / **D**iscard, или force:
+  `$env:DISCBOT_FORCE='1'; irm .../update.ps1 | iex`
+- Никога не пипа `.env`, `data/`, `logs/` (gitignored)
 - Освежава pip зависимостите в `.venv`
 - По желание спира стария процес и стартира новия
 
@@ -122,7 +127,7 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 | Lavalink тръгва и веднага спира | Провери `application.yml` и че порт 12333 не е зает. |
 | Ботът казва `Lavalink not connected` | Изчакай 10-15 сек Lavalink да вдигне. Виж дали паролата в `.env` и `application.yml` съвпада. |
 | Ботът не отговаря на команди | Провери `message content intent` в Discord Developer Portal и върния `GUILD_ID`/`MUSIC_CHANNEL_ID`. |
-| `update.ps1` отказва да ъпдейтне | Имаш локални промени. Ако не те интересуват, изтрий папката и пусни `install.ps1` отново. |
+| `update.ps1` отказва да ъпдейтне | Имаш **tracked** локални промени (не untracked файлове). При interactive run избери **S** (stash) или **D** (discard). За one-liner force: `$env:DISCBOT_FORCE='1'; irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 \| iex`. `.env` / `data/` / untracked файлове не се пипат. |
 
 ## 🔄 Автоматично стартиране с Windows
 
