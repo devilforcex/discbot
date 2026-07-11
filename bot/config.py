@@ -52,6 +52,10 @@ class Config(BaseSettings):
         default=False,
         description="Use HTTPS for the Lavalink node URI",
     )
+    youtube_cookies_enabled: bool = Field(
+        default=False,
+        description="Enable YouTube cookies for age-restricted/region-locked video playback",
+    )
 
     # Spotify (optional)
     spotify_client_id: Optional[str] = Field(

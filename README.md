@@ -135,20 +135,39 @@ Edit `.env` and set at minimum:
 1. Download **Lavalink v4** from [GitHub Releases](https://github.com/lavalink-devs/Lavalink/releases)
 2. Place the `Lavalink.jar` in the project root (or any directory)
 3. Copy the application config:
-   ```bash
-   cp application.yml.example application.yml
-   ```
+    ```bash
+    cp application.yml.example application.yml
+    ```
 4. Edit `application.yml` to match your `.env` settings
 5. (Optional) For Spotify support:
-   - Register an app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
-   - Get `Client ID` and `Client Secret`
-   - Download the [LavaSpotify plugin](https://github.com/lavalink-devs/lava-spotify)
-   - Place the plugin jar in a `plugins/` folder next to Lavalink.jar
-   - Uncomment the `plugins` section in `application.yml`
-6. Start Lavalink:
-   ```bash
-   java -jar Lavalink.jar
-   ```
+    - Register an app at [Spotify Developer Dashboard](https://developer.spotify.com/dashboard)
+    - Get `Client ID` and `Client Secret`
+    - Download the [LavaSpotify plugin](https://github.com/lavalink-devs/lava-spotify)
+    - Place the plugin jar in a `plugins/` folder next to Lavalink.jar
+    - Uncomment the `plugins` section in `application.yml`
+
+#### YouTube Cookies (Optional)
+
+For age-restricted or region-locked YouTube videos, you can use cookies:
+
+1. **Using Docker Compose** (recommended):
+   - The `ytcookies.txt` file in the project root is automatically mounted to the Lavalink container
+   - Ensure `cookieFile` is configured in `docker/lavalink/application.yml` (already done)
+
+2. **Local Lavalink setup**:
+   - Place `ytcookies.txt` in the same directory as your `application.yml`
+   - Add to `application.yml`:
+     ```yaml
+     lavalink:
+       server:
+         youtube:
+           cookieFile: "ytcookies.txt"
+     ```
+
+3. **Exporting cookies from your browser**:
+   - Install a browser extension like "Get cookies.txt LOCALLY" (Chrome) or "cookies.txt" (Firefox)
+   - Log into YouTube in your browser
+   - Export cookies to `ytcookies.txt` in Netscape format
 
 ### 5. Python Dependencies
 

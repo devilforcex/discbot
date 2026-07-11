@@ -13,6 +13,9 @@ lavalink:
       vimeo: true
       http: true
       local: false
+    youtube:
+      # Cookie file path for YouTube authentication (fixes YouTube restrictions)
+      cookieFile: "/opt/Lavalink/ytcookies.txt"
     filters:
       volume: true
       equalizer: true

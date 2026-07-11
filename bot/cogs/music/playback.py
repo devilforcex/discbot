@@ -112,11 +112,19 @@ class PlaybackCog(commands.Cog):
             if not player:
                 await ctx.send(embed=build_error_embed(description="Failed to connect to voice channel."))
                 return
+            # Check if Lavalink is ready before attempting search
+            if not self.bot.lavalink.is_ready:
+                await ctx.send(embed=build_error_embed(description="❌ Lavalink is not connected. Make sure the Lavalink server is running."))
+                return
             try:
                 tracks = await wavelink.Playable.search(query)
             except Exception as e:
                 logger.error("Search failed for '%s': %s", query, e)
-                await ctx.send(embed=build_error_embed(description="Failed to search for tracks. Is Lavalink running?"))
+                # Check if it's a connection issue
+                if "not connected" in str(e).lower() or "failed to connect" in str(e).lower():
+                    await ctx.send(embed=build_error_embed(description="❌ Lavalink is not connected. Is the Lavalink server running?"))
+                else:
+                    await ctx.send(embed=build_error_embed(description=f"Failed to search for tracks: {e}"))
                 return
             if not tracks:
                 embed = TrackNotFound(query).user_message

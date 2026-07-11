@@ -5,6 +5,7 @@ services:
     restart: unless-stopped
     volumes:
       - ./docker/lavalink/application.yml:/opt/Lavalink/application.yml:ro
+      - ./ytcookies.txt:/opt/Lavalink/ytcookies.txt:ro
       - lavalink-logs:/opt/Lavalink/logs
     ports:
       - "12333:12333"
