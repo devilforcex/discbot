@@ -39,9 +39,12 @@ class Bot(commands.Bot):
         super().__init__(
             command_prefix="!",
             intents=intents,
+            help_command=None,  # Disable default help to use custom !help command
         )
 
         # Initialize subsystems
+         # Remove default help command to allow custom !help
+        self._io_loop: Optional[asyncio.AbstractEventLoop] = None
         self.queue_manager = QueueManager()
         self.lavalink = LavalinkClient(self)
         self._dashboard = None

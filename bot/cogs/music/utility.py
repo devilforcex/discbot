@@ -36,7 +36,7 @@ class UtilityCog(commands.Cog):
         await ctx.send(embed=embed)
 
     @commands.command(name="help")
-    async def help_command(self, ctx):
+    async def help_command(self, ctx, *, command: str = None):
         if not await self._check_guild_and_channel(ctx):
             return
         from bot.music.help_views import HelpView, build_main_help_embed
