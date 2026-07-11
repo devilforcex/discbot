@@ -48,7 +48,8 @@ class UtilityCog(commands.Cog):
     async def help_command(self, ctx, *, command: str = None):
         if not await self._check_guild_and_channel(ctx):
             return
-        from bot.music.help_views import HelpView, build_main_help_embed
+        from bot.music.help_views import HelpView, build_category_embed, build_main_help_embed
+        from bot.music.help.categories import CATEGORIES
 
         support_url = getattr(self.bot.config, "support_server_url", None) or getattr(
             self.bot.config, "discord_invite_url", None
@@ -56,7 +57,10 @@ class UtilityCog(commands.Cog):
         invite_url = getattr(self.bot.config, "bot_invite_url", None)
         vote_url = getattr(self.bot.config, "website_url", None)
 
-        embed = build_main_help_embed(bot_user=self.bot.user)
+        key = (command or "").strip().lower()
+        label_to_key = {cat["label"].lower(): name for name, cat in CATEGORIES.items()}
+        category_key = key if key in CATEGORIES else label_to_key.get(key)
+        embed = build_category_embed(category_key, self.bot.user) if category_key else build_main_help_embed(bot_user=self.bot.user)
         view = HelpView(bot=self.bot, support_url=support_url, invite_url=invite_url, vote_url=vote_url)
         await ctx.send(embed=embed, view=view)
 

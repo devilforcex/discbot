@@ -69,7 +69,7 @@ class MiscAdminCog(commands.Cog):
         queue_length = self.bot.queue_manager.get_length(guild_id)
         current_track = "None"
         player = discord.utils.get(self.bot.voice_clients, guild__id=guild_id)
-        if player and player.playing and player.last_track:
+        if player and (getattr(player, "playing", False) or getattr(player, "paused", False)) and player.last_track:
             current_track = player.last_track.title
 
         uptime = "N/A"

@@ -39,6 +39,9 @@
         <a href="#settings" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg">
           <iconify-icon icon="solar:settings-linear" width="18"></iconify-icon> Settings
         </a>
+        <a href="#library" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg">
+          <iconify-icon icon="solar:library-linear" width="18"></iconify-icon> Library
+        </a>
         <a href="#api" class="nav-link flex items-center gap-2 px-3 py-2 rounded-lg">
           <iconify-icon icon="solar:code-linear" width="18"></iconify-icon> API
         </a>
@@ -136,7 +139,7 @@
                   </div>
                 </div>
                 <div class="mt-4 flex flex-wrap items-center gap-2">
-                  <button data-action="pause" class="ctrl-btn" title="Pause / Resume"><iconify-icon icon="solar:play-pause-linear" width="20"></iconify-icon></button>
+                  <button data-action="play_pause" class="ctrl-btn" title="Pause / Resume"><iconify-icon icon="solar:play-pause-linear" width="20"></iconify-icon></button>
                   <button data-action="skip" class="ctrl-btn" title="Skip"><iconify-icon icon="solar:skip-next-linear" width="20"></iconify-icon></button>
                   <button data-action="stop" class="ctrl-btn" title="Stop"><iconify-icon icon="solar:stop-linear" width="20"></iconify-icon></button>
                   <button data-action="shuffle" class="ctrl-btn" title="Shuffle"><iconify-icon icon="solar:shuffle-linear" width="20"></iconify-icon></button>
@@ -165,10 +168,13 @@
           </section>
 
           <section id="settings" class="lg:col-span-2 glass rounded-2xl border border-white/10 p-5 space-y-4">
-            <h2 class="text-sm font-medium text-white mb-2">Controls auth</h2>
+            <div class="flex items-center justify-between gap-3">
+              <h2 class="text-sm font-medium text-white">Settings</h2>
+              <span id="settings-state" class="text-[11px] text-zinc-500">not loaded</span>
+            </div>
             <p class="text-xs text-zinc-500 leading-relaxed">
               Write actions need <code class="text-violet-400">DASHBOARD_SECRET_KEY</code> as Bearer token.
-              Leave empty for local read-only.
+              The secret is stored only in this browser.
             </p>
             <div>
               <label class="text-xs text-zinc-400 ml-0.5">API token</label>
@@ -178,9 +184,77 @@
               <label class="text-xs text-zinc-400 ml-0.5">Guild ID</label>
               <input id="guild-id" type="text" value="{{ guild_id }}" class="mt-1 w-full bg-zinc-950 border border-white/10 rounded-lg py-2 px-3 text-sm text-white font-mono focus:outline-none focus:border-violet-500/50">
             </div>
-            <button id="save-settings" class="w-full py-2.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors">
-              Save locally
-            </button>
+            <div class="grid grid-cols-2 gap-3">
+              <label class="text-xs text-zinc-400">Default volume
+                <input id="set-volume" type="number" min="0" max="100" value="50" class="mt-1 w-full bg-zinc-950 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-violet-500/50">
+              </label>
+              <label class="text-xs text-zinc-400">Default source
+                <select id="set-source" class="mt-1 w-full bg-zinc-950 border border-white/10 rounded-lg py-2 px-3 text-sm text-white focus:outline-none focus:border-violet-500/50">
+                  <option value="ytsearch">YouTube</option>
+                  <option value="ytmsearch">YouTube Music</option>
+                  <option value="scsearch">SoundCloud</option>
+                </select>
+              </label>
+            </div>
+            <label class="flex items-center justify-between text-xs text-zinc-400 border border-white/5 rounded-lg px-3 py-2">
+              Autoplay recommendations
+              <input id="set-autoplay" type="checkbox" class="accent-violet-500">
+            </label>
+            <label class="flex items-center justify-between text-xs text-zinc-400 border border-white/5 rounded-lg px-3 py-2">
+              Announce songs in text channel
+              <input id="set-announce" type="checkbox" class="accent-violet-500">
+            </label>
+            <div class="grid grid-cols-2 gap-2">
+              <button id="save-settings" class="py-2.5 rounded-lg bg-white text-black text-xs font-semibold hover:bg-zinc-200 transition-colors">
+                Save
+              </button>
+              <button id="refresh-settings" class="py-2.5 rounded-lg border border-white/10 text-xs text-zinc-300 hover:bg-white/5 transition-colors">
+                Refresh
+              </button>
+            </div>
+          </section>
+        </div>
+
+        <!-- Stats + Library -->
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          <section id="stats" class="lg:col-span-2 glass rounded-2xl border border-white/10 p-5">
+            <h2 class="text-sm font-medium text-white mb-4">Listening stats</h2>
+            <div class="grid grid-cols-2 gap-3 mb-4">
+              <div class="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                <div class="text-xs text-zinc-500">Total plays</div>
+                <div id="stats-total" class="text-xl text-white mt-1">0</div>
+              </div>
+              <div class="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+                <div class="text-xs text-zinc-500">Unique tracks</div>
+                <div id="stats-unique" class="text-xl text-white mt-1">0</div>
+              </div>
+            </div>
+            <div id="top-tracks" class="space-y-2 text-xs text-zinc-500">
+              No stats yet
+            </div>
+          </section>
+
+          <section id="library" class="lg:col-span-3 glass rounded-2xl border border-white/10 p-5 space-y-4">
+            <div class="flex flex-col sm:flex-row sm:items-end gap-3">
+              <div class="flex-1">
+                <h2 class="text-sm font-medium text-white">User library</h2>
+                <label class="block text-xs text-zinc-400 mt-3">Discord user ID</label>
+                <input id="user-id" type="text" placeholder="Favorites / playlists owner" class="mt-1 w-full bg-zinc-950 border border-white/10 rounded-lg py-2 px-3 text-sm text-white font-mono focus:outline-none focus:border-violet-500/50">
+              </div>
+              <button id="load-library" class="py-2.5 px-4 rounded-lg bg-violet-600 text-white text-xs font-semibold hover:bg-violet-500 transition-colors">
+                Load library
+              </button>
+            </div>
+            <div class="grid sm:grid-cols-2 gap-4">
+              <div>
+                <div class="text-xs text-zinc-400 mb-2">Favorites</div>
+                <div id="favorites-list" class="space-y-2 text-xs text-zinc-500">Enter a user ID to load favorites.</div>
+              </div>
+              <div>
+                <div class="text-xs text-zinc-400 mb-2">Playlists</div>
+                <div id="playlists-list" class="space-y-2 text-xs text-zinc-500">Enter a user ID to load playlists.</div>
+              </div>
+            </div>
           </section>
         </div>
 
@@ -189,7 +263,9 @@
           <h2 class="text-sm font-medium text-white mb-3">Quick API</h2>
           <ul class="grid sm:grid-cols-2 gap-2 text-xs">
             <li><a class="text-violet-400 hover:text-violet-300" href="/api/status">GET /api/status</a></li>
+            <li><a class="text-violet-400 hover:text-violet-300" href="/api/guilds">GET /api/guilds</a></li>
             <li><a class="text-violet-400 hover:text-violet-300" href="/api/lavalink">GET /api/lavalink</a></li>
+            <li><a class="text-violet-400 hover:text-violet-300" href="/api/overview/{{ guild_id }}">GET /api/overview/{{ guild_id }}</a></li>
             <li><a class="text-violet-400 hover:text-violet-300" href="/api/nowplaying/{{ guild_id }}">GET /api/nowplaying/{{ guild_id }}</a></li>
             <li><a class="text-violet-400 hover:text-violet-300" href="/api/queue/{{ guild_id }}">GET /api/queue/{{ guild_id }}</a></li>
           </ul>

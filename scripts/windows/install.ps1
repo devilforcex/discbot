@@ -4,9 +4,10 @@
     One-line DiscBot installer for Windows (PowerShell).
 
 .DESCRIPTION
-    Installs DiscBot to a fixed directory (default E:\discbot) or wherever
-    you pass with -InstallDir / $env:DISCBOT_DIR. Safe to re-run: if the
-    target folder already has a Git clone it updates instead of overwriting.
+    Installs DiscBot only to the fixed directory E:\discbot. Safe to re-run:
+    if the target folder already has a Git clone it updates instead of
+    overwriting. Custom install directories are intentionally rejected so all
+    bot files, config, venv, logs, data, and Lavalink live in one place.
 
     Steps:
       - Creates/chdir to the install folder
@@ -18,10 +19,7 @@
       - Optionally starts the bot when done.
 
 .PARAMETER InstallDir
-    Where to install. Default (in priority order):
-      1. -InstallDir parameter
-      2. $env:DISCBOT_DIR (if set)
-      3. E:\discbot (the standard location for this install)
+    Backward-compatible parameter. Only E:\discbot is accepted.
 
 .PARAMETER Branch
     Git branch to clone/update. Default: master
@@ -36,10 +34,7 @@
     # Default one-liner (installs to E:\discbot):
     irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/install.ps1 | iex
 
-    # Custom location:
-    $env:DISCBOT_DIR = 'D:\bots\discbot'; irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/install.ps1 | iex
-
-    # Locally (from inside the repo):
+    # Locally (from inside the repo; still installs/updates E:\discbot):
     powershell -ExecutionPolicy Bypass -File .\scripts\windows\install.ps1
 #>
 [CmdletBinding()]
@@ -71,24 +66,15 @@ function Request-Confirm($question, $defaultY = $true) {
 }
 
 # ---------- Resolve install dir ----------
-# Priority: -InstallDir > env DISCBOT_DIR > script location (if inside a clone) > E:\discbot
-$defaultDir = "E:\discbot"
-if (-not $InstallDir) {
-    if ($env:DISCBOT_DIR) { $InstallDir = $env:DISCBOT_DIR }
-    else {
-        # If this script lives inside a clone (scripts/windows/install.ps1),
-        # use that clone's root — that's the right thing when run from the repo.
-        try {
-            $hereRoot = Resolve-Path (Join-Path $PSScriptRoot "..\..") -ErrorAction Stop
-            if (Test-Path (Join-Path $hereRoot.Path ".git")) {
-                $InstallDir = $hereRoot.Path
-            }
-        } catch {}
-        if (-not $InstallDir) { $InstallDir = $defaultDir }
-    }
+# Hard requirement: every bot-related file must live under E:\discbot.
+$fixedDir = [IO.Path]::GetFullPath("E:\discbot")
+if ($InstallDir -and ([IO.Path]::GetFullPath($InstallDir).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Fail "DiscBot is locked to E:\discbot. Refusing custom InstallDir: $InstallDir"
 }
-# Normalize
-$InstallDir = [IO.Path]::GetFullPath($InstallDir)
+if ($env:DISCBOT_DIR -and ([IO.Path]::GetFullPath($env:DISCBOT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Fail "DiscBot is locked to E:\discbot. Remove DISCBOT_DIR or set it to E:\discbot. Current: $env:DISCBOT_DIR"
+}
+$InstallDir = $fixedDir
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Magenta
@@ -114,9 +100,7 @@ if (Test-Path $InstallDir) {
         # Otherwise fall through — continue install (idempotent).
     } else {
         if ((Get-ChildItem $InstallDir -Force -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) {
-            if (-not (Request-Confirm "Folder '$InstallDir' exists and is not empty. Continue anyway?" $false)) {
-                exit 0
-            }
+            Write-Fail "E:\discbot exists but is not a Git clone. Move/backup its contents, empty the folder, or run setup.bat if this is a manually copied repo."
         }
     }
 } else {

@@ -11,10 +11,10 @@ from bot.core.errors import DifferentVoiceChannel, NotInVoiceChannel, TrackNotFo
 from bot.database import guild_settings
 from bot.music.embed_manager import EmbedManager
 from bot.music.player import Player
+from bot.music.search import is_url as _is_url, search_tracks
 
 from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, voice_check
 from bot.music.views import SearchView  # now from package
-from bot.music.views.base import is_url as _is_url
 
 logger = logging.getLogger(__name__)
 
@@ -63,6 +63,12 @@ class PlaybackCog(commands.Cog):
             if hasattr(self.bot, "player_messages"):
                 await self.bot.player_messages.update_now_playing(ctx.guild.id)
         else:
+            if hasattr(player, "store_track"):
+                player.store_track(track)
+            try:
+                setattr(track, "requester_id", ctx.author.id)
+            except Exception:
+                pass
             await player.play(track)
             self.bot.queue_manager.add_history(
                 ctx.guild.id,
@@ -117,7 +123,8 @@ class PlaybackCog(commands.Cog):
                 await ctx.send(embed=build_error_embed(description="❌ Lavalink is not connected. Make sure the Lavalink server is running."))
                 return
             try:
-                tracks = await wavelink.Playable.search(query)
+                settings = guild_settings.get(str(ctx.guild.id), self.bot.config.database_path)
+                tracks = await search_tracks(query, source=settings.get("default_source", "ytmsearch"))
             except Exception as e:
                 logger.error("Search failed for '%s': %s", query, e)
                 error_str = str(e).lower()

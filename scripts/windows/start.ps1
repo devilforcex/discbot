@@ -9,11 +9,7 @@
     so Lavalink has time to bind before the bot connects.
 
 .PARAMETER InstallDir
-    Project root. Priority:
-      1. -InstallDir
-      2. $env:DISCBOT_DIR
-      3. the folder containing this script (scripts/windows -> repo root)
-      4. E:\discbot
+    Backward-compatible parameter. Only E:\discbot is accepted.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File scripts\windows\start.ps1
@@ -25,18 +21,17 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Resolve install dir
-if (-not $InstallDir) {
-    if ($env:DISCBOT_DIR) { $InstallDir = $env:DISCBOT_DIR }
-    else {
-        try {
-            $hereRoot = (Resolve-Path (Join-Path $PSScriptRoot "..\..")).Path
-            if (Test-Path (Join-Path $hereRoot ".git")) { $InstallDir = $hereRoot }
-        } catch {}
-        if (-not $InstallDir) { $InstallDir = "E:\discbot" }
-    }
+# Fixed install dir: all DiscBot files live under E:\discbot.
+$fixedDir = [IO.Path]::GetFullPath("E:\discbot")
+if ($InstallDir -and ([IO.Path]::GetFullPath($InstallDir).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Host "X  DiscBot is locked to E:\discbot. Refusing custom InstallDir: $InstallDir" -ForegroundColor Red
+    exit 1
 }
-$InstallDir = [IO.Path]::GetFullPath($InstallDir)
+if ($env:DISCBOT_DIR -and ([IO.Path]::GetFullPath($env:DISCBOT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Host "X  DiscBot is locked to E:\discbot. Remove DISCBOT_DIR or set it to E:\discbot." -ForegroundColor Red
+    exit 1
+}
+$InstallDir = $fixedDir
 
 Push-Location $InstallDir
 
@@ -53,7 +48,8 @@ Write-Host "   Waiting 8 seconds for Lavalink to boot..." -ForegroundColor DarkG
 Start-Sleep -Seconds 8
 
 Write-Host "🎵 Starting Discord bot..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$InstallDir'; .\.venv\Scripts\Activate.ps1; python bot\main.py" -WorkingDirectory $InstallDir
+$botCmd = "cd '$InstallDir'; .\.venv\Scripts\python.exe -m bot.main"
+Start-Process powershell -ArgumentList "-NoExit", "-Command", $botCmd -WorkingDirectory $InstallDir
 
 Write-Host ""
 Write-Host "✅ Both processes started in separate windows." -ForegroundColor Green

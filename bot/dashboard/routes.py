@@ -19,8 +19,7 @@ def register_routes(app, bot, templates, security, check_write_auth):
     async def api_health():
         return {"ok": True, "ready": bot.is_ready()}
 
-    @app.get("/api/status")
-    async def api_bot_status():
+    async def _status_payload() -> dict[str, Any]:
         uptime = None
         if hasattr(bot, "get_uptime"):
             try:
@@ -36,6 +35,34 @@ def register_routes(app, bot, templates, security, check_write_auth):
             "uptime_seconds": None,
             "connected_voice_channels": len(bot.voice_clients),
         }
+
+    def _guild_payload(guild: Any) -> dict[str, Any]:
+        return {
+            "id": guild.id,
+            "name": guild.name,
+            "member_count": getattr(guild, "member_count", None),
+            "icon_url": str(guild.icon.url) if getattr(guild, "icon", None) else None,
+        }
+
+    def _coerce_bool(value: Any) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on"}:
+                return True
+            if normalized in {"0", "false", "no", "off"}:
+                return False
+        return bool(value)
+
+    @app.get("/api/status")
+    async def api_bot_status():
+        return await _status_payload()
+
+    @app.get("/api/guilds")
+    async def api_guilds():
+        """Return the guilds visible to the bot for dashboard selectors."""
+        return {"guilds": [_guild_payload(guild) for guild in bot.guilds]}
 
     @app.get("/api/lavalink")
     async def api_lavalink_status():
@@ -107,6 +134,42 @@ def register_routes(app, bot, templates, security, check_write_auth):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 
+    @app.get("/api/history/{guild_id}")
+    async def api_history(guild_id: str, limit: int = 10):
+        """Return recent playback history for a guild."""
+        from bot.database import history_manager as hm
+
+        try:
+            safe_limit = max(1, min(50, int(limit)))
+            return {
+                "guild_id": guild_id,
+                "limit": safe_limit,
+                "tracks": hm.get_recent(guild_id, safe_limit, bot.config.database_path),
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
+    @app.get("/api/overview/{guild_id}")
+    async def api_overview(guild_id: int):
+        """Combined dashboard payload to reduce frontend round-trips."""
+        from bot.database import guild_settings as gs
+        from bot.database import history_manager as hm
+
+        try:
+            status = await _status_payload()
+            queue = bot.queue_manager.get_all(guild_id)
+            guild = bot.get_guild(guild_id) if hasattr(bot, "get_guild") else None
+            return {
+                "status": status,
+                "guild": _guild_payload(guild) if guild else {"id": guild_id, "name": None},
+                "queue_length": len(queue),
+                "settings": gs.get(str(guild_id), bot.config.database_path),
+                "stats": hm.get_stats(str(guild_id), bot.config.database_path),
+                "recent": hm.get_recent(str(guild_id), 10, bot.config.database_path),
+            }
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=str(e))
+
     @app.get("/api/settings/{guild_id}")
     async def api_get_settings(guild_id: str):
         from bot.database import guild_settings as gs
@@ -134,8 +197,22 @@ def register_routes(app, bot, templates, security, check_write_auth):
 
         data = await request.json()
         try:
-            settings = gs.set(guild_id, bot.config.database_path, **data)
+            updates: dict[str, Any] = {}
+            if "volume" in data:
+                updates["volume"] = max(0, min(100, int(data["volume"])))
+            if "autoplay" in data:
+                updates["autoplay"] = _coerce_bool(data["autoplay"])
+            if "announce_songs" in data:
+                updates["announce_songs"] = _coerce_bool(data["announce_songs"])
+            if "default_source" in data:
+                source = str(data["default_source"]).strip() or "ytsearch"
+                if source not in {"ytsearch", "ytmsearch", "scsearch"}:
+                    raise HTTPException(status_code=400, detail="default_source must be ytsearch, ytmsearch, or scsearch")
+                updates["default_source"] = source
+            settings = gs.set(guild_id, bot.config.database_path, **updates)
             return {"success": True, "settings": settings}
+        except HTTPException:
+            raise
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e))
 

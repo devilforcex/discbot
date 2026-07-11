@@ -1,24 +1,22 @@
 /**
- * DiscBot live dashboard — polls API and sends control actions.
- * Design: Nightmare Bots glass / violet system.
+ * DiscBot live dashboard — full-stack UI for status, playback, settings,
+ * listening stats, favorites, and playlists.
  */
 (function () {
   const guildInput = document.getElementById("guild-id");
   const tokenInput = document.getElementById("api-token");
+  const userInput = document.getElementById("user-id");
   const feedback = document.getElementById("ctrl-feedback");
+  const settingsState = document.getElementById("settings-state");
 
   // Restore local settings
   const savedGuild = localStorage.getItem("discbot_guild");
   const savedToken = localStorage.getItem("discbot_token");
+  const savedUser = localStorage.getItem("discbot_user");
   if (savedGuild) guildInput.value = savedGuild;
   else if (window.DASHBOARD_DEFAULT_GUILD) guildInput.value = window.DASHBOARD_DEFAULT_GUILD;
   if (savedToken) tokenInput.value = savedToken;
-
-  document.getElementById("save-settings").addEventListener("click", () => {
-    localStorage.setItem("discbot_guild", guildInput.value.trim());
-    localStorage.setItem("discbot_token", tokenInput.value);
-    setFeedback("Saved to this browser.", "ok");
-  });
+  if (savedUser) userInput.value = savedUser;
 
   function guildId() {
     return (guildInput.value || window.DASHBOARD_DEFAULT_GUILD || "").trim();
@@ -44,6 +42,13 @@
     feedback.textContent = msg || "";
     feedback.className =
       "text-xs mt-3 min-h-[1rem] " +
+      (kind === "err" ? "text-red-400" : kind === "ok" ? "text-emerald-400" : "text-zinc-500");
+  }
+
+  function setSettingsState(msg, kind) {
+    settingsState.textContent = msg || "";
+    settingsState.className =
+      "text-[11px] " +
       (kind === "err" ? "text-red-400" : kind === "ok" ? "text-emerald-400" : "text-zinc-500");
   }
 
@@ -127,7 +132,7 @@
             : "border-violet-500/30 bg-violet-500/10 text-violet-300");
 
         if (np.artwork_url) {
-          art.innerHTML = `<img class="art-img" src="${np.artwork_url}" alt="">`;
+          art.innerHTML = `<img class="art-img" src="${escapeAttr(np.artwork_url)}" alt="">`;
         }
       } else {
         document.getElementById("np-title").textContent = "Nothing playing";
@@ -170,12 +175,139 @@
     }
   }
 
+  async function refreshSettings() {
+    const gid = guildId();
+    if (!gid) return;
+    setSettingsState("loading…");
+    try {
+      const data = await getJson(`/api/settings/${gid}`);
+      document.getElementById("set-volume").value = data.volume ?? 50;
+      document.getElementById("set-source").value = data.default_source || "ytsearch";
+      document.getElementById("set-autoplay").checked = !!data.autoplay;
+      document.getElementById("set-announce").checked = !!data.announce_songs;
+      setSettingsState("loaded", "ok");
+    } catch (e) {
+      setSettingsState("load failed", "err");
+      console.warn("settings load failed", e);
+    }
+  }
+
+  async function saveSettings() {
+    const gid = guildId();
+    if (!gid) {
+      setSettingsState("guild required", "err");
+      return;
+    }
+    localStorage.setItem("discbot_guild", gid);
+    localStorage.setItem("discbot_token", tokenInput.value);
+    const payload = {
+      volume: Number(document.getElementById("set-volume").value),
+      default_source: document.getElementById("set-source").value,
+      autoplay: document.getElementById("set-autoplay").checked,
+      announce_songs: document.getElementById("set-announce").checked,
+    };
+    setSettingsState("saving…");
+    try {
+      const res = await fetch(`/api/settings/${gid}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+          ...authHeaders(),
+        },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.detail || `Save failed (${res.status})`);
+      setSettingsState("saved", "ok");
+      setFeedback("Settings saved.", "ok");
+      if (data.settings) {
+        document.getElementById("set-volume").value = data.settings.volume ?? payload.volume;
+      }
+    } catch (e) {
+      setSettingsState("save failed", "err");
+      setFeedback(String(e), "err");
+    }
+  }
+
+  async function refreshStats() {
+    const gid = guildId();
+    if (!gid) return;
+    try {
+      const stats = await getJson(`/api/stats/${gid}`);
+      document.getElementById("stats-total").textContent = stats.total_plays ?? 0;
+      document.getElementById("stats-unique").textContent = stats.unique_tracks ?? 0;
+      const top = stats.top_tracks || [];
+      document.getElementById("top-tracks").innerHTML = top.length
+        ? top.slice(0, 5).map((t, i) => `
+          <div class="flex items-center gap-2 rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
+            <span class="text-zinc-600 font-mono">${i + 1}</span>
+            <div class="min-w-0 flex-1">
+              <div class="text-zinc-300 truncate">${escapeHtml(t.title || "Unknown")}</div>
+              <div class="text-zinc-600 truncate">${escapeHtml(t.author || "")}</div>
+            </div>
+            <span class="text-violet-300">${t.play_count}×</span>
+          </div>`).join("")
+        : "No stats yet";
+    } catch (e) {
+      console.warn("stats poll failed", e);
+    }
+  }
+
+  async function refreshLibrary() {
+    const uid = (userInput.value || "").trim();
+    if (!uid) {
+      setFeedback("Set a Discord user ID first.", "err");
+      return;
+    }
+    localStorage.setItem("discbot_user", uid);
+    setFeedback("Loading library…");
+    try {
+      const [favs, pls] = await Promise.all([
+        getJson(`/api/favorites/${uid}`),
+        getJson(`/api/playlists/${uid}`),
+      ]);
+      const favList = document.getElementById("favorites-list");
+      const favorites = favs.favorites || [];
+      favList.innerHTML = favorites.length
+        ? favorites.slice(0, 10).map((f) => `
+          <div class="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
+            <div class="text-zinc-300 truncate">${escapeHtml(f.title || "Unknown")}</div>
+            <div class="flex justify-between gap-2 text-zinc-600 mt-0.5">
+              <span class="truncate">${escapeHtml(f.author || "")}</span>
+              <span class="font-mono">${fmtMs(f.length)}</span>
+            </div>
+          </div>`).join("")
+        : "No favorites found.";
+
+      const plList = document.getElementById("playlists-list");
+      const playlists = pls.playlists || [];
+      plList.innerHTML = playlists.length
+        ? playlists.slice(0, 10).map((p) => `
+          <div class="rounded-lg border border-white/5 bg-white/[0.02] px-3 py-2">
+            <div class="text-zinc-300 truncate">${escapeHtml(p.name || "Untitled")}</div>
+            <div class="flex justify-between gap-2 text-zinc-600 mt-0.5">
+              <span class="truncate">${escapeHtml(p.description || "No description")}</span>
+              <span>${p.track_count || 0} tracks</span>
+            </div>
+          </div>`).join("")
+        : "No playlists found.";
+      setFeedback("Library loaded.", "ok");
+    } catch (e) {
+      setFeedback(String(e), "err");
+    }
+  }
+
   function escapeHtml(s) {
     return String(s)
       .replace(/&/g, "&amp;")
       .replace(/</g, "&lt;")
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;");
+  }
+
+  function escapeAttr(s) {
+    return escapeHtml(s).replace(/'/g, "&#39;");
   }
 
   async function control(action, extra) {
@@ -219,6 +351,16 @@
     volTimer = setTimeout(() => control("volume", { volume: v }), 300);
   });
 
+  document.getElementById("save-settings").addEventListener("click", saveSettings);
+  document.getElementById("refresh-settings").addEventListener("click", refreshSettings);
+  document.getElementById("load-library").addEventListener("click", refreshLibrary);
+  guildInput.addEventListener("change", () => {
+    localStorage.setItem("discbot_guild", guildId());
+    refreshSettings();
+    refreshPlayer();
+    refreshStats();
+  });
+
   // Nav active state
   document.querySelectorAll(".nav-link").forEach((link) => {
     link.addEventListener("click", () => {
@@ -228,8 +370,11 @@
   });
 
   async function tick() {
-    await Promise.all([refreshStatus(), refreshPlayer()]);
+    await Promise.all([refreshStatus(), refreshPlayer(), refreshStats()]);
   }
+
+  refreshSettings();
+  if (userInput.value) refreshLibrary();
   tick();
   setInterval(tick, 2500);
 })();

@@ -2,7 +2,7 @@
 
 Боте, инсталацията е фиксирана за **`E:\discbot`** — всичко се инсталира
 и работи само там (код, `.venv`, `Lavalink.jar`, `.env`, `data/`, `logs/`).
-Ако искаш друга папка, сетни `$env:DISCBOT_DIR` в PowerShell преди one-liner-а.
+Скриптовете умишлено отказват друга директория, за да няма разхвърляни файлове.
 
 ## 🚀 Най-бързият начин (препоръчван)
 
@@ -16,12 +16,6 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
 ```
 
-> За друга папка (не е нужно в твоя случай):
-> ```powershell
-> $env:DISCBOT_DIR = 'D:\bots\discbot'
-> irm ... | iex
-> ```
-
 > Ако ти гръмне с *"execution of scripts is disabled on this system"*,
 > пусни веднъж:
 > ```powershell
@@ -30,7 +24,7 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 > и отговори `Y`. Това е еднократно.
 
 ### Какво прави `install.ps1`?
-1. Избира директория за инсталация — по подразбиране `%LOCALAPPDATA%\DiscBot` (per-user, без admin права)
+1. Използва само фиксираната директория `E:\discbot`
 2. Тества за `git` и клонира repo-то
 3. Проверява за **Python 3.12+** и **Java 17+**; ако липсват, ти отваря download страниците
 4. Създава `.venv` и `pip install -r requirements.txt`
@@ -44,7 +38,7 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 
 ### Какво прави `update.ps1`?
 - `git fetch` + `git merge --ff-only`
-- Блокира **само tracked** локални промени (като `update.sh`). Untracked файлове
+- Блокира **само tracked** локални промени. Untracked файлове
   (`generated-page.html`, локални бележки и т.н.) **не** спират ъпдейта.
 - При tracked промени: interactive избор **S**tash / **D**iscard, или force:
   `$env:DISCBOT_FORCE='1'; irm .../update.ps1 | iex`
@@ -141,7 +135,8 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 За по-сериозно ползване — [NSSM](https://nssm.cc/) за инсталиране на
 python и java като Windows услуги.
 
-## 💡 За `update.sh`
+## 💡 Забележка за Docker/Linux
 
-`update.sh` е за Linux/Docker. На Windows ползвай `update.ps1` (един ред в
-PowerShell) или `update.bat` — те правят същото но за native Windows инсталация.
+Docker файловете и Linux updater-ът са премахнати от този Windows-focused build.
+На Windows ползвай `update.ps1` (един ред в PowerShell) или `update.bat` — те
+обновяват native инсталацията без контейнери.

@@ -35,7 +35,8 @@ class PlayerStateBuilder:
         loop = self.bot.queue_manager.get_loop(guild_id)
         queue_len = self.bot.queue_manager.get_length(guild_id)
 
-        if not player or not getattr(player, "last_track", None) or not player.playing:
+        is_active = bool(player and (getattr(player, "playing", False) or getattr(player, "paused", False)))
+        if not player or not getattr(player, "last_track", None) or not is_active:
             return {
                 "playing": False,
                 "paused": False,

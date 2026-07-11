@@ -10,10 +10,11 @@ setlocal
 chcp 65001 >nul
 title DiscBot — Update
 
-if defined DISCBOT_DIR (
-    cd /d "%DISCBOT_DIR%"
-) else (
-    cd /d "%~dp0..\.."
+cd /d "E:\discbot" 2>nul
+if errorlevel 1 (
+    echo  ❌ E:\discbot does not exist or is not accessible. Run install.ps1 first.
+    pause
+    exit /b 1
 )
 
 echo  ⬆️  Updating DiscBot in %CD%
@@ -26,7 +27,7 @@ if errorlevel 1 (
     exit /b 1
 )
 
-REM Only tracked edits block (same as update.sh / update.ps1).
+REM Only tracked edits block (same policy as update.ps1).
 REM Untracked files (generated-page.html, local notes, …) are fine.
 git diff --quiet
 set TRACKED_DIRTY=0
@@ -65,8 +66,7 @@ if errorlevel 1 (
 
 if exist ".venv\Scripts\python.exe" (
     echo  Refreshing dependencies...
-    call .venv\Scripts\activate.bat
-    pip install -r requirements.txt --upgrade
+    .venv\Scripts\python.exe -m pip install -r requirements.txt --upgrade
 ) else (
     echo  ⚠️  .venv not found — skipping pip refresh (run setup.bat first).
 )

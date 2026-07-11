@@ -165,4 +165,4 @@ Buttons use Discord native styles + unicode emoji matching design language.
 | `docs/index.html` | Deployable landing (DiscBot-branded, same system) |
 | `bot/dashboard/templates/index.html` | Live control panel UI |
 | `bot/dashboard/static/css/dashboard.css` | Optional non-CDN fallback tokens |
-| `IMPROVEMENT_PLAN.md` | Engineering phases (player, API, etc.) |
+| `docs/PROJECT_PLAN.md` | Engineering phases, Windows debug checklist, archived plan summary |
