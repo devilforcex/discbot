@@ -120,11 +120,14 @@ class PlaybackCog(commands.Cog):
                 tracks = await wavelink.Playable.search(query)
             except Exception as e:
                 logger.error("Search failed for '%s': %s", query, e)
+                error_str = str(e).lower()
                 # Check if it's a connection issue
-                if "not connected" in str(e).lower() or "failed to connect" in str(e).lower():
+                if "not connected" in error_str or "failed to connect" in error_str:
                     await ctx.send(embed=build_error_embed(description="❌ Lavalink is not connected. Is the Lavalink server running?"))
+                elif "age" in error_str or "restricted" in error_str or "copyright" in error_str:
+                    await ctx.send(embed=build_error_embed(description="❌ Cannot play this track. It may be age-restricted or region-locked. Try enabling YouTube cookies."))
                 else:
-                    await ctx.send(embed=build_error_embed(description=f"Failed to search for tracks: {e}"))
+                    await ctx.send(embed=build_error_embed(description=f"❌ Failed to load tracks: {e}"))
                 return
             if not tracks:
                 embed = TrackNotFound(query).user_message

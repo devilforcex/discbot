@@ -580,10 +580,17 @@ WantedBy=multi-user.target
 - Check Lavalink sources in `application.yml` (youtube: true)
 - Verify Lavalink has internet access for YouTube streaming
 
+### "Failed to Load Tracks" or "Something went wrong while looking up the track" errors
+- **YouTube is blocking requests** - Refresh your `ytcookies.txt` file with fresh cookies from an actively logged-in browser
+- Check that cookies include: `VISITOR_INFO_LIVE`, `SID`, `__Secure-1PSID`, `LOGIN_INFO`
+- Ensure the cookies file is in **Netscape format** (not JSON)
+- For Docker: verify volume mount is correct (`./ytcookies.txt:/opt/Lavalink/ytcookies.txt:ro`)
+- Try a different, non-age-restricted video to confirm the issue
+- Check Lavalink logs: `docker compose logs -f lavalink` for detailed error messages
+
 ### "Track not found" errors
 - YouTube may be rate-limiting — try again later
 - For Spotify URLs, ensure Spotify plugin is installed in Lavalink
-- Try searching by track name instead of URL
 
 ### Dashboard not working
 - Install dashboard dependencies: `pip install fastapi uvicorn jinja2 aiofiles python-multipart`

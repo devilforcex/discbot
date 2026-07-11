@@ -24,15 +24,24 @@ class UtilityCog(commands.Cog):
             return
         bot_latency = round(self.bot.latency * 1000)
         lavalink_latency = "N/A"
+        lavalink_status = "Disconnected"
+        node_info = "No node"
         try:
             node = wavelink.Pool.get_node()
-            if node and getattr(node, "is_connected", False):
-                lavalink_latency = f"{round(node.latency)}ms"
+            if node:
+                if getattr(node, "is_connected", False):
+                    lavalink_latency = f"{round(node.latency)}ms"
+                    lavalink_status = "Connected"
+                    node_info = f"{node.identifier}"
+                else:
+                    lavalink_status = "Connecting..."
         except Exception:
             pass
         embed = discord.Embed(title="🏓 Pong!", color=discord.Color.green())
         embed.add_field(name="Bot Latency", value=f"{bot_latency}ms", inline=True)
+        embed.add_field(name="Lavalink Status", value=lavalink_status, inline=True)
         embed.add_field(name="Lavalink Latency", value=lavalink_latency, inline=True)
+        embed.add_field(name="Node", value=node_info, inline=True)
         await ctx.send(embed=embed)
 
     @commands.command(name="help")

@@ -15,7 +15,7 @@ lavalink:
       local: false
     youtube:
       # Cookie file path for YouTube authentication (fixes YouTube restrictions)
-      cookieFile: "/opt/Lavalink/ytcookies.txt"
+      cookieFile: "ytcookies.txt"
     filters:
       volume: true
       equalizer: true
