@@ -35,6 +35,7 @@ class DatabaseTests(unittest.TestCase):
                 "bot_settings",
             }
             self.assertTrue(expected_tables.issubset(table_names))
+            close_connection(str(db_path))
 
     def test_connection_cache_is_keyed_by_resolved_path(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -59,6 +60,8 @@ class DatabaseTests(unittest.TestCase):
                 ("probe",),
             ).fetchone()
             self.assertIsNone(row)
+            close_connection(str(first_path))
+            close_connection(str(second_path))
 
     def test_close_connection_can_close_single_path(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -72,6 +75,7 @@ class DatabaseTests(unittest.TestCase):
             reopened = get_connection(str(db_path))
             self.assertIsNot(conn, reopened)
             self.assertEqual(reopened.execute("SELECT 1").fetchone()[0], 1)
+            close_connection(str(db_path))
 
 
 if __name__ == "__main__":

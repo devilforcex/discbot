@@ -1,0 +1,659 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DiscBot Steel | Local Discord Music Dashboard</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #080a0c;
+      --panel: #101419;
+      --panel-2: #151a20;
+      --steel: #87929d;
+      --steel-2: #cbd3da;
+      --text: #f4f7f9;
+      --muted: #9aa5ad;
+      --line: #28323a;
+      --cyan: #34d3ff;
+      --green: #49df92;
+      --amber: #f6bd44;
+      --red: #ff5d66;
+      --warm: #ff8f3c;
+      --shadow: 0 22px 70px rgba(0, 0, 0, .46);
+      font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 16% 0%, rgba(52, 211, 255, .13), transparent 30rem),
+        radial-gradient(circle at 86% 4%, rgba(255, 143, 60, .11), transparent 26rem),
+        linear-gradient(180deg, #080a0c 0%, #0b0e11 46%, #07090b 100%);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: .34;
+      background-image:
+        linear-gradient(rgba(255,255,255,.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255,255,255,.03) 1px, transparent 1px);
+      background-size: 48px 48px;
+      mask-image: linear-gradient(to bottom, #000, transparent 72%);
+    }
+
+    a { color: inherit; text-decoration: none; }
+    button, input { font: inherit; }
+    .wrap { width: min(1180px, calc(100% - 32px)); margin: 0 auto; }
+
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      border-bottom: 1px solid rgba(203, 211, 218, .1);
+      background: rgba(8, 10, 12, .84);
+      backdrop-filter: blur(18px);
+    }
+
+    .nav {
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 18px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .brand img {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      border: 1px solid rgba(203, 211, 218, .22);
+      box-shadow: 0 0 28px rgba(52, 211, 255, .12);
+    }
+
+    .brand strong { display: block; letter-spacing: .02em; }
+    .brand span { color: var(--muted); font-size: 12px; }
+
+    .navlinks {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--steel-2);
+      font-size: 13px;
+    }
+
+    .navlinks a, .btn {
+      border: 1px solid rgba(203, 211, 218, .14);
+      background: rgba(21, 26, 32, .7);
+      border-radius: 8px;
+      padding: 10px 13px;
+      transition: border-color .18s ease, background .18s ease, transform .18s ease;
+      white-space: nowrap;
+    }
+
+    .navlinks a:hover, .btn:hover,
+    .navlinks a:focus-visible, .btn:focus-visible {
+      border-color: rgba(52, 211, 255, .56);
+      background: rgba(52, 211, 255, .1);
+      outline: none;
+    }
+
+    .btn.primary {
+      color: #061014;
+      background: linear-gradient(135deg, var(--cyan), var(--green));
+      border-color: transparent;
+      font-weight: 800;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: minmax(0, 1.02fr) minmax(360px, .98fr);
+      gap: 24px;
+      align-items: center;
+      min-height: calc(100vh - 68px);
+      padding: 52px 0 38px;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 9px;
+      padding: 8px 10px;
+      border: 1px solid rgba(73, 223, 146, .32);
+      background: rgba(73, 223, 146, .08);
+      color: #b7ffd7;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 800;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+    }
+
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--green);
+      box-shadow: 0 0 18px var(--green);
+      display: inline-block;
+    }
+
+    h1 {
+      margin: 22px 0 16px;
+      font-size: clamp(42px, 7vw, 86px);
+      line-height: .92;
+      letter-spacing: 0;
+    }
+
+    .lead {
+      margin: 0 0 26px;
+      max-width: 670px;
+      color: var(--steel-2);
+      font-size: clamp(17px, 2vw, 21px);
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      margin-bottom: 26px;
+    }
+
+    .status-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      border: 1px solid rgba(203, 211, 218, .13);
+      background: rgba(16, 20, 25, .76);
+      box-shadow: var(--shadow);
+    }
+
+    .strip-item {
+      min-width: 0;
+      padding: 14px;
+      border-right: 1px solid rgba(203, 211, 218, .1);
+    }
+
+    .strip-item:last-child { border-right: 0; }
+    .label { display: block; color: var(--muted); font-size: 12px; margin-bottom: 7px; }
+    .value { display: flex; align-items: center; gap: 8px; font-weight: 850; }
+    .tiny { color: var(--muted); font-size: 12px; }
+
+    .console {
+      position: relative;
+      border: 1px solid rgba(203, 211, 218, .16);
+      background:
+        linear-gradient(145deg, rgba(255,255,255,.07), transparent 28%),
+        linear-gradient(180deg, rgba(21, 26, 32, .96), rgba(10, 13, 16, .96));
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .console::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      background: linear-gradient(90deg, transparent, rgba(52, 211, 255, .1), transparent);
+      transform: translateX(-100%);
+      animation: scan 5.6s ease-in-out infinite;
+    }
+
+    @keyframes scan {
+      0%, 32% { transform: translateX(-120%); }
+      52%, 100% { transform: translateX(120%); }
+    }
+
+    .console-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 18px;
+      border-bottom: 1px solid rgba(203, 211, 218, .12);
+    }
+
+    .bot-id { display: flex; align-items: center; gap: 13px; min-width: 0; }
+    .bot-id img {
+      width: 58px;
+      height: 58px;
+      border-radius: 12px;
+      border: 1px solid rgba(203, 211, 218, .18);
+    }
+
+    .bot-id h2 { font-size: 18px; margin: 0 0 4px; }
+    .meter {
+      width: 96px;
+      height: 96px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      background: conic-gradient(var(--green) 0 78%, rgba(255,255,255,.1) 78% 100%);
+    }
+    .meter b {
+      display: grid;
+      place-items: center;
+      width: 76px;
+      height: 76px;
+      border-radius: 50%;
+      background: #0d1115;
+      font-size: 22px;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1px;
+      background: rgba(203, 211, 218, .1);
+    }
+
+    .stat {
+      background: rgba(12, 16, 20, .96);
+      padding: 18px;
+      min-height: 106px;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 28px;
+      margin-top: 8px;
+    }
+
+    .now-playing {
+      padding: 18px;
+      border-top: 1px solid rgba(203, 211, 218, .12);
+    }
+
+    .track {
+      display: grid;
+      grid-template-columns: 44px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 12px;
+      margin-top: 12px;
+    }
+
+    .cover {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, var(--warm), var(--cyan));
+      display: grid;
+      place-items: center;
+      color: #071014;
+      font-weight: 900;
+    }
+
+    main section { padding: 42px 0; }
+    .section-title {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: 18px;
+      margin-bottom: 18px;
+    }
+    h2 { margin: 0; font-size: clamp(25px, 3vw, 38px); }
+    .section-title p { margin: 8px 0 0; color: var(--muted); max-width: 660px; line-height: 1.55; }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    .panel {
+      border: 1px solid rgba(203, 211, 218, .13);
+      background: rgba(16, 20, 25, .8);
+      padding: 18px;
+      box-shadow: 0 14px 46px rgba(0,0,0,.2);
+    }
+
+    .panel h3 { margin: 0 0 9px; font-size: 17px; }
+    .panel p { margin: 0; color: var(--muted); line-height: 1.55; }
+    .tagrow { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+    .tag {
+      border: 1px solid rgba(203, 211, 218, .13);
+      color: var(--steel-2);
+      background: rgba(255,255,255,.035);
+      border-radius: 7px;
+      padding: 7px 9px;
+      font-size: 12px;
+    }
+
+    .commands {
+      border: 1px solid rgba(203, 211, 218, .13);
+      background: rgba(16, 20, 25, .84);
+      overflow: hidden;
+    }
+
+    .command-tools {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 14px;
+      border-bottom: 1px solid rgba(203, 211, 218, .11);
+    }
+
+    .command-tools input {
+      width: 100%;
+      min-width: 0;
+      color: var(--text);
+      background: #0b0f13;
+      border: 1px solid rgba(203, 211, 218, .16);
+      border-radius: 8px;
+      padding: 12px 12px;
+      outline: none;
+    }
+
+    .command-tools input:focus { border-color: rgba(52, 211, 255, .7); }
+    .count { color: var(--muted); font-size: 13px; white-space: nowrap; }
+    .command-list { display: grid; }
+    .command {
+      display: grid;
+      grid-template-columns: 140px minmax(0, 1fr) 92px;
+      gap: 14px;
+      padding: 13px 14px;
+      border-bottom: 1px solid rgba(203, 211, 218, .08);
+      align-items: center;
+    }
+    .command:last-child { border-bottom: 0; }
+    code {
+      color: #d9fbff;
+      background: rgba(52, 211, 255, .09);
+      border: 1px solid rgba(52, 211, 255, .18);
+      border-radius: 6px;
+      padding: 6px 8px;
+      white-space: nowrap;
+    }
+    .command span { color: var(--muted); min-width: 0; }
+    .pill { color: var(--amber); font-size: 12px; text-align: right; }
+
+    .ops {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    .checklist {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      display: grid;
+      gap: 10px;
+    }
+    .checklist li {
+      display: flex;
+      gap: 10px;
+      color: var(--steel-2);
+      line-height: 1.45;
+    }
+    .checklist li::before {
+      content: "";
+      flex: 0 0 9px;
+      height: 9px;
+      margin-top: 6px;
+      background: var(--green);
+      box-shadow: 0 0 12px rgba(73, 223, 146, .5);
+    }
+
+    footer {
+      border-top: 1px solid rgba(203, 211, 218, .12);
+      padding: 28px 0 40px;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .accent-cyan { color: var(--cyan); }
+    .accent-green { color: var(--green); }
+    .accent-amber { color: var(--amber); }
+    .accent-red { color: var(--red); }
+
+    @media (max-width: 860px) {
+      .nav { height: auto; padding: 12px 0; align-items: flex-start; }
+      .navlinks { overflow-x: auto; padding-bottom: 4px; }
+      .hero { grid-template-columns: 1fr; min-height: auto; padding-top: 38px; }
+      .status-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .strip-item:nth-child(2) { border-right: 0; }
+      .strip-item:nth-child(-n+2) { border-bottom: 1px solid rgba(203, 211, 218, .1); }
+      .grid-3, .ops { grid-template-columns: 1fr; }
+      .section-title { display: block; }
+    }
+
+    @media (max-width: 560px) {
+      .wrap { width: min(100% - 22px, 1180px); }
+      .brand span { display: none; }
+      .nav { gap: 10px; }
+      .navlinks a:not(.btn) { display: none; }
+      .actions .btn { width: 100%; text-align: center; }
+      .status-strip, .stats { grid-template-columns: 1fr; }
+      .strip-item { border-right: 0; border-bottom: 1px solid rgba(203, 211, 218, .1); }
+      .strip-item:last-child { border-bottom: 0; }
+      .console-head { align-items: flex-start; }
+      .meter { width: 78px; height: 78px; }
+      .meter b { width: 61px; height: 61px; font-size: 18px; }
+      .track { grid-template-columns: 44px minmax(0, 1fr); }
+      .track .tiny { grid-column: 2; }
+      .command-tools { align-items: stretch; flex-direction: column; }
+      .command {
+        grid-template-columns: 1fr;
+        gap: 8px;
+      }
+      .pill { text-align: left; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <nav class="wrap nav" aria-label="Primary navigation">
+      <a class="brand" href="#top" aria-label="DiscBot home">
+        <img src="docs/assets/steel-music-bot-logo.png" alt="DiscBot Steel logo">
+        <span><strong>DiscBot Steel</strong><span>Windows local music bot</span></span>
+      </a>
+      <div class="navlinks">
+        <a href="#overview">Overview</a>
+        <a href="#commands">Commands</a>
+        <a href="#operations">Operations</a>
+        <a class="btn primary" href="http://127.0.0.1:18080">Open dashboard</a>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="wrap hero" aria-labelledby="hero-title">
+      <div>
+        <span class="eyebrow"><span class="dot"></span> Local node ready</span>
+        <h1 id="hero-title">Steel-grade Discord music from your Windows machine.</h1>
+        <p class="lead">DiscBot is a local Discord music bot stack with Lavalink, a FastAPI dashboard, queue controls, and practical checks for server owners who want the music running without guesswork.</p>
+        <div class="actions">
+          <a class="btn primary" href="#operations">Start locally</a>
+          <a class="btn" href="http://127.0.0.1:18080">Open dashboard</a>
+          <a class="btn" href="#commands">View commands</a>
+        </div>
+        <div class="status-strip" aria-label="Live status snapshot">
+          <div class="strip-item"><span class="label">Bot</span><span class="value"><i class="dot"></i> Ready</span></div>
+          <div class="strip-item"><span class="label">Lavalink</span><span class="value accent-green">Connected</span></div>
+          <div class="strip-item"><span class="label">API</span><span class="value accent-cyan">:18080</span></div>
+          <div class="strip-item"><span class="label">Path</span><span class="value">E:\discbot</span></div>
+        </div>
+      </div>
+
+      <aside class="console" aria-label="Dashboard snapshot">
+        <div class="console-head">
+          <div class="bot-id">
+            <img src="docs/assets/steel-avatar.png" alt="Steel bot avatar">
+            <div>
+              <h2>Steel Music Core</h2>
+              <span class="tiny">FastAPI dashboard + Lavalink audio node</span>
+            </div>
+          </div>
+          <div class="meter" aria-label="Readiness 78 percent"><b>78%</b></div>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="label">Latency</span><strong>42ms</strong><span class="tiny accent-green">healthy gateway</span></div>
+          <div class="stat"><span class="label">Guilds</span><strong>12</strong><span class="tiny">local config</span></div>
+          <div class="stat"><span class="label">Queue</span><strong>7</strong><span class="tiny accent-amber">autoplay off</span></div>
+          <div class="stat"><span class="label">Voice</span><strong>3</strong><span class="tiny">active rooms</span></div>
+        </div>
+        <div class="now-playing">
+          <span class="label">Now playing</span>
+          <div class="track">
+            <div class="cover">M</div>
+            <div>
+              <strong>Midnight Steel Session</strong><br>
+              <span class="tiny">03:18 elapsed - requested by admin</span>
+            </div>
+            <span class="tiny accent-cyan">320kbps</span>
+          </div>
+        </div>
+      </aside>
+    </section>
+
+    <section id="overview" class="wrap" aria-labelledby="overview-title">
+      <div class="section-title">
+        <div>
+          <h2 id="overview-title">Dashboard Overview</h2>
+          <p>Everything that matters before opening Discord: bot readiness, Lavalink state, voice activity, queue depth, local path, and dashboard access.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <article class="panel">
+          <h3>Readiness Checks</h3>
+          <p>Confirm bot token, gateway login, Lavalink connection, and dashboard service before inviting users to queue tracks.</p>
+          <div class="tagrow"><span class="tag accent-green">Bot ready</span><span class="tag">Token loaded</span><span class="tag">Voice enabled</span></div>
+        </article>
+        <article class="panel">
+          <h3>Music Control</h3>
+          <p>Use compact controls for play, pause, skip, queue, filters, volume, and disconnect without digging through console output.</p>
+          <div class="tagrow"><span class="tag">Queue</span><span class="tag">Filters</span><span class="tag">Volume</span></div>
+        </article>
+        <article class="panel">
+          <h3>Admin Access</h3>
+          <p>Keep operations local on Windows, point trusted admins to the dashboard, and expose only what your server needs.</p>
+          <div class="tagrow"><span class="tag accent-cyan">127.0.0.1</span><span class="tag">FastAPI</span><span class="tag">Local first</span></div>
+        </article>
+      </div>
+    </section>
+
+    <section class="wrap" aria-labelledby="workflow-title">
+      <div class="section-title">
+        <div>
+          <h2 id="workflow-title">Fast Owner Workflow</h2>
+          <p>A practical path from cold Windows folder to a running music room.</p>
+        </div>
+      </div>
+      <div class="grid-3">
+        <article class="panel">
+          <span class="label accent-cyan">01 Setup</span>
+          <h3>Start the stack</h3>
+          <p>Launch the bot, confirm environment values, and check that Lavalink answers before users join voice.</p>
+        </article>
+        <article class="panel">
+          <span class="label accent-green">02 Control</span>
+          <h3>Run the room</h3>
+          <p>Search, play, pause, skip, clear, and inspect current queue state from Discord commands or the web dashboard.</p>
+        </article>
+        <article class="panel">
+          <span class="label accent-amber">03 Maintain</span>
+          <h3>Fix quickly</h3>
+          <p>Use local checks for missing Java, unavailable Lavalink, bad tokens, or voice permission issues.</p>
+        </article>
+      </div>
+    </section>
+
+    <section id="commands" class="wrap" aria-labelledby="commands-title">
+      <div class="section-title">
+        <div>
+          <h2 id="commands-title">Command Reference</h2>
+          <p>Search the compact command list. Filtering runs in this page only and does not call the bot.</p>
+        </div>
+      </div>
+      <div class="commands">
+        <div class="command-tools">
+          <input id="commandSearch" type="search" placeholder="Filter commands by name, action, or permission..." aria-label="Filter commands">
+          <span class="count" id="commandCount">10 commands</span>
+        </div>
+        <div class="command-list" id="commandList">
+          <div class="command" data-command="/play music song url"><code>/play</code><span>Search or play a track from a URL.</span><b class="pill">Music</b></div>
+          <div class="command" data-command="/pause music"><code>/pause</code><span>Pause the current track in the active voice room.</span><b class="pill">Music</b></div>
+          <div class="command" data-command="/resume music"><code>/resume</code><span>Resume playback after a pause.</span><b class="pill">Music</b></div>
+          <div class="command" data-command="/skip next queue"><code>/skip</code><span>Skip to the next queued track.</span><b class="pill">Queue</b></div>
+          <div class="command" data-command="/queue list upcoming"><code>/queue</code><span>Show upcoming songs, requester, and estimated duration.</span><b class="pill">Queue</b></div>
+          <div class="command" data-command="/nowplaying current track np"><code>/nowplaying</code><span>Display the current track and progress.</span><b class="pill">Info</b></div>
+          <div class="command" data-command="/volume loud quiet admin"><code>/volume</code><span>Set playback volume for the current guild player.</span><b class="pill">Admin</b></div>
+          <div class="command" data-command="/filter bass nightcore clear audio"><code>/filter</code><span>Apply or clear Lavalink audio filters.</span><b class="pill">Audio</b></div>
+          <div class="command" data-command="/stop clear disconnect"><code>/stop</code><span>Stop playback, clear queue, and leave voice.</span><b class="pill">Admin</b></div>
+          <div class="command" data-command="/status health latency lavalink"><code>/status</code><span>Check bot latency, node state, and dashboard health.</span><b class="pill">Health</b></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="operations" class="wrap" aria-labelledby="operations-title">
+      <div class="section-title">
+        <div>
+          <h2 id="operations-title">Local Operations</h2>
+          <p>Built for a Windows owner running the bot directly from the project folder.</p>
+        </div>
+      </div>
+      <div class="ops">
+        <article class="panel">
+          <h3>Paths & Endpoints</h3>
+          <ul class="checklist">
+            <li>Project root: <strong>E:\discbot</strong></li>
+            <li>Dashboard: <strong>http://127.0.0.1:18080</strong></li>
+            <li>Static assets: <strong>bot\dashboard\static</strong></li>
+            <li>Visual assets: <strong>docs\assets</strong></li>
+          </ul>
+        </article>
+        <article class="panel">
+          <h3>Troubleshooting Checks</h3>
+          <ul class="checklist">
+            <li>Discord token is present and the bot is invited with voice permissions.</li>
+            <li>Lavalink is running, reachable, and uses matching password settings.</li>
+            <li>Java is installed and available to the local process.</li>
+            <li>Port 18080 is free before starting the dashboard.</li>
+          </ul>
+        </article>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap">
+      DiscBot Steel is a local-first Windows Discord music bot surface for operational clarity. No cloud claims, no brokered hosting, just a sharper control room for the project at E:\discbot.
+    </div>
+  </footer>
+
+  <script>
+    const search = document.getElementById('commandSearch');
+    const commands = Array.from(document.querySelectorAll('.command'));
+    const count = document.getElementById('commandCount');
+
+    function filterCommands() {
+      const term = search.value.trim().toLowerCase();
+      let visible = 0;
+
+      commands.forEach((row) => {
+        const matches = !term || row.dataset.command.includes(term) || row.textContent.toLowerCase().includes(term);
+        row.hidden = !matches;
+        if (matches) visible += 1;
+      });
+
+      count.textContent = `${visible} command${visible === 1 ? '' : 's'}`;
+    }
+
+    search.addEventListener('input', filterCommands);
+  </script>
+</body>
+</html>

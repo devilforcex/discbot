@@ -6,7 +6,8 @@
 discord.py>=2.4.0
 PyNaCl>=1.5.0
 # Optional faster voice encryption backend used by newer discord.py releases.
-davey>=0.1.6
+davey>=0.1.6; platform_system != "Windows"
+cffi>=1.16.0,<2.0.0
 
 # Lavalink v4 client
 wavelink>=3.0.0

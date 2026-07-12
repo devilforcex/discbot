@@ -11,7 +11,7 @@ from bot.core.errors import DifferentVoiceChannel, NotInVoiceChannel, TrackNotFo
 from bot.database import guild_settings
 from bot.music.embed_manager import EmbedManager
 from bot.music.player import Player
-from bot.music.search import is_url as _is_url, search_tracks
+from bot.music.search import is_url as _is_url, search_tracks, _extract_lavalink_error
 
 from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, voice_check
 from bot.music.views import SearchView  # now from package
@@ -127,14 +127,15 @@ class PlaybackCog(commands.Cog):
                 tracks = await search_tracks(query, source=settings.get("default_source", "ytmsearch"))
             except Exception as e:
                 logger.error("Search failed for '%s': %s", query, e)
+                user_msg, cause = _extract_lavalink_error(e)
                 error_str = str(e).lower()
                 # Check if it's a connection issue
                 if "not connected" in error_str or "failed to connect" in error_str:
                     await ctx.send(embed=build_error_embed(description="❌ Lavalink is not connected. Is the Lavalink server running?"))
                 elif "age" in error_str or "restricted" in error_str or "copyright" in error_str:
-                    await ctx.send(embed=build_error_embed(description="❌ Cannot play this track. It may be age-restricted or region-locked. Try enabling YouTube cookies."))
+                    await ctx.send(embed=build_error_embed(description=f"❌ {user_msg} Try enabling YouTube cookies."))
                 else:
-                    await ctx.send(embed=build_error_embed(description=f"❌ Failed to load tracks: {e}"))
+                    await ctx.send(embed=build_error_embed(description=f"❌ {user_msg}"))
                 return
             if not tracks:
                 embed = TrackNotFound(query).user_message
@@ -158,48 +159,6 @@ class PlaybackCog(commands.Cog):
             embed = EmbedManager.search_results_embed(query, top_tracks)
             view = SearchView(top_tracks, requester_id=ctx.author.id, bot=self.bot, guild_id=ctx.guild.id, query=query)
             await ctx.send(embed=embed, view=view)
-
-    @commands.command(name="pause")
-    async def pause(self, ctx):
-        if not await self._check_guild_and_channel(ctx):
-            return
-        if not await self._require_authorized(ctx):
-            return
-        await self._run_controller(ctx, self.bot.player_controller.pause(ctx.guild.id, ctx.author))
-
-    @commands.command(name="resume")
-    async def resume(self, ctx):
-        if not await self._check_guild_and_channel(ctx):
-            return
-        if not await self._require_authorized(ctx):
-            return
-        await self._run_controller(ctx, self.bot.player_controller.resume(ctx.guild.id, ctx.author))
-
-    @commands.command(name="skip", aliases=["s", "next"])
-    async def skip(self, ctx):
-        if not await self._check_guild_and_channel(ctx):
-            return
-        if not await self._require_authorized(ctx):
-            return
-        await self._run_controller(ctx, self.bot.player_controller.skip(ctx.guild.id, ctx.author))
-
-    @commands.command(name="stop")
-    async def stop(self, ctx):
-        if not await self._check_guild_and_channel(ctx):
-            return
-        if not await self._require_authorized(ctx):
-            return
-        await self._run_controller(ctx, self.bot.player_controller.stop(ctx.guild.id, ctx.author))
-        if hasattr(self.bot, "player_messages"):
-            await self.bot.player_messages.set_idle(ctx.guild.id)
-
-    @commands.command(name="disconnect", aliases=["dc", "leave"])
-    async def disconnect(self, ctx):
-        if not await self._check_guild_and_channel(ctx):
-            return
-        if not await self._require_authorized(ctx):
-            return
-        await self._run_controller(ctx, self.bot.player_controller.disconnect(ctx.guild.id, ctx.author))
 
 
 async def setup(bot):

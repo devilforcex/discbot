@@ -12,6 +12,8 @@ from typing import Optional
 logger = logging.getLogger(__name__)
 
 _local = threading.local()
+_registry_lock = threading.Lock()
+_connection_registry: dict[str, list[sqlite3.Connection]] = {}
 
 
 def _connection_cache() -> dict[str, sqlite3.Connection]:
@@ -19,6 +21,40 @@ def _connection_cache() -> dict[str, sqlite3.Connection]:
     if not hasattr(_local, "connections") or _local.connections is None:
         _local.connections = {}
     return _local.connections
+
+
+def _register_connection(cache_key: str, conn: sqlite3.Connection) -> None:
+    with _registry_lock:
+        connections = _connection_registry.setdefault(cache_key, [])
+        if conn not in connections:
+            connections.append(conn)
+
+
+def _unregister_connection(cache_key: str, conn: sqlite3.Connection) -> None:
+    with _registry_lock:
+        connections = _connection_registry.get(cache_key)
+        if connections is None:
+            return
+        try:
+            connections.remove(conn)
+        except ValueError:
+            pass
+        if not connections:
+            _connection_registry.pop(cache_key, None)
+
+
+def _registered_connections(cache_key: str) -> list[sqlite3.Connection]:
+    with _registry_lock:
+        return list(_connection_registry.get(cache_key, []))
+
+
+def _close_registered_connection(cache_key: str, conn: sqlite3.Connection) -> None:
+    try:
+        conn.close()
+    except sqlite3.ProgrammingError as exc:
+        logger.debug("Database connection already closed or unavailable: %s", exc)
+    finally:
+        _unregister_connection(cache_key, conn)
 
 
 def get_connection(db_path: str) -> sqlite3.Connection:
@@ -40,12 +76,13 @@ def get_connection(db_path: str) -> sqlite3.Connection:
 
     conn = cache.get(cache_key)
     if conn is None:
-        conn = sqlite3.connect(str(db_path_obj))
+        conn = sqlite3.connect(str(db_path_obj), check_same_thread=False)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL")
         conn.execute("PRAGMA foreign_keys=ON")
         conn.execute("PRAGMA busy_timeout=5000")
         cache[cache_key] = conn
+        _register_connection(cache_key, conn)
         logger.debug("Database connection established: %s", db_path_obj)
     return conn
 
@@ -63,12 +100,14 @@ def close_connection(db_path: Optional[str] = None) -> None:
         cache_key = str(Path(db_path).expanduser().resolve())
         conn = cache.pop(cache_key, None)
         if conn is not None:
-            conn.close()
-            logger.debug("Database connection closed: %s", cache_key)
+            _close_registered_connection(cache_key, conn)
+        for registered in _registered_connections(cache_key):
+            _close_registered_connection(cache_key, registered)
+        logger.debug("Database connections closed: %s", cache_key)
         return
 
     for cache_key, conn in list(cache.items()):
-        conn.close()
+        _close_registered_connection(cache_key, conn)
         logger.debug("Database connection closed: %s", cache_key)
     cache.clear()
 
