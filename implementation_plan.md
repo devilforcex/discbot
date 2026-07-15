@@ -1,70 +1,40 @@
-# Implementation Plan
+# Landing Page Implementation Plan
 
-## Overview
+## Goals
+- Transform existing index.html into a standalone landing page for the DiscBot.
+- Serve it at a dedicated address (e.g., http://localhost:8080 or configurable port).
+- Keep all changes within the `bot/` directory structure.
 
-Fix Lavalink YouTube playback by properly configuring the youtube-v2 plugin with cookies, correcting the Lavalink application.yml, fixing start scripts to point to the lavalink/ directory, and resolving wavelink 3.5.2 API compatibility issues in the bot code.
+## Steps
+- [ ] Analyze current `index.html` and extract dependencies (CSS, JS, images).
+- [ ] Create a minimal routing endpoint in `dashboard.py`/`routes.py` to serve the landing page.
+- [ ] Adjust relative links and asset paths to work from the new location.
+- [ ] Ensure the landing page is accessible at the target address.
+- [ ] Test locally and verify functionality.
+- [ ] Document any required environment variables or configuration.
 
-The current setup has Lavalink.jar and its configuration in `E:\discbot\lavalink\` but start scripts look for them in `E:\discbot\`. The `lavalink/application.yml` lacks plugin configuration entirely despite having `youtube-v2-1.18.1.jar` in the plugins folder. Additionally, the bot code uses wavelink 3.5.2 which has API changes (e.g., `Playable.search` returns `Search` object, not a plain list, and YouTube cookies support needs to be enabled).
+## Details
+1. **Asset Relocation**
+   - Move `index.html` into `bot/dashboard/static/landing/` (or similar).
+   - Copy required assets (`docs/assets/*.png`, `static/css/*`, `static/js/*`) into the landing directory or keep them in existing locations with relative references.
 
-## Types
+2. **Routing**
+   - Add a new route in `routes.py` (e.g., `@app.get("/")`) that returns the landing page.
+   - Ensure the route is mounted correctly in `dashboard.py`.
 
-No new type definitions needed; the existing `Config` class in `bot/config.py` already has `youtube_cookies_enabled` field which just needs to be toggled to `True`.
+3. **Configuration**
+   - Determine the target port (e.g., 3000) and update the server startup to expose it.
+   - Optionally allow the port to be configured via environment variable.
 
-Minor signature changes in `bot/music/search.py` to handle the wavelink 3.5.2 `Search` return type (which inherits from `list` but has `.tracks` property for playlist results).
+4. **Testing**
+   - Run the server and verify that the landing page is reachable at `http://localhost:<port>`.
+   - Check that all assets load correctly and that navigation links work.
 
-## Files
+5. **Deployment**
+   - If the target address is external, consider using a tunneling service (e.g., ngrok) that forwards to the local port.
+   - Ensure the tunnel URL is shared with stakeholders.
 
-### Modified files:
-1. **lavalink/application.yml** — Complete rewrite with youtube-v2 plugin configuration, cookie file path, and proper source settings.
-2. **scripts/windows/start.bat** — Update paths to point to `lavalink/` for Lavalink.jar and application.yml.
-3. **lavalink/run_lavalink.bat** — Update to use plugins from `plugins/` directory.
-4. **bot/music/search.py** — Fix `search_tracks` to handle `Playable.search` returning `Search` (list subclass) and fix the source fallback logic for URL queries.
-
-### Files to be created:
-5. **E:\discbot\lavalink\plugins\** (symbolic link or copy of youtube-v2-1.18.1.jar)
-
-### No files to delete.
-
-## Functions
-
-### Modified Functions:
-1. `search_tracks` in `bot/music/search.py`:
-   - Fix URL handling: `Playable.search` now returns `Search` (list subclass) — the truthiness check still works but playlist detection needs updating.
-   - Fix the fallback chain for URL sources — when source is `None`, Lavalink auto-detects, but with youtube-v2 plugin the auto-detect should work correctly.
-   - The `_extract_lavalink_error` helper function signature stays the same — already handles `LavalinkLoadException` and `NodeException`.
-
-### No functions removed.
-
-## Classes
-
-### Modified Classes:
-1. `LavalinkClient` in `bot/music/lavalink/client.py`:
-   - The `setup` method currently creates `wavelink.Node(uri=uri, password=...)` — this is compatible with wavelink 3.5.2 (Node __init__ signature verified).
-   - The `Pool.connect(client=self.bot, nodes=[node])` call is compatible with wavelink 3.5.2 signature: `(*, nodes: 'Iterable[Node]', client: 'discord.Client | None' = None, cache_capacity: 'int | None' = None)`.
-   - No changes needed here except version compatibility is verified.
-
-2. `Config` in `bot/config.py`:
-   - No API changes needed. Just the default for `youtube_cookies_enabled` changes from `False` to `True`.
-
-## Dependencies
-
-No new Python packages needed. The venv already has wavelink 3.5.2 installed which is compatible with Lavalink v4.
-
-The youtube-v2-1.18.1.jar plugin needs to be made available to Lavalink at runtime. This plugin goes in Lavalink's plugin directory (`lavalink/plugins/` or the configured `pluginPath`).
-
-## Testing
-
-Run `test_lavalink_url.py` after changes to verify Lavalink connectivity and YouTube URL resolution.
-Run the bot with `python -m bot.main` to verify it starts and connects to Lavalink without errors.
-Verify the start.bat script exits cleanly (invoke it and check both windows appear).
-
-## Implementation Order
-
-1. Update `lavalink/application.yml` with youtube-v2 plugin config, cookies, and corrected settings.
-2. Copy or symlink `youtube-v2-1.18.1.jar` from plugins folder to Lavalink's plugin path.
-3. Update `lavalink/run_lavalink.bat` to include the plugin path.
-4. Update `scripts/windows/start.bat` to point to lavalink/ directory for Lavalink.
-5. Fix `bot/music/search.py` for wavelink 3.5.2 Search return type compatibility.
-6. Update `bot/config.py` default for `youtube_cookies_enabled` to True.
-7. Update root `start.bat` launcher to be consistent.
-8. Test the setup.
+## Risks & Mitigations
+- **Asset Path Issues**: Update all relative URLs to reflect the new directory structure.
+- **Port Conflicts**: Choose a port that is not already in use (e.g., 3000 or 8080).
+- **Security**: Since the landing page is static, ensure no sensitive information is exposed.
