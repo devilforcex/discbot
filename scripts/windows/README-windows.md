@@ -28,10 +28,12 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 2. Тества за `git` и клонира repo-то
 3. Проверява за **Python 3.12+** и **Java 17+**; ако липсват, ти отваря download страниците
 4. Създава `.venv` и `pip install -r requirements.txt`
-5. Копира `.env.example` → `.env`, `application.yml.example` → `application.yml`
-6. Сваля най-новия `Lavalink.jar` от GitHub releases
-7. Отваря `.env` в Notepad за попълване на токени
-8. По желание стартира бота веднага
+5. Копира `.env.example` → `.env`
+6. Копира `application.yml.example` → `lavalink/application.yml`
+7. Сваля най-новия `Lavalink.jar` в `lavalink/` подпапка
+8. Сваля `youtube-plugin-1.18.0.jar` в `lavalink/plugins/`
+9. Отваря `.env` в Notepad за попълване на токени
+10. По желание стартира бота веднага
 
 Инсталаторът е non-destructive — ако папката вече съществува, той сам те пренасочва
 към `update.ps1`.
@@ -57,15 +59,16 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 2. **Свали/клонирай** repo-то в папка по избор, напр. `C:\DiscBot`
 
 3. **Първоначална настройка** — двойно кликни:
-   ```
-   scripts\windows\setup.bat
-   ```
-   Скриптът ще:
-   - провери за Python и Java
-   - създаде `.venv` и инсталира зависимостите
-   - направи `.env` от template-а
-   - свали последния `Lavalink.jar`
-   - отвори `.env` в Notepad, за да попълниш токените
+    ```
+    scripts\windows\setup.bat
+    ```
+    Скриптът ще:
+    - провери за Python и Java
+    - създаде `.venv` и инсталира зависимостите
+    - направи `.env` от template-а
+    - свали последния `Lavalink.jar` в `lavalink/` подпапка
+    - свали `youtube-plugin-1.18.0.jar` в `lavalink/plugins/`
+    - отвори `.env` в Notepad, за да попълниш токените
 
 4. **Попълни `.env`** (трябва поне):
    - `DISCORD_BOT_TOKEN`

@@ -1,4 +1,4 @@
-@echo off
-REM Convenience launcher for Windows users.
-REM DiscBot is locked to E:\discbot.
-call "E:\discbot\scripts\windows\start.bat"
+@echo off  
+REM DiscBot convenience launcher.  
+cd /d "E:\discbot"  
+call "scripts\windows\start.bat"  

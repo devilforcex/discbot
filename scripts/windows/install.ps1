@@ -15,7 +15,7 @@
       - Verifies Python 3.12+ and Java 17+ (opens download pages if missing)
       - Creates .venv and pip-installs requirements
       - Creates .env / application.yml from examples
-      - Downloads the latest Lavalink.jar
+      - Downloads the latest Lavalink.jar and YouTube plugin
       - Optionally starts the bot when done.
 
 .PARAMETER InstallDir
@@ -203,26 +203,53 @@ if (-not (Test-Path $envPath)) {
     Write-Ok ".env created from .env.example"
 } else { Write-Ok ".env already exists — left untouched" }
 
-$appYml = Join-Path $InstallDir "application.yml"
-if (-not (Test-Path $appYml)) {
-    Copy-Item (Join-Path $InstallDir "application.yml.example") $appYml
-    Write-Ok "application.yml created"
+# ---------- 8. Lavalink ----------
+$lavalinkDir = Join-Path $InstallDir "lavalink"
+if (-not (Test-Path $lavalinkDir)) {
+    New-Item -ItemType Directory -Path $lavalinkDir -Force | Out-Null
 }
 
-# ---------- 8. Lavalink ----------
+$lavalinkPluginsDir = Join-Path $lavalinkDir "plugins"
+if (-not (Test-Path $lavalinkPluginsDir)) {
+    New-Item -ItemType Directory -Path $lavalinkPluginsDir -Force | Out-Null
+}
+
+# Copy application.yml to lavalink/ subdirectory
+$lavalinkAppYml = Join-Path $lavalinkDir "application.yml"
+if (-not (Test-Path $lavalinkAppYml)) {
+    Copy-Item (Join-Path $InstallDir "application.yml.example") $lavalinkAppYml
+    Write-Ok "lavalink/application.yml created from application.yml.example"
+} else { Write-Ok "lavalink/application.yml already exists — left untouched" }
+
 Write-Step "Checking Lavalink.jar"
-$ll = Join-Path $InstallDir "Lavalink.jar"
+$ll = Join-Path $lavalinkDir "Lavalink.jar"
 if (Test-Path $ll) {
-    Write-Ok "Lavalink.jar already present"
+    Write-Ok "Lavalink.jar already present in lavalink/"
 } else {
     Write-Host "    Downloading latest Lavalink v4..."
     $llUrl = "https://github.com/lavalink-devs/Lavalink/releases/latest/download/Lavalink.jar"
     try {
         Invoke-WebRequest -Uri $llUrl -OutFile $ll -UseBasicParsing
-        Write-Ok "Lavalink.jar downloaded"
+        Write-Ok "Lavalink.jar downloaded to lavalink/"
     } catch {
         Write-Warn "Auto-download failed: $_"
-        Write-Warn "Manually download Lavalink.jar from https://github.com/lavalink-devs/Lavalink/releases and place it in '$InstallDir'."
+        Write-Warn "Manually download Lavalink.jar from https://github.com/lavalink-devs/Lavalink/releases and place it in '$lavalinkDir'."
+    }
+}
+
+Write-Step "Checking YouTube plugin"
+$ytPlugin = Join-Path $lavalinkPluginsDir "youtube-plugin-1.18.0.jar"
+if (Test-Path $ytPlugin) {
+    Write-Ok "youtube-plugin already present in lavalink/plugins/"
+} else {
+    Write-Host "    Downloading youtube-plugin v1.18.0..."
+    $ytPluginUrl = "https://github.com/lavalink-devs/youtube-source/releases/download/1.18.0/youtube-plugin-1.18.0.jar"
+    try {
+        Invoke-WebRequest -Uri $ytPluginUrl -OutFile $ytPlugin -UseBasicParsing
+        Write-Ok "youtube-plugin downloaded to lavalink/plugins/"
+    } catch {
+        Write-Warn "Auto-download failed: $_"
+        Write-Warn "Manually download youtube-plugin-1.18.0.jar from https://github.com/lavalink-devs/youtube-source/releases and place it in '$lavalinkPluginsDir'."
     }
 }
 

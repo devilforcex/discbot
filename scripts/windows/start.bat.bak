@@ -2,8 +2,8 @@
 REM ============================================================
 REM  DiscBot — Start Lavalink + Discord Bot
 REM  ------------------------------------------------------------
-REM  Runs only from E:\discbot. All bot files/config/data/logs live there.
-REM  Lavalink runs from lavalink/ subdirectory with application.yml and plugins.
+REM  Lavalink lives in E:\discbot\lavalink\ with its own config & plugins.
+REM  The Discord bot lives in E:\discbot\ (root).
 REM  Opens two console windows: one for Lavalink, one for the bot.
 REM ============================================================
 setlocal
@@ -31,22 +31,35 @@ if not exist ".venv\Scripts\python.exe" (
     exit /b 1
 )
 if not exist "lavalink\Lavalink.jar" (
-    echo  ❌ Lavalink.jar not found in lavalink\. Run install.ps1 to download it.
+    echo  ❌ lavalink\Lavalink.jar not found. Run setup.bat to download it,
+    echo     or place Lavalink.jar in E:\discbot\lavalink\.
     pause
     exit /b 1
 )
+if not exist "lavalink\application.yml" (
+    echo  ❌ lavalink\application.yml not found. Bot cannot start without it.
+    pause
+    exit /b 1
+)
+if not exist "lavalink\plugins\youtube-plugin-1.18.0.jar" (
+    echo  ⚠️  lavalink\plugins\youtube-plugin-1.18.0.jar not found.
+    echo     YouTube playback may not work correctly.
+    timeout /t 3 /nobreak >nul
+)
 
-echo  Starting Lavalink (new window)...
-start "DiscBot — Lavalink" cmd /k "cd /d ""%CD%\lavalink"" && java -jar Lavalink.jar"
+echo  Starting Lavalink from lavalink/ (new window)...
+start "DiscBot — Lavalink" cmd /k "cd /d ""%CD%\lavalink"" && run_lavalink.bat"
 
-echo  Waiting for Lavalink to boot...
-timeout /t 8 /nobreak >nul
+echo  Waiting for Lavalink to boot (10s)...
+timeout /t 10 /nobreak >nul
 
 echo  Starting bot (new window)...
 start "DiscBot — Bot" cmd /k "cd /d ""%CD%"" && .venv\Scripts\python.exe -m bot.main"
 
 echo.
 echo  ✅ Both processes launched in separate windows.
+echo     - Lavalink: lavalink\ directory (port 12333)
+echo     - Bot:      %CD%
 echo     Close the windows (or run stop.bat) to shut them down.
 echo.
 endlocal

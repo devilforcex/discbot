@@ -5,6 +5,7 @@ REM  ------------------------------------------------------------
 REM  Pulls latest code from git, refreshes pip dependencies in
 REM  .venv, and reminds you to restart the bot. Everything stays
 REM  inside the repo folder (default E:\discbot if installed there).
+REM  Ensure lavalink/application.yml exists after update.
 REM ============================================================
 setlocal
 chcp 65001 >nul
@@ -69,6 +70,15 @@ if exist ".venv\Scripts\python.exe" (
     .venv\Scripts\python.exe -m pip install -r requirements.txt --upgrade
 ) else (
     echo  ⚠️  .venv not found — skipping pip refresh (run setup.bat first).
+)
+
+REM Ensure application.yml exists in lavalink/ subdirectory
+if not exist "lavalink\application.yml" (
+    if not exist "lavalink" mkdir lavalink
+    copy "application.yml.example" "lavalink\application.yml" >nul
+    echo  ✅ Ensured lavalink\application.yml exists
+) else (
+    echo  lavalink\application.yml already exists — skipping.
 )
 
 echo.

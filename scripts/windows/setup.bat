@@ -2,17 +2,18 @@
 REM ============================================================
 REM  DiscBot — First-time Windows setup
 REM  ------------------------------------------------------------
-REM  Installs everything next to this script (i.e. in the repo root).
-REM  By convention for this install that is E:\discbot — everything
-REM  (.venv, Lavalink.jar, .env, data/, logs/) stays there.
+REM  Installs everything in E:\discbot — everything
+REM  (.venv, lavalink\Lavalink.jar, .env, data/, logs/) stays there.
+REM  Lavalink runs from lavalink/ subdirectory with application.yml and plugins.
 REM
 REM  Steps:
 REM    1. Check for Python 3.12+ and Java 17+
 REM    2. Create virtual environment (.venv) and pip-install deps
 REM    3. Create .env from .env.example (if missing)
-REM    4. Create application.yml from example
-REM    5. Download latest Lavalink.jar (if missing)
-REM    6. Open .env in Notepad for editing
+REM    4. Create application.yml in lavalink/ from example
+REM    5. Download latest Lavalink.jar to lavalink/ (if missing)
+REM    6. Download youtube-plugin to lavalink/plugins/ (if missing)
+REM    7. Open .env in Notepad for editing
 REM ============================================================
 setlocal enabledelayedexpansion
 chcp 65001 >nul
@@ -39,7 +40,7 @@ echo     Working in: %CD%
 echo.
 
 REM ---------- 1. Python check ----------
-echo [1/6] Checking Python...
+echo [1/7] Checking Python...
 where python >nul 2>&1
 if errorlevel 1 (
     where py >nul 2>&1
@@ -79,7 +80,7 @@ if %PYMIN% LSS 12 (
 echo       Found Python %PYMAJ%.%PYMIN% — OK.
 
 REM ---------- 2. Java check ----------
-echo [2/6] Checking Java...
+echo [2/7] Checking Java...
 where java >nul 2>&1
 if errorlevel 1 (
     echo  ❌ Java was not found.
@@ -106,7 +107,7 @@ if %JAVAVER% LSS 17 (
 )
 
 REM ---------- 3. Virtual env + pip ----------
-echo [3/6] Setting up Python virtual environment (.venv^)...
+echo [3/7] Setting up Python virtual environment (.venv^)...
 if not exist ".venv\Scripts\python.exe" (
     %PY% -m venv .venv
     if errorlevel 1 (
@@ -126,7 +127,7 @@ if errorlevel 1 (
 )
 
 REM ---------- 4. .env ----------
-echo [4/6] Setting up .env...
+echo [4/7] Setting up .env...
 if not exist ".env" (
     copy ".env.example" ".env" >nul
     echo       ✅ Created .env from .env.example
@@ -136,18 +137,26 @@ if not exist ".env" (
     echo       .env already exists — skipping.
 )
 
-REM ---------- 5. application.yml ----------
-echo [5/6] Setting up Lavalink config...
-if not exist "application.yml" (
-    copy "application.yml.example" "application.yml" >nul
-    echo       ✅ Created application.yml
+REM ---------- 5. lavalink directory ----------
+echo [5/7] Creating lavalink directory structure...
+if not exist "lavalink" mkdir lavalink
+if not exist "lavalink\plugins" mkdir lavalink\plugins
+echo       ✅ Created lavalink/ and lavalink/plugins/ directories
+
+REM ---------- 6. application.yml ----------
+echo [6/7] Setting up Lavalink config...
+if not exist "lavalink\application.yml" (
+    copy "application.yml.example" "lavalink\application.yml" >nul
+    echo       ✅ Created lavalink\application.yml
 ) else (
-    echo       application.yml already exists — skipping.
+    echo       lavalink\application.yml already exists — skipping.
 )
 
-REM ---------- 6. Download Lavalink ----------
-echo [6/6] Lavalink.jar...
-if exist "Lavalink.jar" (
+REM ---------- 7. Download Lavalink and YouTube plugin ----------
+echo [7/7] Downloading Lavalink and YouTube plugin...
+
+REM Download Lavalink.jar
+if exist "lavalink\Lavalink.jar" (
     echo       Lavalink.jar already present — skipping download.
 ) else (
     echo       Downloading Lavalink v4 (this may take a minute)...
@@ -155,15 +164,37 @@ if exist "Lavalink.jar" (
     if errorlevel 1 (
         echo  ❌ curl not found. Please download Lavalink v4 manually from:
         echo     https://github.com/lavalink-devs/Lavalink/releases
-        echo     Place Lavalink.jar in %CD%
+        echo     Place Lavalink.jar in %CD%\lavalink\
     ) else (
-        curl -L -o Lavalink.jar "https://github.com/lavalink-devs/Lavalink/releases/latest/download/Lavalink.jar"
+        curl -L -o lavalink\Lavalink.jar "https://github.com/lavalink-devs/Lavalink/releases/latest/download/Lavalink.jar"
         if errorlevel 1 (
             echo  ❌ Download failed. Grab it manually from
             echo     https://github.com/lavalink-devs/Lavalink/releases
-            echo     and place it in %CD%
+            echo     and place it in %CD%\lavalink\
         ) else (
-            echo       ✅ Downloaded Lavalink.jar
+            echo       ✅ Downloaded Lavalink.jar to lavalink\
+        )
+    )
+)
+
+REM Download YouTube plugin
+if exist "lavalink\plugins\youtube-plugin-1.18.0.jar" (
+    echo       youtube-plugin already present — skipping download.
+) else (
+    echo       Downloading youtube-plugin v1.18.0...
+    where curl >nul 2>&1
+    if errorlevel 1 (
+        echo  ❌ curl not found. Please download youtube-plugin manually from:
+        echo     https://github.com/lavalink-devs/youtube-source/releases
+        echo     Place youtube-plugin-1.18.0.jar in %CD%\lavalink\plugins\
+    ) else (
+        curl -L -o lavalink\plugins\youtube-plugin-1.18.0.jar "https://github.com/lavalink-devs/youtube-source/releases/download/1.18.0/youtube-plugin-1.18.0.jar"
+        if errorlevel 1 (
+            echo  ❌ Download failed. Grab it manually from
+            echo     https://github.com/lavalink-devs/youtube-source/releases
+            echo     and place it in %CD%\lavalink\plugins\
+        ) else (
+            echo       ✅ Downloaded youtube-plugin to lavalink\plugins\
         )
     )
 )
@@ -176,8 +207,8 @@ echo.
 echo     Location : %CD%
 echo.
 echo  Next steps:
-echo    1. Edit .env (fill in your bot token + IDs)
-echo    2. Double-click start.bat to run Lavalink + the bot
+echo   1. Edit .env (fill in your bot token + IDs)
+echo   2. Double-click start.bat to run Lavalink + the bot
 echo.
 echo  Opening .env in Notepad for you...
 timeout /t 2 >nul

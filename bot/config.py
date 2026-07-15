@@ -53,7 +53,7 @@ class Config(BaseSettings):
         description="Use HTTPS for the Lavalink node URI",
     )
     youtube_cookies_enabled: bool = Field(
-        default=False,
+        default=True,
         description="Enable YouTube cookies for age-restricted/region-locked video playback",
     )
 

@@ -1,22 +1,19 @@
 # Lavalink v4 Configuration Example — native Windows
-# Copy this file to E:\discbot\application.yml
-# Keep it next to E:\discbot\Lavalink.jar
+# Copy this file to E:\discbot\lavalink\application.yml
+# Keep it next to E:\discbot\lavalink\Lavalink.jar
 
 server:
   port: 12333
-  address: 127.0.0.1
+  address: 0.0.0.0
 
 lavalink:
-  # Lavalink v4 plugin dependencies.
-  # YouTube playback/search should use lavalink-devs/youtube-source.
-  plugins:
-    - dependency: "dev.lavalink.youtube:youtube-plugin:1.18.0"
-      snapshot: false
+  # Path to plugins directory (relative to this config file)
+  pluginsPath: "./plugins"
 
   server:
     password: "youshallnotpass"
     sources:
-      # Built-in YouTube source is deprecated/disabled when using youtube-source.
+      # Built-in YouTube source is disabled when using youtube-source plugin
       youtube: false
       bandcamp: true
       soundcloud: true
@@ -47,23 +44,20 @@ lavalink:
     soundcloudSearchEnabled: true
     gc-warnings: true
 
-# Runtime plugin configuration.
-plugins:
-  youtube:
-    enabled: true
-    allowSearch: true
-    allowDirectVideoIds: true
-    allowDirectPlaylistIds: true
-    clients:
-      - MUSIC
-      - ANDROID_MUSIC
-      - WEB
-      - WEBEMBEDDED
-    # Optional cookies file. Uncomment only after placing ytcookies.txt next to Lavalink.jar.
-    # cookieFile: "ytcookies.txt"
-
-  # Spotify/LavaSrc is optional. Keep disabled until you intentionally install
-  # and configure a Spotify-capable Lavalink plugin with real credentials.
+    # YouTube plugin configuration (youtube-plugin v1)
+    # This config is read by the youtube-plugin JAR placed in ./plugins/
+    youtube:
+      enabled: true
+      allowSearch: true
+      allowDirectVideoIds: true
+      allowDirectPlaylistIds: true
+      clients:
+        - MUSIC
+        - ANDROID_MUSIC
+        - WEB
+        - WEBEMBEDDED
+      # Optional cookies file. Uncomment only after placing ytcookies.txt next to Lavalink.jar.
+      # cookieFile: "ytcookies.txt"
 
 metrics:
   prometheus:

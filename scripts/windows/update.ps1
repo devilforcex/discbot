@@ -252,8 +252,16 @@ if (-not (Test-Path (Join-Path $InstallDir ".env"))) {
     Write-Warn ".env is missing — copying from .env.example. Please edit it before the bot can start."
     Copy-Item (Join-Path $InstallDir ".env.example") (Join-Path $InstallDir ".env")
 }
-if (-not (Test-Path (Join-Path $InstallDir "application.yml"))) {
-    Copy-Item (Join-Path $InstallDir "application.yml.example") (Join-Path $InstallDir "application.yml")
+# Copy application.yml to lavalink/ subdirectory (Lavalink reads config from there)
+$lavalinkDir = Join-Path $InstallDir "lavalink"
+$lavalinkAppYml = Join-Path $lavalinkDir "application.yml"
+if (-not (Test-Path $lavalinkAppYml)) {
+    # Ensure lavalink directory exists
+    if (-not (Test-Path $lavalinkDir)) {
+        New-Item -ItemType Directory -Path $lavalinkDir -Force | Out-Null
+    }
+    Copy-Item (Join-Path $InstallDir "application.yml.example") $lavalinkAppYml
+    Write-Ok "lavalink/application.yml created from example"
 }
 
 # ---------- Restart ----------

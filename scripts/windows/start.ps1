@@ -37,12 +37,17 @@ Push-Location $InstallDir
 
 if (-not (Test-Path ".env"))                       { Write-Host "X  .env not found at $InstallDir. Run install.ps1 first." -ForegroundColor Red; exit 1 }
 if (-not (Test-Path ".venv\Scripts\python.exe"))   { Write-Host "X  .venv not found at $InstallDir. Run install.ps1 first." -ForegroundColor Red; exit 1 }
-if (-not (Test-Path "Lavalink.jar"))               { Write-Host "X  Lavalink.jar not found at $InstallDir. Run install.ps1 first." -ForegroundColor Red; exit 1 }
-if (-not (Test-Path "application.yml")) { Copy-Item "application.yml.example" "application.yml" }
+# Lavalink runs from lavalink/ subdirectory
+$lavalinkDir = Join-Path $InstallDir "lavalink"
+
+if (-not (Test-Path (Join-Path $lavalinkDir "Lavalink.jar"))) {
+    Write-Host "X  Lavalink.jar not found in $lavalinkDir. Run install.ps1 first." -ForegroundColor Red
+    exit 1
+}
 
 Write-Host "🎵 DiscBot @ $InstallDir" -ForegroundColor Magenta
 Write-Host "🎵 Starting Lavalink..." -ForegroundColor Cyan
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$InstallDir'; java -jar Lavalink.jar" -WorkingDirectory $InstallDir
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$lavalinkDir'; java -jar Lavalink.jar" -WorkingDirectory $lavalinkDir
 
 Write-Host "   Waiting 8 seconds for Lavalink to boot..." -ForegroundColor DarkGray
 Start-Sleep -Seconds 8
