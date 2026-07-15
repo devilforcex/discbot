@@ -336,7 +336,14 @@ def register_routes(app, bot, templates, security, check_write_auth):
             raise HTTPException(status_code=500, detail=str(e))
 
     @app.get("/")
-    async def index(request: Request):
+    async def landing(request: Request):
+        return templates.TemplateResponse(
+            "landing.html",
+            {"request": request},
+        )
+
+    @app.get("/dashboard")
+    async def dashboard(request: Request):
         guild_id = str(getattr(bot.config, "guild_id", "") or "")
         return templates.TemplateResponse(
             "index.html",

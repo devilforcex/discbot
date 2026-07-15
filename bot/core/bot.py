@@ -120,13 +120,18 @@ class Bot(commands.Bot):
         logger.info("Bot setup complete")
 
     async def _init_database(self) -> None:
-        """Initialize database tables."""
+        """Initialize database via the unified repository (PostgreSQL or SQLite fallback)."""
         try:
-            from bot.database import database as db
-            db.initialize_database(self._config.database_path)
-            logger.info("Database initialized at: %s", self._config.database_path)
+            from bot.database.repository import create_repository
+            self.db = await create_repository(
+                db_path=self._config.database_path,
+                database_url=self._config.database_url,
+            )
+            backend = "PostgreSQL" if self.db.is_postgres else "SQLite"
+            logger.info("Database initialized — backend: %s", backend)
         except Exception as e:
             logger.error("Database initialization failed: %s", e)
+            self.db = None
 
     async def _setup_dashboard(self) -> None:
         """Setup the optional web dashboard."""
@@ -182,15 +187,12 @@ class Bot(commands.Bot):
     async def _auto_join_music_channel(self) -> None:
         """Auto-join the configured music channel's voice if 24/7 mode is enabled."""
         try:
-            from bot.database.database import get_connection
-
-            conn = get_connection(self._config.database_path)
-            cursor = conn.cursor()
-            cursor.execute(
+            if not hasattr(self, "db") or not self.db:
+                return
+            row = await self.db.fetchrow(
                 "SELECT value FROM bot_settings WHERE key = '247_enabled'"
             )
-            row = cursor.fetchone()
-            if not row or row["value"] != "true":
+            if not row or row.get("value") != "true":
                 return
         except Exception as e:
             logger.debug("Failed to check 24/7 setting: %s", e)
@@ -305,12 +307,13 @@ class Bot(commands.Bot):
         except Exception as e:
             logger.error("Lavalink shutdown error: %s", e)
 
-        # Close database
-        try:
-            from bot.database import database as db
-            db.close_connection()
-        except Exception as e:
-            logger.error("Database shutdown error: %s", e)
+        # Close database (repository handles both backends)
+        if hasattr(self, "db") and self.db:
+            try:
+                await self.db.shutdown()
+                logger.info("Database connection closed")
+            except Exception as e:
+                logger.error("Database shutdown error: %s", e)
 
         await super().close()
         logger.info("Bot shutdown complete")
