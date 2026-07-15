@@ -28,6 +28,4 @@ jobs:
 
       - name: Run tests
         run: |
-          python -m pytest tests/ -v --tb=short 2>&1 || true
-          # Also run unittest tests directly
-          python -m unittest discover -s tests -v 2>&1 || true
+          python -m pytest tests/ -v --tb=short 2>&1

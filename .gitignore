@@ -11,11 +11,17 @@ logs/
 bot/logs/
 
 # Lavalink
-Lavalink.jar
-application.yml
-ytcookies.txt
-plugins/
-lavalink/
+# Do NOT ignore these - required for Docker build:
+# Lavalink.jar, application.yml, plugins/
+
+# Ignore Lavalink runtime files (logs, cookies, local scripts)
+lavalink/logs/
+lavalink/lavalink.log
+lavalink/*.bak
+lavalink/run_lavalink.bat
+lavalink/ytcookies.txt
+# Root plugins/ is a duplicate of lavalink/plugins/
+/plugins/
 *.yml.bak
 
 # Python

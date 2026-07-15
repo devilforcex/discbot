@@ -20,9 +20,10 @@ EXPOSE 12333
 # ---------- Stage 2: Python bot ----------
 FROM python:3.12-slim AS bot
 
-# Install Java Runtime for Lavalink subprocess
+# Install Java 17 Runtime for Lavalink subprocess + curl for healthcheck
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
+    openjdk-17-jre-headless \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy Java + Lavalink from stage 1
