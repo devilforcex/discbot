@@ -8,9 +8,12 @@ Usage:
     # Then open http://localhost:3000
 """
 import http.server
+import logging
 import os
 import socketserver
 import sys
+
+logger = logging.getLogger(__name__)
 
 PORT = 3000
 STATIC_DIR = os.path.join(os.path.dirname(__file__), "static")
@@ -39,16 +42,14 @@ def main():
         sys.exit(1)
 
     with socketserver.TCPServer(("", PORT), LandingHandler) as httpd:
-        print(f"+{'-'*46}+")
-        print(f"|  DiscBot Steel - Landing Page               |")
-        print(f"|  Serving at http://localhost:{PORT}            |")
-        print(f"|  Press Ctrl+C to stop                       |")
-        print(f"+{'-'*46}+")
-        print(f"\nStatic directory: {STATIC_DIR}")
+        logger.info("DiscBot Steel - Landing Page")
+        logger.info("Serving at http://localhost:%s", PORT)
+        logger.info("Press Ctrl+C to stop")
+        logger.info("Static directory: %s", STATIC_DIR)
         try:
             httpd.serve_forever()
         except KeyboardInterrupt:
-            print("\nShutting down landing page server...")
+            logger.info("Shutting down landing page server...")
 
 
 if __name__ == "__main__":

@@ -33,7 +33,7 @@ def setup_logging(log_level: str = "INFO") -> None:
         datefmt="%Y-%m-%d %H:%M:%S",
     )
 
-# Console handler (stdout) - with UTF-8 encoding for Unicode support
+    # Console handler (stdout) - with UTF-8 encoding for Unicode support
     console_handler = logging.StreamHandler(sys.stdout)
     console_handler.setLevel(level)
     try:

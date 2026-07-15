@@ -71,7 +71,7 @@ def _extract_lavalink_error(exc: Exception) -> tuple[str, str]:
         error_msg = exc.error or "Unknown error"
         cause = exc.cause or "unknown"
         severity = exc.severity or "unknown"
-        
+
         # Map common causes to user-friendly messages
         if "age" in cause.lower() or "restricted" in error_msg.lower():
             return ("Cannot play this track. It may be age-restricted or region-locked.", cause)
