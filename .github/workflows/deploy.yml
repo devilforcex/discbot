@@ -15,6 +15,10 @@ jobs:
         run: npm install -g @railway/cli
 
       - name: Deploy to Railway
-        run: railway up --detach --service discbot --ci
+        # Target the existing project + service explicitly so CI (which has no
+        # linked project) knows where to deploy. --detach returns once the build
+        # is queued; --ci streams build logs and exits with a non-zero status on
+        # build failure so the GitHub job fails loudly instead of silently.
+        run: railway up --detach --ci --service discbot --project 1ced0dea-5e5c-4691-bb78-88a952c6f21a
         env:
           RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}

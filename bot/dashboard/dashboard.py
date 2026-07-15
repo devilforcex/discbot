@@ -56,17 +56,29 @@ class DashboardServer:
         self._register_routes()
 
         config = self.bot.config
+
+        # Railway (and most PaaS) injects the listening port via $PORT and routes
+        # the healthcheck/traffic to it. Fall back to the configured port when $PORT
+        # is not present (local dev).
+        import os
+
+        port = int(os.environ.get("PORT", config.dashboard_port))
+
+        # Bind to 0.0.0.0 by default so Railway can reach the server. When the
+        # config explicitly sets a host, honor it (e.g. local-only 127.0.0.1).
+        host = config.dashboard_host if config.dashboard_host else "0.0.0.0"
+
         self._server = uvicorn.Server(
             config=uvicorn.Config(
                 app=self._app,
-                host=config.dashboard_host,
-                port=config.dashboard_port,
+                host=host,
+                port=port,
                 log_level="warning",
             )
         )
 
         self._running = True
-        logger.info("Dashboard available at http://%s:%s", config.dashboard_host, config.dashboard_port)
+        logger.info("Dashboard available at http://%s:%s", host, port)
         await self._server.serve()
 
     async def stop(self) -> None:

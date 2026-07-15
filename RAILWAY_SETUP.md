@@ -7,6 +7,10 @@
 3. **`test.yml`** имаше `|| true` което скриваше грешки от тестовете
 4. **`deploy.yml`** ползваше `install.sh` за Railway CLI който се чупеше в CI
 5. **`requirements.txt`** нямаше `pytest` за CI
+6. **Healthcheck падаше** — dashboard-ът не слушаше на `$PORT` (Railway инжектира порта) и
+   беше вързан на `127.0.0.1`. Оправено в `bot/dashboard/dashboard.py` (чете `$PORT`, bind `0.0.0.0`)
+   и `bot/core/bot.py` (стартира dashboard-а винаги на Railway заради `/api/health`).
+   Също `deploy.yml` вече сочи проекта/сървъра директно (`--project` / `--service`).
 
 ## Как да настроиш GitHub Secrets
 
@@ -21,6 +25,10 @@
 Добави нов secret:
 - **Name**: `RAILWAY_TOKEN`
 - **Value**: (токена от Railway)
+
+> Забележка: `deploy.yml` вече сочи директно към проекта (`--project 1ced0dea-...`)
+> и сървъра (`--service discbot`), така че CI не се нуждае от допълнителна
+> конфигурация на линк.
 
 ### 3. Настрой Railway Project
 В Railway dashboard:

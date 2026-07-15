@@ -48,7 +48,6 @@ lavalink:
         - ANDROID_MUSIC
         - WEB
         - WEBEMBEDDED
-      cookieFile: "ytcookies.txt"
 
 metrics:
   prometheus:

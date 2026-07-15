@@ -90,8 +90,8 @@ class Config(BaseSettings):
         description="Enable the web dashboard",
     )
     dashboard_host: str = Field(
-        default="127.0.0.1",
-        description="Dashboard server host",
+        default="0.0.0.0",
+        description="Dashboard server host. Defaults to 0.0.0.0 so Railway/Paas can reach it.",
     )
     dashboard_port: int = Field(
         default=18080,
