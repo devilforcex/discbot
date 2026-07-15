@@ -11,10 +11,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Install Railway CLI
+        run: |
+          curl -fsSL https://railway.app/install.sh | sh
+          echo "$HOME/.railway/bin" >> "$GITHUB_PATH"
+
       - name: Deploy to Railway
-        uses: brianmoran/railway-deploy@v1
-        with:
-          railway_token: ${{ secrets.RAILWAY_TOKEN }}
-          service: discbot
-          detach: true
-          flags: --ci
+        run: railway up --detach --service discbot --ci
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
