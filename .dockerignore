@@ -1,0 +1,52 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.env
+.venv
+venv/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Windows
+Thumbs.db
+*.bat
+*.bat.bak
+
+# Logs
+logs/
+*.log
+lavalink/lavalink.log
+lavalink/logs/
+
+# Data (SQLite local)
+data/
+
+# Temp
+tmp/
+temp/
+
+# Docs
+docs/
+
+# Tests (not needed in production)
+tests/
+
+# Scripts
+scripts/
+
+# Installation
+install.bat
+start.bat

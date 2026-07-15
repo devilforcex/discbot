@@ -70,7 +70,12 @@ class Config(BaseSettings):
     # Database
     database_path: str = Field(
         default="data/musicbot.db",
-        description="Path to SQLite database file",
+        description="Path to SQLite database file (used as fallback when DATABASE_URL is not set)",
+    )
+    database_url: Optional[str] = Field(
+        default=None,
+        description="PostgreSQL connection string (e.g. postgresql://user:pass@host:5432/db). "
+                    "When set, PostgreSQL is used instead of SQLite.",
     )
 
     # Logging
