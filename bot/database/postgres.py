@@ -1,6 +1,6 @@
 """
 PostgreSQL connection manager for DiscBot.
-Used when DATABASE_URL is set (Railway/cloud deployment).
+Used when DATABASE_URL is set (cloud deployment / PostgreSQL).
 Falls back to SQLite when DATABASE_URL is not set.
 """
 from __future__ import annotations

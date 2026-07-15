@@ -57,15 +57,15 @@ class DashboardServer:
 
         config = self.bot.config
 
-        # Railway (and most PaaS) injects the listening port via $PORT and routes
+        # Most PaaS platforms inject the listening port via $PORT and route
         # the healthcheck/traffic to it. Fall back to the configured port when $PORT
         # is not present (local dev).
         import os
 
         port = int(os.environ.get("PORT", config.dashboard_port))
 
-        # Bind to 0.0.0.0 by default so Railway can reach the server. When the
-        # config explicitly sets a host, honor it (e.g. local-only 127.0.0.1).
+        # Bind to 0.0.0.0 by default so the server is reachable from outside the
+        # container. When the config explicitly sets a host, honor it (e.g. local-only 127.0.0.1).
         host = config.dashboard_host if config.dashboard_host else "0.0.0.0"
 
         self._server = uvicorn.Server(

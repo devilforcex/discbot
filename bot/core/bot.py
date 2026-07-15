@@ -114,12 +114,10 @@ class Bot(commands.Bot):
         # Initialize database
         await self._init_database()
 
-        # Setup dashboard if enabled. On Railway (and other PaaS that inject $PORT
-        # and healthcheck the service) the dashboard must always run so the
-        # /api/health endpoint is reachable — otherwise deployments fail the healthcheck.
-        dashboard_on = self._config.dashboard_enabled or bool(os.environ.get("PORT")) or bool(
-            os.environ.get("RAILWAY_ENVIRONMENT")
-        )
+        # Setup dashboard if enabled, or when running as a web service (e.g. a PaaS
+        # that injects $PORT and healthchecks the service). The dashboard must always
+        # run so the /api/health endpoint is reachable — otherwise deployments fail.
+        dashboard_on = self._config.dashboard_enabled or bool(os.environ.get("PORT"))
         if dashboard_on:
             await self._setup_dashboard()
 

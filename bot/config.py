@@ -91,7 +91,7 @@ class Config(BaseSettings):
     )
     dashboard_host: str = Field(
         default="0.0.0.0",
-        description="Dashboard server host. Defaults to 0.0.0.0 so Railway/Paas can reach it.",
+        description="Dashboard server host. Defaults to 0.0.0.0 so the server is reachable from outside the container.",
     )
     dashboard_port: int = Field(
         default=18080,

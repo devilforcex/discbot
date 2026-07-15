@@ -1,6 +1,6 @@
 """
 Database repository abstraction layer.
-Provides a unified interface for SQLite (local) and PostgreSQL (Railway/cloud).
+Provides a unified interface for SQLite (local) and PostgreSQL (cloud).
 Auto-detects which backend to use based on DATABASE_URL config.
 """
 from __future__ import annotations
