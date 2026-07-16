@@ -12,7 +12,7 @@ export default function TopTracks() {
         <Skeleton className="mb-3 h-4 w-24" />
         <div className="space-y-2">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            <Skeleton key={i} className="h-12 w-full rounded-[11px]" />
           ))}
         </div>
       </div>

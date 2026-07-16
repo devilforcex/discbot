@@ -1,8 +1,8 @@
 import { useWs, type WsStatus } from "../../hooks/use-ws";
 
 const statusStyles: Record<WsStatus, { dot: string; label: string }> = {
-  connected: { dot: "bg-emerald-400", label: "Live" },
-  connecting: { dot: "bg-amber-400 animate-pulse", label: "Connecting" },
+  connected: { dot: "bg-accent-emerald", label: "Live" },
+  connecting: { dot: "bg-accent-amber animate-pulse", label: "Connecting" },
   disconnected: { dot: "bg-dark-500", label: "Offline" },
 };
 

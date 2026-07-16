@@ -34,7 +34,7 @@ export default function HostingInfo() {
         {items.map((item) => (
           <div key={item.title}>
             <div
-              className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-full ${item.color}`}
+              className={`mb-4 inline-flex h-10 w-10 items-center justify-center rounded-[11px] ${item.color}`}
             >
               <item.icon className="h-5 w-5" />
             </div>

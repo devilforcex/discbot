@@ -39,13 +39,13 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const icons = {
-    success: <CheckCircle2 className="h-4 w-4 text-emerald-400" />,
+    success: <CheckCircle2 className="h-4 w-4 text-accent-emerald" />,
     error: <AlertCircle className="h-4 w-4 text-accent-red" />,
     info: <Info className="h-4 w-4 text-accent-blue" />,
   };
 
   const borderColors = {
-    success: "border-emerald-400/30",
+    success: "border-accent-emerald/30",
     error: "border-accent-red/30",
     info: "border-accent-blue/30",
   };

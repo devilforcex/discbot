@@ -86,7 +86,7 @@ export default function PlaylistDetailPage() {
       <div className="mb-6 flex items-center gap-3">
         <button
           onClick={() => navigate("/library")}
-          className="rounded-lg p-1.5 text-dark-300 hover:bg-dark-600 hover:text-white transition-colors"
+          className="rounded-[11px] p-1.5 text-dark-300 hover:bg-dark-600 hover:text-white transition-colors"
         >
           <ArrowLeft className="h-5 w-5" />
         </button>

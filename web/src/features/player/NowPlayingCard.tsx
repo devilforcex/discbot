@@ -76,7 +76,7 @@ export default function NowPlayingCard() {
             title={isFavorited ? "Already in favorites" : "Add to favorites"}
           >
             <Heart
-              className={`h-5 w-5 ${isFavorited ? "fill-fuchsia-400 text-fuchsia-400" : "text-dark-400"}`}
+              className={`h-5 w-5 ${isFavorited ? "fill-accent-fuchsia text-accent-fuchsia" : "text-dark-400"}`}
             />
           </button>
         )}
