@@ -13,7 +13,7 @@ export interface LavalinkHealthResponse {
 
 export interface StatusResponse {
   bot_name: string;
-  bot_id: number | null;
+  bot_id: string | null;
   latency_ms: number | null;
   guild_count: number;
   uptime: string | null;
@@ -30,7 +30,7 @@ export interface LavalinkStatusResponse {
 }
 
 export interface Guild {
-  id: number;
+  id: string;
   name: string;
   member_count: number | null;
   icon_url: string | null;
@@ -60,11 +60,11 @@ export interface QueueTrack {
   author: string | null;
   uri: string | null;
   length: number | null;
-  requester_id: number | null;
+  requester_id: string | null;
 }
 
 export interface QueueResponse {
-  guild_id: number;
+  guild_id: string;
   queue_length: number;
   tracks: QueueTrack[];
 }

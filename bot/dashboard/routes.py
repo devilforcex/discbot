@@ -62,7 +62,7 @@ def register_routes(app, bot, security, check_write_auth):
                 uptime = None
         return {
             "bot_name": str(bot.user) if bot.user else "Not ready",
-            "bot_id": bot.user.id if bot.user else None,
+            "bot_id": str(bot.user.id) if bot.user else None,
             "latency_ms": round(bot.latency * 1000, 2) if bot.latency else None,
             "guild_count": len(bot.guilds),
             "uptime": uptime,
@@ -72,7 +72,7 @@ def register_routes(app, bot, security, check_write_auth):
 
     def _guild_payload(guild: Any) -> dict[str, Any]:
         return {
-            "id": guild.id,
+            "id": str(guild.id),
             "name": guild.name,
             "member_count": getattr(guild, "member_count", None),
             "icon_url": str(guild.icon.url) if getattr(guild, "icon", None) else None,
@@ -119,7 +119,7 @@ def register_routes(app, bot, security, check_write_auth):
     async def api_queue(guild_id: int):
         queue = bot.queue_manager.get_all_as_dicts(guild_id)
         return {
-            "guild_id": guild_id,
+            "guild_id": str(guild_id),
             "queue_length": len(queue),
             "tracks": [
                 {
@@ -127,7 +127,7 @@ def register_routes(app, bot, security, check_write_auth):
                     "author": t.get("author"),
                     "uri": t.get("uri"),
                     "length": t.get("length"),
-                    "requester_id": t.get("requester_id"),
+                    "requester_id": str(t.get("requester_id")) if t.get("requester_id") else None,
                 }
                 for t in queue
             ],
@@ -189,7 +189,7 @@ def register_routes(app, bot, security, check_write_auth):
             guild = bot.get_guild(guild_id) if hasattr(bot, "get_guild") else None
             return {
                 "status": status,
-                "guild": _guild_payload(guild) if guild else {"id": guild_id, "name": None},
+                "guild": _guild_payload(guild) if guild else {"id": str(guild_id), "name": None},
                 "queue_length": len(queue),
                 "settings": gs.get(str(guild_id), bot.config.database_path),
                 "stats": hm.get_stats(str(guild_id), bot.config.database_path),
