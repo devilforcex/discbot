@@ -8,7 +8,6 @@ Run: python setup.py
 from __future__ import annotations
 
 import asyncio
-import os
 import platform
 import shutil
 import subprocess
@@ -24,7 +23,6 @@ IS_INTERACTIVE = sys.stdin.isatty()
 try:
     from rich.console import Console
     from rich.panel import Panel
-    from rich.progress import Progress, SpinnerColumn, TextColumn
     from rich.prompt import Confirm, Prompt
     from rich.table import Table
     RICH_AVAILABLE = True

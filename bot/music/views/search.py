@@ -59,9 +59,7 @@ class TrackSelect(discord.ui.Select):
             member = interaction.user  # type: ignore
 
         try:
-            _, embed, _ = await play_wavelink_track_shared(
-                self.bot, self.guild_id, member, track
-            )
+            _, embed, _ = await play_wavelink_track_shared(self.bot, self.guild_id, member, track)
         except ValueError as ve:
             await interaction.followup.send(str(ve), ephemeral=True)
             return

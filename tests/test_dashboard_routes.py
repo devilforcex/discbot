@@ -33,7 +33,7 @@ class DashboardRoutesTests(unittest.TestCase):
             is_ready=lambda: True,
             get_guild=lambda guild_id: guild if guild_id == guild.id else None,
         )
-        app = FastAPI()
+        app = FastAPI()  # pyright: ignore[reportOptionalCall]
         security = HTTPBearer(auto_error=False)
 
         def check_write_auth(credentials):

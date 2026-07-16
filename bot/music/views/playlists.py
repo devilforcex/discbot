@@ -175,9 +175,7 @@ class PlaylistTrackSelect(discord.ui.Select):
 
         w_track = tracks[0]
         try:
-            _, embed, _ = await play_wavelink_track_shared(
-                self.bot, self.guild_id, member, w_track
-            )
+            _, embed, _ = await play_wavelink_track_shared(self.bot, self.guild_id, member, w_track)
         except ValueError as ve:
             await interaction.followup.send(str(ve), ephemeral=True)
             return
@@ -291,9 +289,7 @@ class PlaylistDetailView(discord.ui.View):
                 if not w_tracks:
                     continue
                 w_track = w_tracks[0]
-                _, player = await ensure_voice_player_shared(
-                    self.bot, self.guild_id, member
-                )
+                _, player = await ensure_voice_player_shared(self.bot, self.guild_id, member)
                 settings = guild_settings.get(str(self.guild_id), self.bot.config.database_path)
                 vol = settings.get("volume", 50)
                 with contextlib.suppress(Exception):

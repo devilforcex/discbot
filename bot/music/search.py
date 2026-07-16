@@ -16,6 +16,13 @@ import wavelink
 
 logger = logging.getLogger(__name__)
 
+__all__ = [
+    "is_url",
+    "normalize_source",
+    "fallback_sources",
+    "_extract_lavalink_error",
+]
+
 URL_PREFIXES = ("http://", "https://")
 SOURCE_ALIASES = {
     "yt": wavelink.TrackSource.YouTube,
@@ -62,12 +69,15 @@ def fallback_sources(preferred: str | None) -> list:
     return result
 
 
-def _extract_lavalink_error(exc: Exception) -> tuple[str, str]:  # pyright: ignore[reportUnusedFunction]
+def _extract_lavalink_error(
+    exc: Exception,
+) -> tuple[str, str]:
     """Extract user-friendly error message and cause from LavalinkLoadException.
 
     Returns:
         Tuple of (user_message, technical_cause)
     """
+    # Exported and used by bot.cogs.music.playback - pyright doesn't track cross-module
     if isinstance(exc, wavelink.LavalinkLoadException):
         error_msg = exc.error or "Unknown error"
         cause = exc.cause or "unknown"

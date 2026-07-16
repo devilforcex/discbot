@@ -4,7 +4,7 @@ import discord
 import wavelink
 from discord.ext import commands
 
-from .base import check_guild_and_channel, is_authorized, MusicCogMixin
+from .base import MusicCogMixin, check_guild_and_channel, is_authorized
 
 
 class UtilityCog(commands.Cog, MusicCogMixin):

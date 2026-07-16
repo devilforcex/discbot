@@ -20,20 +20,20 @@ class Config(BaseSettings):
 
     # Guild/Channel Restrictions
     guild_id: int = Field(
-        default=1074037877899542538,
-        description="Discord guild ID the bot is restricted to",
+        default=0,
+        description="Discord guild ID the bot is restricted to (0 = all guilds)",
     )
     music_channel_id: int = Field(
-        default=1097945134630445227,
-        description="Channel ID where music commands are allowed",
+        default=0,
+        description="Channel ID where music commands are allowed (0 = all channels)",
     )
     music_voice_channel_id: int = Field(
-        default=1097945134630445227,
-        description="Voice channel ID to auto-join for 24/7 mode",
+        default=0,
+        description="Voice channel ID to auto-join for 24/7 mode (0 = disabled)",
     )
     owner_id: int = Field(
-        default=954887574248374322,
-        description="Bot owner/super-admin user ID",
+        default=0,
+        description="Bot owner/super-admin user ID (0 = disabled)",
     )
 
     # Lavalink
@@ -131,10 +131,18 @@ class Config(BaseSettings):
 
     @model_validator(mode="after")
     def validate_token(self) -> "Config":
-        """Ensure Discord bot token is provided."""
+        """Ensure Discord bot token is provided and warn about default secrets."""
+        import logging
+
+        log = logging.getLogger(__name__)
         if not self.discord_bot_token or self.discord_bot_token == "your_bot_token_here":
             raise ValueError(
                 "DISCORD_BOT_TOKEN is not set. " "Copy .env.example to .env and set your bot token."
+            )
+        if self.dashboard_secret_key == "change_me_to_a_random_secret_key":
+            log.warning(
+                "DASHBOARD_SECRET_KEY is still the default value. "
+                "Set a random secret in .env to enable dashboard write operations."
             )
         return self
 

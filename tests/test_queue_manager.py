@@ -1,5 +1,4 @@
 import unittest
-from unittest.mock import MagicMock
 
 from bot.music.queue_manager import LoopMode, QueueManager
 
@@ -27,8 +26,8 @@ class QueueManagerTests(unittest.TestCase):
         first = self._make_track("First")
         second = self._make_track("Second")
 
-        self.assertEqual(self.manager.add(self.guild_id, first, requester_id=10), 1)
-        self.assertEqual(self.manager.add(self.guild_id, second, requester_id=20), 2)
+        self.assertEqual(self.manager.add(self.guild_id, first, requester_id=10), 1)  # type: ignore[arg-type]
+        self.assertEqual(self.manager.add(self.guild_id, second, requester_id=20), 2)  # type: ignore[arg-type]
         self.assertEqual(self.manager.get_length(self.guild_id), 2)
         self.assertEqual(self.manager.get_all_as_dicts(self.guild_id)[0]["requester_id"], 10)
 
@@ -42,9 +41,9 @@ class QueueManagerTests(unittest.TestCase):
         self.manager.clear(self.guild_id)
         self.assertTrue(self.manager.is_empty(self.guild_id))
 
-        self.manager.add(self.guild_id, self._make_track("Temp"), requester_id=1)
+        self.manager.add(self.guild_id, self._make_track("Temp"), requester_id=1)  # type: ignore[arg-type]
         self.manager.set_loop(self.guild_id, "queue")
-        self.manager.add_history(self.guild_id, self._make_track("Temp"))
+        self.manager.add_history(self.guild_id, self._make_track("Temp"))  # type: ignore[arg-type]
         self.manager.cleanup(self.guild_id)
 
         self.assertTrue(self.manager.is_empty(self.guild_id))
@@ -52,16 +51,16 @@ class QueueManagerTests(unittest.TestCase):
         self.assertEqual(self.manager.get_history(self.guild_id), [])
 
     def test_loop_none_pops_tracks(self):
-        self.manager.add(self.guild_id, self._make_track("A"), requester_id=1)
-        self.manager.add(self.guild_id, self._make_track("B"), requester_id=2)
+        self.manager.add(self.guild_id, self._make_track("A"), requester_id=1)  # type: ignore[arg-type]
+        self.manager.add(self.guild_id, self._make_track("B"), requester_id=2)  # type: ignore[arg-type]
 
         self.assertEqual(self.manager.get_next(self.guild_id).title, "A")
         self.assertEqual(self.manager.get_next(self.guild_id).title, "B")
         self.assertIsNone(self.manager.get_next(self.guild_id))
 
     def test_loop_queue_rotates_tracks(self):
-        self.manager.add(self.guild_id, self._make_track("A"), requester_id=1)
-        self.manager.add(self.guild_id, self._make_track("B"), requester_id=2)
+        self.manager.add(self.guild_id, self._make_track("A"), requester_id=1)  # type: ignore[arg-type]
+        self.manager.add(self.guild_id, self._make_track("B"), requester_id=2)  # type: ignore[arg-type]
         self.manager.set_loop(self.guild_id, "queue")
 
         self.assertEqual(self.manager.get_next(self.guild_id).title, "A")
@@ -75,7 +74,7 @@ class QueueManagerTests(unittest.TestCase):
             self.manager.set_loop(self.guild_id, "invalid")
 
         for i in range(60):
-            self.manager.add_history(self.guild_id, self._make_track(f"Track {i}"))
+            self.manager.add_history(self.guild_id, self._make_track(f"Track {i}"))  # type: ignore[arg-type]
 
         history = self.manager.get_history(self.guild_id, limit=100)
         self.assertEqual(len(history), 50)

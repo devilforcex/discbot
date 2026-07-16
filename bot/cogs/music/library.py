@@ -12,7 +12,7 @@ from bot.music.embed_manager import EmbedManager
 from bot.music.emoji import EMOJI
 from bot.music.views import FavoritesPaginatorView, PlaylistDetailView, PlaylistListView
 
-from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, MusicCogMixin
+from .base import MusicCogMixin, check_guild_and_channel, get_player_from_ctx, is_authorized
 
 logger = logging.getLogger(__name__)
 
@@ -194,10 +194,14 @@ class LibraryCog(commands.Cog, MusicCogMixin):
             playlist_id=playlist_id, db_path=self.bot.config.database_path
         )
         if not playlist:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="Playlist not found."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="Playlist not found.")
+            )
             return
         if not playlist.get("tracks"):
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="This playlist has no tracks."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="This playlist has no tracks.")
+            )
             return
         view = PlaylistDetailView(
             bot=self.bot,
@@ -218,7 +222,9 @@ class LibraryCog(commands.Cog, MusicCogMixin):
             return
         player = get_player_from_ctx(ctx)
         if not player or not player.playing or not player.last_track:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="Nothing is currently playing."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="Nothing is currently playing.")
+            )
             return
         track = player.last_track
         success = playlist_manager.add_track(
@@ -279,18 +285,26 @@ class LibraryCog(commands.Cog, MusicCogMixin):
                 playlist_id=playlist_id, db_path=self.bot.config.database_path
             )
             if not playlist:
-                await self._send_embed_to_response(ctx, embed=build_error_embed(description="Playlist not found."))
+                await self._send_embed_to_response(
+                    ctx, embed=build_error_embed(description="Playlist not found.")
+                )
                 return
             if not playlist["tracks"]:
-                await self._send_embed_to_response(ctx, embed=build_error_embed(description="This playlist has no tracks."))
+                await self._send_embed_to_response(
+                    ctx, embed=build_error_embed(description="This playlist has no tracks.")
+                )
                 return
             try:
                 _voice_channel, player = await self._ensure_voice(ctx)
             except (NotInVoiceChannel, DifferentVoiceChannel) as e:
-                await self._send_embed_to_response(ctx, embed=build_error_embed(description=e.user_message))
+                await self._send_embed_to_response(
+                    ctx, embed=build_error_embed(description=e.user_message)
+                )
                 return
             if not player:
-                await self._send_embed_to_response(ctx, embed=build_error_embed(description="Failed to connect to voice."))
+                await self._send_embed_to_response(
+                    ctx, embed=build_error_embed(description="Failed to connect to voice.")
+                )
                 return
             for track_data in playlist["tracks"]:
                 try:

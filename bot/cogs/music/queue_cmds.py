@@ -11,7 +11,13 @@ from bot.music.emoji import EMOJI
 from bot.music.queue_manager import LoopMode
 from bot.music.views import QueuePaginatorView
 
-from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, voice_check, MusicCogMixin
+from .base import (
+    MusicCogMixin,
+    check_guild_and_channel,
+    get_player_from_ctx,
+    is_authorized,
+    voice_check,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +65,9 @@ class QueueCog(commands.Cog, MusicCogMixin):
             }
         queue_list = self.bot.queue_manager.get_all_as_dicts(ctx.guild.id)
         if not queue_list and not current_track:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="The queue is empty."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="The queue is empty.")
+            )
             return
         embed = EmbedManager.queue_embed(
             queue=queue_list,
@@ -94,11 +102,15 @@ class QueueCog(commands.Cog, MusicCogMixin):
                     delete_after=6,
                 )
             else:
-                await self._send_embed_to_response(ctx, embed=build_error_embed(description="Could not create player message."))
+                await self._send_embed_to_response(
+                    ctx, embed=build_error_embed(description="Could not create player message.")
+                )
             return
         player = get_player_from_ctx(ctx)
         if not player or not player.playing or not player.last_track:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="Nothing is currently playing."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="Nothing is currently playing.")
+            )
             return
         track = player.last_track
         embed = EmbedManager.now_playing(
@@ -133,16 +145,20 @@ class QueueCog(commands.Cog, MusicCogMixin):
         if mode_lower not in ("none", "track", "queue"):
             await self._send_embed_to_response(
                 ctx,
-                embed=build_error_embed(description="Invalid mode. Use: none, track, or queue.")
+                embed=build_error_embed(description="Invalid mode. Use: none, track, or queue."),
             )
             return
         try:
             _, player = voice_check(ctx)
         except (NotInVoiceChannel, DifferentVoiceChannel) as e:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description=e.user_message))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description=e.user_message)
+            )
             return
         if not player:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="No active music session."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="No active music session.")
+            )
             return
         loop_mode = self.bot.queue_manager.set_loop(ctx.guild.id, mode_lower)
         mode_emojis = {
@@ -169,10 +185,14 @@ class QueueCog(commands.Cog, MusicCogMixin):
         try:
             _, player = voice_check(ctx)
         except (NotInVoiceChannel, DifferentVoiceChannel) as e:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description=e.user_message))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description=e.user_message)
+            )
             return
         if not player:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="No active music session."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="No active music session.")
+            )
             return
         state_lower = state.strip().lower()
         if state_lower == "on":
@@ -196,7 +216,9 @@ class QueueCog(commands.Cog, MusicCogMixin):
         if not await self._require_authorized(ctx):
             return
         if volume < 0 or volume > 100:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="Volume must be between 0 and 100."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="Volume must be between 0 and 100.")
+            )
             return
         await self._run_controller(
             ctx, self.bot.player_controller.set_volume(ctx.guild.id, ctx.author, volume)

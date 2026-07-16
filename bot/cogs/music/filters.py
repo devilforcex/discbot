@@ -10,7 +10,7 @@ from bot.core.errors import build_error_embed
 from bot.music.audio_filters import get_filter_choices
 from bot.music.embed_manager import EmbedManager
 
-from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, MusicCogMixin
+from .base import MusicCogMixin, check_guild_and_channel, get_player_from_ctx, is_authorized
 
 logger = logging.getLogger(__name__)
 
@@ -68,7 +68,9 @@ class FilterSelectView(discord.ui.View):
         guild = self.bot.get_guild(self.guild_id)
         member = guild.get_member(interaction.user.id) if guild else None
         if not member:
-            member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+            member = (
+                interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+            )
         if not member:
             member = interaction.user  # type: ignore[assignment]
 
@@ -105,7 +107,9 @@ class FilterSelectView(discord.ui.View):
         guild = self.bot.get_guild(self.guild_id)
         member = guild.get_member(interaction.user.id) if guild else None
         if not member:
-            member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+            member = (
+                interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+            )
         if not member:
             member = interaction.user  # type: ignore[assignment]
 
@@ -161,7 +165,9 @@ class FiltersCog(commands.Cog, MusicCogMixin):
             return
         player = get_player_from_ctx(ctx)
         if not player or not player.playing:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description="Nothing is currently playing."))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description="Nothing is currently playing.")
+            )
             return
         try:
             ms = seconds * 1000
@@ -174,7 +180,9 @@ class FiltersCog(commands.Cog, MusicCogMixin):
                 ),
             )
         except Exception as e:
-            await self._send_embed_to_response(ctx, embed=build_error_embed(description=f"Seek failed: {e}"))
+            await self._send_embed_to_response(
+                ctx, embed=build_error_embed(description=f"Seek failed: {e}")
+            )
 
     @commands.command(name="forward", aliases=["fwd", "seekfwd"])
     async def forward(self, ctx, seconds: int = 10):

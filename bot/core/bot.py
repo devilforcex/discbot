@@ -228,9 +228,7 @@ class Bot(commands.Bot):
 
         voice_channel = guild.get_channel(voice_channel_id)
         if not voice_channel:
-            logger.warning(
-                "Cannot auto-join: voice channel %s not found", voice_channel_id
-            )
+            logger.warning("Cannot auto-join: voice channel %s not found", voice_channel_id)
             return
 
         if not isinstance(voice_channel, discord.VoiceChannel):

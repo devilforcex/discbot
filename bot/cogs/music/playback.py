@@ -22,7 +22,7 @@ from bot.music.search import _extract_lavalink_error, search_tracks
 from bot.music.search import is_url as _is_url
 from bot.music.views import SearchView  # now from package
 
-from .base import check_guild_and_channel, is_authorized, voice_check, MusicCogMixin
+from .base import MusicCogMixin, check_guild_and_channel, is_authorized, voice_check
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +105,9 @@ class PlaybackCog(commands.Cog, MusicCogMixin):
             try:
                 _voice_channel, player = await self._ensure_voice(ctx)
             except (NotInVoiceChannel, DifferentVoiceChannel) as e:
-                await self._send_embed_to_response(ctx, embed=build_error_embed(description=e.user_message))
+                await self._send_embed_to_response(
+                    ctx, embed=build_error_embed(description=e.user_message)
+                )
                 return
             if not player:
                 await self._send_embed_to_response(
@@ -147,7 +149,9 @@ class PlaybackCog(commands.Cog, MusicCogMixin):
                         ),
                     )
                 else:
-                    await self._send_embed_to_response(ctx, embed=build_error_embed(description=f"❌ {user_msg}"))
+                    await self._send_embed_to_response(
+                        ctx, embed=build_error_embed(description=f"❌ {user_msg}")
+                    )
                 return
             if not tracks:
                 embed = TrackNotFound(query).user_message

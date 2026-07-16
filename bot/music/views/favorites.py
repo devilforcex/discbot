@@ -92,9 +92,7 @@ class FavoriteSelect(discord.ui.Select):
 
         w_track = tracks[0]
         try:
-            _, embed, _ = await play_wavelink_track_shared(
-                self.bot, self.guild_id, member, w_track
-            )
+            _, embed, _ = await play_wavelink_track_shared(self.bot, self.guild_id, member, w_track)
         except ValueError as ve:
             await interaction.followup.send(str(ve), ephemeral=True)
             return
