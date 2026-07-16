@@ -7,12 +7,14 @@ import Button from "../../components/ui/Button";
 import TokenInput from "../../components/shared/TokenInput";
 import GlassCard from "../../components/ui/GlassCard";
 import Skeleton from "../../components/ui/Skeleton";
+import { useToast } from "../../components/ui/Toast";
 import { useState, useEffect } from "react";
 
 export default function SettingsForm() {
   const guildId = useAuthStore((s) => s.guildId);
   const { data: settings, isLoading } = useSettings();
   const updateSettings = useUpdateSettings();
+  const { toast } = useToast();
 
   const [volume, setVolume] = useState(50);
   const [defaultSource, setDefaultSource] = useState("ytsearch");
@@ -47,12 +49,18 @@ export default function SettingsForm() {
   }
 
   const handleSave = () => {
-    updateSettings.mutate({
-      volume,
-      default_source: defaultSource,
-      autoplay,
-      announce_songs: announceSongs,
-    });
+    updateSettings.mutate(
+      {
+        volume,
+        default_source: defaultSource,
+        autoplay,
+        announce_songs: announceSongs,
+      },
+      {
+        onSuccess: () => toast("Settings saved!", "success"),
+        onError: () => toast("Failed to save settings.", "error"),
+      },
+    );
   };
 
   return (
@@ -90,21 +98,9 @@ export default function SettingsForm() {
         onChange={setAnnounceSongs}
       />
 
-      <div className="flex gap-3">
-        <Button onClick={handleSave} disabled={updateSettings.isPending}>
-          {updateSettings.isPending ? "Saving..." : "Save Settings"}
-        </Button>
-        <Button variant="ghost" onClick={() => window.location.reload()}>
-          Refresh
-        </Button>
-      </div>
-
-      {updateSettings.isSuccess && (
-        <p className="text-sm text-accent-emerald">Settings saved!</p>
-      )}
-      {updateSettings.isError && (
-        <p className="text-sm text-accent-red">Failed to save settings.</p>
-      )}
+      <Button onClick={handleSave} disabled={updateSettings.isPending}>
+        {updateSettings.isPending ? "Saving..." : "Save Settings"}
+      </Button>
     </GlassCard>
   );
 }

@@ -123,6 +123,7 @@ export interface Favorite {
   title: string;
   author: string;
   uri: string;
+  identifier?: string;
   length: number;
 }
 
@@ -133,12 +134,35 @@ export interface FavoritesResponse {
   favorites: Favorite[];
 }
 
+export interface PlaylistTrack {
+  position: number;
+  title: string;
+  author: string;
+  uri: string;
+  identifier: string;
+  length: number;
+  artwork_url?: string | null;
+  added_by: string;
+}
+
 export interface Playlist {
   playlist_id: string;
   name: string;
   description: string;
   track_count: number;
   created_at?: string;
+}
+
+export interface PlaylistDetail {
+  playlist_id: string;
+  user_id: string;
+  guild_id: string;
+  name: string;
+  description: string;
+  track_count: number;
+  tracks: PlaylistTrack[];
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface PlaylistsResponse {

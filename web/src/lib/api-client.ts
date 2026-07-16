@@ -16,6 +16,14 @@ export class ApiError extends Error {
   }
 }
 
+function authHeaders(): Record<string, string> {
+  const token = getToken();
+  if (!token) return {};
+  return {
+    Authorization: token.startsWith("Bearer ") ? token : `Bearer ${token}`,
+  };
+}
+
 export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
@@ -23,14 +31,8 @@ export async function apiFetch<T>(
   const headers: Record<string, string> = {
     Accept: "application/json",
     ...(options.headers as Record<string, string>),
+    ...authHeaders(),
   };
-
-  const token = getToken();
-  if (token && options.method === "POST") {
-    headers.Authorization = token.startsWith("Bearer ")
-      ? token
-      : `Bearer ${token}`;
-  }
 
   const res = await fetch(`${BASE_URL}${path}`, { ...options, headers });
 
@@ -51,6 +53,13 @@ export const api = {
   post: <T>(path: string, body?: unknown) =>
     apiFetch<T>(path, {
       method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    }),
+
+  delete: <T>(path: string, body?: unknown) =>
+    apiFetch<T>(path, {
+      method: "DELETE",
       headers: { "Content-Type": "application/json" },
       body: body !== undefined ? JSON.stringify(body) : undefined,
     }),

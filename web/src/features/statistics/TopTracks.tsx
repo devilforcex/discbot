@@ -1,9 +1,23 @@
 import { useStats } from "../../hooks/use-stats";
 import EmptyState from "../../components/ui/EmptyState";
+import Skeleton from "../../components/ui/Skeleton";
 import { Trophy } from "lucide-react";
 
 export default function TopTracks() {
-  const { data } = useStats();
+  const { data, isLoading } = useStats();
+
+  if (isLoading) {
+    return (
+      <div className="glass rounded-xl p-4">
+        <Skeleton className="mb-3 h-4 w-24" />
+        <div className="space-y-2">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <Skeleton key={i} className="h-12 w-full rounded-lg" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   if (!data?.top_tracks.length) {
     return <EmptyState icon={<Trophy className="h-8 w-8" />} title="No tracks played yet" />;

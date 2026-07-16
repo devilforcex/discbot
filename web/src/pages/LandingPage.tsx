@@ -1,5 +1,8 @@
-import { Link } from "react-router-dom";
-import { Code } from "lucide-react";
+import { useState, useEffect } from "react";
+import { Link, useSearchParams, useNavigate } from "react-router-dom";
+import { Code, LogIn } from "lucide-react";
+import { useAuthStore } from "../hooks/use-auth-store";
+import ConnectModal from "../components/shared/ConnectModal";
 import HeroSection from "../features/landing/HeroSection";
 import FeatureCards from "../features/landing/FeatureCards";
 import PlayerPreview from "../features/landing/PlayerPreview";
@@ -8,6 +11,28 @@ import HostingInfo from "../features/landing/HostingInfo";
 import Footer from "../features/landing/Footer";
 
 export default function LandingPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const token = useAuthStore((s) => s.token);
+  const [connectOpen, setConnectOpen] = useState(false);
+
+  useEffect(() => {
+    if (searchParams.get("connect") === "1") {
+      setConnectOpen(true);
+      searchParams.delete("connect");
+      setSearchParams(searchParams, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
+  const handleConnectSuccess = () => {
+    const from = searchParams.get("from");
+    if (from) {
+      navigate(from);
+    } else {
+      navigate("/dashboard");
+    }
+  };
+
   return (
     <div className="min-h-screen bg-dark-900 text-dark-200">
       {/* Ambient glow */}
@@ -42,8 +67,15 @@ export default function LandingPage() {
             >
               <Code className="h-5 w-5" />
             </a>
+            <button
+              onClick={() => setConnectOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-dark-300 transition-all hover:border-accent-violet/30 hover:text-white"
+            >
+              <LogIn className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Connect</span>
+            </button>
             <Link
-              to="/dashboard"
+              to={token ? "/dashboard" : "/?connect=1"}
               className="rounded-lg bg-white px-4 py-2 text-xs font-semibold tracking-wide text-black transition-all hover:bg-zinc-200 hover:scale-105 active:scale-95"
             >
               Dashboard
@@ -58,6 +90,12 @@ export default function LandingPage() {
       <CommandList />
       <HostingInfo />
       <Footer />
+
+      <ConnectModal
+        open={connectOpen}
+        onClose={() => setConnectOpen(false)}
+        onSuccess={handleConnectSuccess}
+      />
     </div>
   );
 }

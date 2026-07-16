@@ -1,14 +1,19 @@
 import { Play, Pause, SkipForward, Square, Shuffle } from "lucide-react";
 import { useControl } from "../../hooks/use-control";
 import { useNowPlaying } from "../../hooks/use-now-playing";
+import { useToast } from "../../components/ui/Toast";
 import Button from "../../components/ui/Button";
 
 export default function PlayerControls() {
   const { data } = useNowPlaying();
   const control = useControl();
+  const { toast } = useToast();
 
   const handle = (action: "play_pause" | "skip" | "stop" | "shuffle") => {
-    control.mutate({ action });
+    control.mutate(
+      { action },
+      { onError: () => toast("Control action failed.", "error") },
+    );
   };
 
   return (

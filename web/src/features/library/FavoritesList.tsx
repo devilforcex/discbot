@@ -1,8 +1,10 @@
-import { useFavorites } from "../../hooks/use-favorites";
+import { useFavorites, useRemoveFavorite } from "../../hooks/use-favorites";
+import { useControl } from "../../hooks/use-control";
+import { useToast } from "../../components/ui/Toast";
 import { fmtMs } from "../../lib/utils";
 import EmptyState from "../../components/ui/EmptyState";
 import Skeleton from "../../components/ui/Skeleton";
-import { Heart } from "lucide-react";
+import { Heart, Play, Trash2 } from "lucide-react";
 
 interface FavoritesListProps {
   userId: string;
@@ -10,6 +12,23 @@ interface FavoritesListProps {
 
 export default function FavoritesList({ userId }: FavoritesListProps) {
   const { data, isLoading } = useFavorites(userId);
+  const removeFav = useRemoveFavorite(userId);
+  const control = useControl();
+  const { toast } = useToast();
+
+  const handlePlay = (uri: string) => {
+    control.mutate(
+      { action: "play_pause", body: { uri } },
+      { onError: () => toast("Failed to play track.", "error") },
+    );
+  };
+
+  const handleRemove = (identifier: string) => {
+    removeFav.mutate(identifier, {
+      onSuccess: () => toast("Removed from favorites.", "success"),
+      onError: () => toast("Failed to remove favorite.", "error"),
+    });
+  };
 
   if (isLoading) {
     return (
@@ -40,11 +59,32 @@ export default function FavoritesList({ userId }: FavoritesListProps) {
         {data.favorites.map((fav, i) => (
           <div
             key={`${fav.uri}-${i}`}
-            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-dark-600 transition-colors"
+            className="group flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-dark-600 transition-colors"
           >
             <div className="min-w-0 flex-1">
               <div className="truncate text-dark-100">{fav.title}</div>
               <div className="truncate text-xs text-dark-400">{fav.author}</div>
+            </div>
+            <div className="ml-3 flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+              {fav.uri && (
+                <button
+                  onClick={() => handlePlay(fav.uri)}
+                  className="rounded p-1 text-dark-400 hover:text-accent-violet transition-colors"
+                  title="Play"
+                >
+                  <Play className="h-3.5 w-3.5" />
+                </button>
+              )}
+              {fav.identifier && (
+                <button
+                  onClick={() => handleRemove(fav.identifier!)}
+                  disabled={removeFav.isPending}
+                  className="rounded p-1 text-dark-400 hover:text-accent-red transition-colors"
+                  title="Remove"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                </button>
+              )}
             </div>
             <span className="ml-3 text-xs text-dark-400">{fmtMs(fav.length)}</span>
           </div>
