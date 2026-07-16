@@ -62,6 +62,12 @@ Docker/Compose/Linux артефактите са премахнати от ак�
 - FastAPI dashboard със status, Lavalink, now playing, queue, settings, stats, favorites/playlists.
 - Bearer token защита за write actions.
 - Dashboard route tests.
+- **React SPA** (`web/`) — пълен replace на Jinja2 templates с React 19 + TypeScript + Vite + Tailwind v4.
+  - Страници: Landing, Dashboard, Player, Statistics, Library (Favorites + Playlists), Settings, 404.
+  - WebSocket real-time updates (`/ws/{guild_id}`) с auto-reconnect.
+  - Toast notifications, ErrorBoundary, ProtectedRoute за auth.
+  - TanStack Query polling (3-30s), Zustand auth state в localStorage.
+  - SPA catch-all в `dashboard.py` за production serving.
 
 ### Windows packaging
 
@@ -98,11 +104,14 @@ cd E:\discbot
 
 ## 5. Текущи приоритети
 
-1. Live test на `!play` с реален Lavalink/Discord token.
-2. Проверка на player embed съобщението след `!play` и `!nowplaying`.
-3. Проверка на help menu dropdown/buttons.
-4. Проверка на Windows installer от чиста машина.
-5. Ако YouTube блокира — локален `ytcookies.txt`, uncomment `youtube.cookieFile` в `application.yml`.
+1. ~~Live test на `!play` с реален Lavalink/Discord token.~~ ✅
+2. ~~Проверка на player embed съобщението след `!play` и `!nowplaying`.~~ ✅
+3. ~~Проверка на help menu dropdown/buttons.~~ ✅
+4. ~~Проверка на Windows installer от чиста машина.~~ ✅
+5. ~~Ако YouTube блокира — локален `ytcookies.txt`, uncomment `youtube.cookieFile` в `application.yml`.~~ ✅
+6. React SPA dashboard — ✅ завършен (6 phases).
+7. WebSocket real-time updates — ✅ завършен.
+8. Library management (favorites + playlists) в SPA — ✅ завършен.
 
 ## 6. Правило за бъдещи планове
 

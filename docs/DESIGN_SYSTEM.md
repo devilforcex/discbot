@@ -149,8 +149,7 @@ Buttons use Discord native styles + unicode emoji matching design language.
 
 | Surface | Stack |
 |---------|-------|
-| Landing / docs | Static HTML + Tailwind CDN + Iconify → **GitHub Pages / Netlify** |
-| Live dashboard | FastAPI + Jinja `templates/index.html` + Tailwind CDN OR self-hosted CSS with same tokens |
+| Landing / dashboard | React SPA (`web/`) + Vite + Tailwind v4 + TanStack Query |
 | Discord | embeds + `discord.ui.View` buttons |
 
 **No bot secrets on static hosts.** Landing is public marketing only.
@@ -162,7 +161,10 @@ Buttons use Discord native styles + unicode emoji matching design language.
 | File | Role |
 |------|------|
 | `docs/reference-nightmare-bots.html` | Canonical design reference (this system) |
-| `docs/index.html` | Deployable landing (DiscBot-branded, same system) |
-| `bot/dashboard/templates/index.html` | Live control panel UI |
-| `bot/dashboard/static/css/dashboard.css` | Optional non-CDN fallback tokens |
+| `web/` | React SPA — landing, dashboard, player, stats, library, settings |
+| `web/src/components/ui/` | UI primitives (Button, GlassCard, Toast, ErrorBoundary, etc.) |
+| `web/src/features/` | Feature modules (player, stats, library, settings, landing) |
+| `bot/dashboard/dashboard.py` | FastAPI app, SPA catch-all + WebSocket endpoint |
+| `bot/dashboard/routes.py` | All `/api/*` routes |
+| `bot/dashboard/ws_manager.py` | WebSocket connection manager |
 | `docs/PROJECT_PLAN.md` | Engineering phases, Windows debug checklist, archived plan summary |
