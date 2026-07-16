@@ -1,15 +1,27 @@
 """API routes for dashboard — split from monolithic dashboard.py."""
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 import discord
-import wavelink
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
+from pydantic import BaseModel, Field
 
 logger = logging.getLogger(__name__)
+
+# pyright: reportUnusedFunction=false
+
+
+class SettingsUpdate(BaseModel):
+    """Validated payload for settings updates."""
+
+    volume: int | None = Field(None, ge=0, le=100)
+    autoplay: bool | None = None
+    announce_songs: bool | None = None
+    default_source: str | None = Field(None, pattern=r"^(ytsearch|ytmsearch|scsearch)$")
 
 
 def register_routes(app, bot, templates, security, check_write_auth):
@@ -18,6 +30,13 @@ def register_routes(app, bot, templates, security, check_write_auth):
     @app.get("/api/health")
     async def api_health():
         return {"ok": True, "ready": bot.is_ready()}
+
+    @app.get("/api/health/lavalink")
+    async def api_lavalink_health():
+        if hasattr(bot, "lavalink") and bot.lavalink:
+            health = await bot.lavalink.health_check()
+            return health
+        return {"healthy": False, "reason": "Lavalink client not initialized"}
 
     async def _status_payload() -> dict[str, Any]:
         uptime = None
@@ -67,22 +86,23 @@ def register_routes(app, bot, templates, security, check_write_auth):
     @app.get("/api/lavalink")
     async def api_lavalink_status():
         try:
-            node = wavelink.Pool.get_node()
-            if node and getattr(node, "is_connected", False):
+            # Use the bot's Lavalink client health check for consistency
+            health = await bot.lavalink.health_check()
+            if health.get("connected"):
                 return {
                     "connected": True,
-                    "uri": node.uri,
-                    "latency_ms": round(node.latency, 2) if node.latency else None,
-                    "players": node.stats.players if node.stats else 0,
-                    "playing_players": node.stats.playing_players if node.stats else 0,
+                    "uri": health.get("uri"),
+                    "latency_ms": None,  # Not in health check, could be added
+                    "players": health.get("players", 0),
+                    "playing_players": 0,  # Not in health check
                 }
         except Exception:
-            pass
+            logger.warning("Lavalink status check failed")
         return {"connected": False}
 
     @app.get("/api/queue/{guild_id}")
     async def api_queue(guild_id: int):
-        queue = bot.queue_manager.get_all(guild_id)
+        queue = bot.queue_manager.get_all_as_dicts(guild_id)
         return {
             "guild_id": guild_id,
             "queue_length": len(queue),
@@ -132,7 +152,7 @@ def register_routes(app, bot, templates, security, check_write_auth):
         try:
             return hm.get_stats(guild_id, bot.config.database_path)
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from None
 
     @app.get("/api/history/{guild_id}")
     async def api_history(guild_id: str, limit: int = 10):
@@ -147,7 +167,7 @@ def register_routes(app, bot, templates, security, check_write_auth):
                 "tracks": hm.get_recent(guild_id, safe_limit, bot.config.database_path),
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from None
 
     @app.get("/api/overview/{guild_id}")
     async def api_overview(guild_id: int):
@@ -157,7 +177,7 @@ def register_routes(app, bot, templates, security, check_write_auth):
 
         try:
             status = await _status_payload()
-            queue = bot.queue_manager.get_all(guild_id)
+            queue = bot.queue_manager.get_all_as_dicts(guild_id)
             guild = bot.get_guild(guild_id) if hasattr(bot, "get_guild") else None
             return {
                 "status": status,
@@ -168,7 +188,7 @@ def register_routes(app, bot, templates, security, check_write_auth):
                 "recent": hm.get_recent(str(guild_id), 10, bot.config.database_path),
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from None
 
     @app.get("/api/settings/{guild_id}")
     async def api_get_settings(guild_id: str):
@@ -184,37 +204,24 @@ def register_routes(app, bot, templates, security, check_write_auth):
                 "default_source": settings.get("default_source", "ytsearch"),
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from None
 
     @app.post("/api/settings/{guild_id}")
     async def api_update_settings(
         guild_id: str,
-        request: Request,
-        credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+        payload: SettingsUpdate,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
     ):
         check_write_auth(credentials)
         from bot.database import guild_settings as gs
 
-        data = await request.json()
-        try:
-            updates: dict[str, Any] = {}
-            if "volume" in data:
-                updates["volume"] = max(0, min(100, int(data["volume"])))
-            if "autoplay" in data:
-                updates["autoplay"] = _coerce_bool(data["autoplay"])
-            if "announce_songs" in data:
-                updates["announce_songs"] = _coerce_bool(data["announce_songs"])
-            if "default_source" in data:
-                source = str(data["default_source"]).strip() or "ytsearch"
-                if source not in {"ytsearch", "ytmsearch", "scsearch"}:
-                    raise HTTPException(status_code=400, detail="default_source must be ytsearch, ytmsearch, or scsearch")
-                updates["default_source"] = source
-            settings = gs.set(guild_id, bot.config.database_path, **updates)
-            return {"success": True, "settings": settings}
-        except HTTPException:
-            raise
-        except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+        updates = payload.model_dump(exclude_unset=True)
+        if "autoplay" in updates:
+            updates["autoplay"] = _coerce_bool(updates["autoplay"])
+        if "announce_songs" in updates:
+            updates["announce_songs"] = _coerce_bool(updates["announce_songs"])
+        settings = gs.set(guild_id, bot.config.database_path, **updates)
+        return {"success": True, "settings": settings}
 
     @app.get("/api/favorites/{user_id}")
     async def api_favorites(user_id: str, page: int = 1):
@@ -227,11 +234,17 @@ def register_routes(app, bot, templates, security, check_write_auth):
                 "page": page,
                 "total": total,
                 "favorites": [
-                    {"title": f["title"], "author": f["author"], "uri": f["uri"], "length": f["length"]} for f in favs
+                    {
+                        "title": f["title"],
+                        "author": f["author"],
+                        "uri": f["uri"],
+                        "length": f["length"],
+                    }
+                    for f in favs
                 ],
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from None
 
     @app.get("/api/playlists/{user_id}")
     async def api_playlists(user_id: str):
@@ -253,14 +266,14 @@ def register_routes(app, bot, templates, security, check_write_auth):
                 ],
             }
         except Exception as e:
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from None
 
     @app.post("/api/control/{guild_id}/{action}")
     async def api_control(
         guild_id: int,
         action: str,
         request: Request,
-        credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
     ):
         check_write_auth(credentials)
         body: dict = {}
@@ -333,19 +346,30 @@ def register_routes(app, bot, templates, security, check_write_auth):
             raise
         except Exception as e:
             logger.exception("Control action %s failed", action)
-            raise HTTPException(status_code=500, detail=str(e))
+            raise HTTPException(status_code=500, detail=str(e)) from None
 
     @app.get("/")
     async def landing(request: Request):
-        return templates.TemplateResponse(
-            "landing.html",
-            {"request": request},
-        )
+        logger.info("Landing page requested: method=%s path=%s", request.method, request.url.path)
+        try:
+            return templates.TemplateResponse(
+                request,
+                "landing.html",
+                {
+                    "discord_invite_url": getattr(bot.config, "discord_invite_url", "https://discord.gg/"),
+                    "support_server_url": getattr(bot.config, "support_server_url", "https://discord.gg/"),
+                    "bot_invite_url": getattr(bot.config, "bot_invite_url", "https://discord.com/oauth2/authorize"),
+                },
+            )
+        except Exception:
+            logger.exception("Error rendering landing page")
+            raise
 
     @app.get("/dashboard")
     async def dashboard(request: Request):
         guild_id = str(getattr(bot.config, "guild_id", "") or "")
         return templates.TemplateResponse(
+            request,
             "index.html",
-            {"request": request, "guild_id": guild_id},
+            {"guild_id": guild_id},
         )
