@@ -129,6 +129,48 @@ class Config(BaseSettings):
         description="Footer branding text",
     )
 
+    # AI Chat Configuration
+    ai_enabled: bool = Field(
+        default=False,
+        description="Enable AI chat features",
+    )
+    ai_provider: str = Field(
+        default="omniroute",
+        description="AI provider: omniroute, openai, anthropic",
+    )
+    omniroute_base_url: str = Field(
+        default="http://localhost:20128/v1",
+        description="Omniroute API base URL (OpenAI-compatible)",
+    )
+    omniroute_api_key: str = Field(
+        default="",
+        description="Omniroute API key (Bearer token)",
+    )
+    openai_api_key: str | None = Field(
+        default=None,
+        description="Direct OpenAI API key (fallback)",
+    )
+    ai_default_model: str = Field(
+        default="gpt-4o-mini",
+        description="Default model for chat",
+    )
+    ai_system_prompt: str = Field(
+        default="You are a helpful Discord music bot assistant. You help with music recommendations, bot commands, server admin tasks, and general conversation. Keep responses concise and friendly.",
+        description="System prompt for AI assistant",
+    )
+    ai_max_history: int = Field(
+        default=10,
+        description="Number of previous message pairs to include in context",
+        ge=1,
+        le=50,
+    )
+    ai_temperature: float = Field(
+        default=0.7,
+        description="Response creativity (0.0-1.0)",
+        ge=0.0,
+        le=1.0,
+    )
+
     @model_validator(mode="after")
     def validate_token(self) -> "Config":
         """Ensure Discord bot token is provided and warn about default secrets."""

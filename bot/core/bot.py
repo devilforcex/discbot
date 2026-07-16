@@ -113,6 +113,8 @@ class Bot(commands.Bot):
             "bot.cogs.music.filters",
             "bot.cogs.music.library",
             "bot.cogs.music.utility",
+            # AI Chat
+            "bot.cogs.chat.commands",
             "bot.cogs.events",
         ]
 
@@ -132,6 +134,15 @@ class Bot(commands.Bot):
         dashboard_on = self._config.dashboard_enabled or bool(os.environ.get("PORT"))
         if dashboard_on:
             await self._setup_dashboard()
+
+        # Initialize AI service
+        try:
+            from bot.core.services.ai_service import init_ai_service
+
+            init_ai_service(self._config)
+            logger.info("AI service initialized: %s", "enabled" if self._config.ai_enabled else "disabled")
+        except Exception as e:
+            logger.error("AI service initialization failed: %s", e)
 
         logger.info("Bot setup complete")
 
