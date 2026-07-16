@@ -36,19 +36,18 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-dark-900 text-dark-200">
       {/* Ambient glow */}
-      <div className="pointer-events-none fixed left-1/4 top-0 -z-10 h-96 w-96 rounded-full bg-accent-violet/20 blur-[128px]" />
-      <div className="pointer-events-none fixed bottom-0 right-1/4 -z-10 h-96 w-96 rounded-full bg-accent-fuchsia/10 blur-[128px]" />
+      <div className="pointer-events-none fixed left-1/2 top-0 -z-10 h-[500px] w-[600px] -translate-x-1/2 rounded-full bg-accent-violet/15 blur-[160px]" />
 
       {/* Nav */}
-      <nav className="glass fixed top-0 z-50 w-full border-b border-white/5">
+      <nav className="fixed top-0 z-50 w-full border-b border-dark-500 bg-dark-900/95 backdrop-blur-md">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
           <Link to="/" className="group flex items-center gap-2">
             <img
               src="/assets/steel-avatar.png"
               alt="DiscBot"
-              className="h-8 w-8 rounded-lg border border-accent-violet/30 object-cover transition-shadow group-hover:shadow-[0_0_15px_rgba(139,92,246,0.5)]"
+              className="h-8 w-8 rounded-[11px] border border-accent-violet/30 object-cover transition-shadow group-hover:shadow-[0_0_15px_rgba(104,31,209,0.5)]"
             />
-            <span className="text-lg font-medium tracking-tight text-white">
+            <span className="text-lg font-medium tracking-tight text-white font-[family-name:var(--font-heading)]">
               DrusaBota
             </span>
           </Link>
@@ -69,14 +68,14 @@ export default function LandingPage() {
             </a>
             <button
               onClick={() => setConnectOpen(true)}
-              className="flex items-center gap-1.5 rounded-lg border border-white/10 px-3 py-2 text-xs font-medium text-dark-300 transition-all hover:border-accent-violet/30 hover:text-white"
+              className="flex items-center gap-1.5 rounded-[11px] border border-dark-500 px-3 py-2 text-xs font-medium text-dark-300 transition-all hover:border-accent-violet/30 hover:text-white"
             >
               <LogIn className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Connect</span>
             </button>
             <Link
               to={token ? "/dashboard" : "/?connect=1"}
-              className="rounded-lg bg-white px-4 py-2 text-xs font-semibold tracking-wide text-black transition-all hover:bg-zinc-200 hover:scale-105 active:scale-95"
+              className="rounded-[11px] bg-accent-violet px-4 py-2 text-xs font-semibold tracking-wide text-white transition-all hover:bg-accent-violet/80 hover:scale-105 active:scale-95 shadow-[0_0_16px_rgba(104,31,209,0.35)]"
             >
               Dashboard
             </Link>

@@ -4,9 +4,10 @@ import { ExternalLink } from "lucide-react";
 export default function HeroSection() {
   return (
     <section className="relative overflow-hidden px-6 pt-32 pb-20 md:pt-48 md:pb-28">
-      {/* Ambient glow */}
-      <div className="pointer-events-none absolute left-1/4 top-0 -z-10 h-96 w-96 rounded-full bg-accent-violet/20 blur-[128px]" />
-      <div className="pointer-events-none absolute bottom-0 right-1/4 -z-10 h-96 w-96 rounded-full bg-accent-fuchsia/10 blur-[128px]" />
+      {/* Background grid */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-50" />
+      {/* Background radial */}
+      <div className="pointer-events-none absolute inset-0 -z-10 bg-radial" />
 
       <div className="relative z-10 mx-auto max-w-7xl text-center">
         <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-accent-violet/30 bg-accent-violet/10 px-3 py-1 text-xs font-medium text-accent-violet">
@@ -17,7 +18,7 @@ export default function HeroSection() {
           DrusaBota — Made with ❤️ by Steel
         </div>
 
-        <h1 className="mb-6 text-5xl font-medium tracking-tight text-white md:text-7xl lg:text-8xl">
+        <h1 className="mb-6 text-5xl font-bold tracking-tight text-white md:text-7xl lg:text-8xl font-[family-name:var(--font-heading)] text-shadow-heading">
           Music that feels
           <br />
           <span className="text-gradient">native to Discord.</span>
@@ -25,7 +26,7 @@ export default function HeroSection() {
 
         <p className="mx-auto mb-10 max-w-2xl text-lg font-light leading-relaxed text-dark-300 md:text-xl">
           Lavalink v4 audio, prefix commands, whitelist access control, playlists
-          &amp; favorites — plus a glassmorphic dashboard and embed player with
+          &amp; favorites — plus a solid dark dashboard and embed player with
           real buttons.
         </p>
 
@@ -34,14 +35,14 @@ export default function HeroSection() {
             href="https://github.com/devilforcex/discbot"
             target="_blank"
             rel="noreferrer"
-            className="group flex w-full items-center justify-center gap-2 rounded-lg bg-white px-8 py-3.5 text-sm font-semibold text-black transition-all hover:bg-zinc-200 hover:scale-105 active:scale-95 sm:w-auto"
+            className="group flex w-full items-center justify-center gap-2 rounded-[11px] bg-accent-violet px-8 py-3.5 text-sm font-semibold text-white transition-all hover:bg-accent-violet/80 hover:scale-105 active:scale-95 sm:w-auto shadow-[0_0_16px_rgba(104,31,209,0.35)]"
           >
             View on GitHub
             <ExternalLink className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
           </a>
           <Link
             to="/dashboard"
-            className="flex w-full items-center justify-center rounded-lg border border-dark-500 bg-dark-800/50 px-8 py-3.5 text-sm font-medium text-dark-200 backdrop-blur transition-all hover:text-white hover:border-dark-400 sm:w-auto"
+            className="flex w-full items-center justify-center rounded-[11px] border border-dark-500 bg-dark-700 px-8 py-3.5 text-sm font-medium text-dark-200 transition-all hover:text-white hover:border-dark-400 sm:w-auto"
           >
             Open Dashboard
           </Link>
@@ -52,7 +53,7 @@ export default function HeroSection() {
           <img
             src="/assets/steel-music-bot-logo.png"
             alt="Steel Music Bot Banner"
-            className="w-full rounded-2xl border border-accent-violet/20 shadow-[0_0_40px_rgba(139,92,246,0.2)]"
+            className="w-full rounded-2xl border border-dark-500 shadow-[0_0_40px_rgba(104,31,209,0.15)]"
           />
           <p className="mt-3 text-xs text-dark-400">
             Official banner — DrusaBota • Steel Music Bot
@@ -62,20 +63,20 @@ export default function HeroSection() {
         {/* Abstract dashboard mock */}
         <div className="relative mx-auto mt-20 max-w-5xl">
           <div className="absolute inset-0 z-10 pointer-events-none bg-gradient-to-t from-dark-900 via-transparent to-transparent" />
-          <div className="glass rounded-xl border border-white/10 p-2 md:p-4">
-            <div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-white/5 bg-dark-800/80">
+          <div className="glass rounded-xl p-2 md:p-4">
+            <div className="relative aspect-[16/9] overflow-hidden rounded-lg border border-dark-500 bg-dark-800">
               <div className="absolute inset-0 flex">
                 {/* Sidebar mock */}
-                <div className="hidden w-48 border-r border-white/5 p-4 md:block">
+                <div className="hidden w-48 border-r border-dark-500 p-4 md:block">
                   <div className="mb-6 flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-md bg-gradient-to-br from-accent-violet to-accent-fuchsia" />
+                    <div className="h-7 w-7 rounded-[11px] bg-gradient-to-br from-accent-violet to-accent-fuchsia" />
                     <div className="h-3 w-20 rounded bg-dark-500/60" />
                   </div>
                   <div className="space-y-2">
-                    <div className="h-8 rounded-lg border border-accent-violet/25 bg-accent-violet/15" />
-                    <div className="h-8 rounded-lg bg-dark-600/40" />
-                    <div className="h-8 rounded-lg bg-dark-600/40" />
-                    <div className="h-8 rounded-lg bg-dark-600/40" />
+                    <div className="h-8 rounded-[11px] border border-accent-violet/25 bg-accent-violet/15" />
+                    <div className="h-8 rounded-[11px] bg-dark-600/40" />
+                    <div className="h-8 rounded-[11px] bg-dark-600/40" />
+                    <div className="h-8 rounded-[11px] bg-dark-600/40" />
                   </div>
                 </div>
                 {/* Content mock */}
@@ -97,9 +98,9 @@ export default function HeroSection() {
                     </div>
                   </div>
                   <div className="grid grid-cols-3 gap-3">
-                    <div className="glass h-20 rounded-xl border border-white/5" />
-                    <div className="glass h-20 rounded-xl border border-white/5" />
-                    <div className="glass h-20 rounded-xl border border-white/5" />
+                    <div className="glass h-20 rounded-xl border border-dark-500" />
+                    <div className="glass h-20 rounded-xl border border-dark-500" />
+                    <div className="glass h-20 rounded-xl border border-dark-500" />
                   </div>
                 </div>
               </div>

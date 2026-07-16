@@ -11,10 +11,10 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
   const { data: status } = useStatus();
 
   return (
-    <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-glass-border bg-dark-800/80 px-4 py-3 backdrop-blur-md lg:px-6">
+    <header className="sticky top-0 z-30 flex items-center gap-4 border-b border-dark-500 bg-dark-800 px-4 py-3 lg:px-6">
       <button
         onClick={onMenuToggle}
-        className="rounded-lg p-1.5 text-dark-300 hover:bg-dark-600 lg:hidden"
+        className="rounded-[11px] p-1.5 text-dark-300 hover:bg-dark-600 lg:hidden"
       >
         <Menu className="h-5 w-5" />
       </button>

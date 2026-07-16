@@ -28,7 +28,7 @@ export default function HostingInfo() {
   return (
     <section
       id="hosting"
-      className="border-y border-white/5 bg-dark-800/20 px-6 py-24"
+      className="border-y border-dark-500 bg-dark-800/20 px-6 py-24"
     >
       <div className="mx-auto grid max-w-7xl gap-12 md:grid-cols-3">
         {items.map((item) => (
@@ -38,7 +38,7 @@ export default function HostingInfo() {
             >
               <item.icon className="h-5 w-5" />
             </div>
-            <h3 className="mb-2 text-lg font-medium text-white">{item.title}</h3>
+            <h3 className="mb-2 text-lg font-medium text-white font-[family-name:var(--font-heading)]">{item.title}</h3>
             <p className="text-sm leading-relaxed text-dark-300">
               {item.description}
             </p>

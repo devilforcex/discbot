@@ -8,7 +8,8 @@ const features = [
     description:
       "High-quality streams via Wavelink. YouTube & Spotify URLs, queue, loop, autoplay, volume persistence.",
     tags: ["Low latency", "24/7 mode"],
-    color: "text-accent-violet",
+    iconBg: "bg-accent-violet/10 border-accent-violet/20",
+    iconColor: "text-accent-violet",
   },
   {
     icon: PlayCircle,
@@ -16,7 +17,8 @@ const features = [
     description:
       "Persistent Now Playing with real Discord buttons — pause, skip, loop, volume, favorites — not just text commands.",
     tags: ["Buttons", "Emoji UI"],
-    color: "text-accent-fuchsia",
+    iconBg: "bg-accent-fuchsia/10 border-accent-fuchsia/20",
+    iconColor: "text-accent-fuchsia",
   },
   {
     icon: Shield,
@@ -24,7 +26,8 @@ const features = [
     description:
       "Owner, whitelist, blacklist, self-request flow, audit logs. Guild + music channel lock.",
     tags: ["Whitelist", "Audit"],
-    color: "text-accent-blue",
+    iconBg: "bg-accent-blue/10 border-accent-blue/20",
+    iconColor: "text-accent-blue",
   },
 ];
 
@@ -33,7 +36,7 @@ export default function FeatureCards() {
     <section id="features" className="px-6 py-24">
       <div className="mx-auto max-w-7xl">
         <div className="mb-12">
-          <h2 className="mb-4 text-3xl font-medium tracking-tight text-white md:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl font-[family-name:var(--font-heading)]">
             Built for performance
           </h2>
           <p className="max-w-md text-dark-300">
@@ -44,10 +47,10 @@ export default function FeatureCards() {
         <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
           {features.map((f) => (
             <GlassCard key={f.title} hover className="p-8 transition-all duration-300">
-              <div className={`mb-6 flex h-12 w-12 items-center justify-center rounded-lg border border-white/10 bg-dark-800 ${f.color}`}>
+              <div className={`mb-6 flex h-12 w-12 items-center justify-center rounded-[11px] border ${f.iconBg} ${f.iconColor}`}>
                 <f.icon className="h-7 w-7" />
               </div>
-              <h3 className="mb-2 text-xl font-medium text-white">{f.title}</h3>
+              <h3 className="mb-2 text-xl font-medium text-white font-[family-name:var(--font-heading)]">{f.title}</h3>
               <p className="mb-4 text-sm leading-relaxed text-dark-300">
                 {f.description}
               </p>
@@ -55,7 +58,7 @@ export default function FeatureCards() {
                 {f.tags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-md border border-white/5 bg-white/5 px-2 py-1 text-xs text-dark-300"
+                    className="rounded-[8px] border border-dark-500 bg-dark-600 px-2 py-1 text-xs text-dark-300"
                   >
                     {tag}
                   </span>

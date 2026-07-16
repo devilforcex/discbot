@@ -2,14 +2,14 @@ import { Code, MessageCircle } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="border-t border-white/5 bg-dark-900 px-6 pt-16 pb-10">
+    <footer className="border-t border-dark-500 bg-dark-900 px-6 pt-16 pb-10">
       <div className="mx-auto flex max-w-7xl flex-col gap-8 md:flex-row md:justify-between">
         <div>
           <div className="mb-4 flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-gradient-to-br from-accent-violet to-accent-fuchsia text-[10px] font-bold text-white">
+            <div className="flex h-6 w-6 items-center justify-center rounded-[11px] bg-gradient-to-br from-accent-violet to-accent-fuchsia text-[10px] font-bold text-white">
               DB
             </div>
-            <span className="text-lg font-medium text-white">DrusaBota</span>
+            <span className="text-lg font-medium text-white font-[family-name:var(--font-heading)]">DrusaBota</span>
           </div>
           <p className="max-w-sm text-sm text-dark-400">
             Nightmare Music design language • Made with ❤️ by Steel • Private
@@ -20,7 +20,7 @@ export default function Footer() {
               href="https://discord.gg/jbjEpqwNn"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-accent-violet/30 bg-accent-violet/20 px-3 py-1.5 text-xs text-accent-violet transition-colors hover:bg-accent-violet/30"
+              className="inline-flex items-center gap-2 rounded-[11px] border border-accent-violet/30 bg-accent-violet/20 px-3 py-1.5 text-xs text-accent-violet transition-colors hover:bg-accent-violet/30"
             >
               <MessageCircle className="h-4 w-4" />
               Join Discord
@@ -29,7 +29,7 @@ export default function Footer() {
               href="https://github.com/devilforcex/discbot"
               target="_blank"
               rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-white/10 bg-white/5 px-3 py-1.5 text-xs text-dark-300 transition-colors hover:text-white"
+              className="inline-flex items-center gap-2 rounded-[11px] border border-dark-500 bg-dark-700 px-3 py-1.5 text-xs text-dark-300 transition-colors hover:text-white"
             >
               <Code className="h-4 w-4" />
               GitHub

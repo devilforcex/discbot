@@ -60,7 +60,7 @@ export default function NowPlayingCard() {
         <img
           src={data.artwork_url}
           alt={data.title}
-          className="mb-4 h-40 w-full rounded-lg object-cover"
+          className="mb-4 h-40 w-full rounded-lg border border-dark-500 object-cover"
         />
       )}
       <div className="flex items-start justify-between gap-2">
@@ -72,7 +72,7 @@ export default function NowPlayingCard() {
           <button
             onClick={handleFavorite}
             disabled={isFavorited || addFav.isPending}
-            className="mt-1 shrink-0 rounded-lg p-2 transition-colors hover:bg-white/10 disabled:opacity-40"
+            className="mt-1 shrink-0 rounded-[11px] p-2 transition-colors hover:bg-white/10 disabled:opacity-40"
             title={isFavorited ? "Already in favorites" : "Add to favorites"}
           >
             <Heart

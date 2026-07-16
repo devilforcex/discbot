@@ -30,7 +30,7 @@ export default function LibraryPage() {
         />
         <button
           onClick={handleApply}
-          className="rounded-lg bg-accent-violet px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-violet/80"
+          className="rounded-[11px] bg-accent-violet px-4 py-2 text-sm font-medium text-white transition hover:bg-accent-violet/80 shadow-[0_0_16px_rgba(104,31,209,0.35)]"
         >
           Load
         </button>

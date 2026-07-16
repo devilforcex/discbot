@@ -30,10 +30,10 @@ export default function TopTracks() {
         {data.top_tracks.map((track, i) => (
           <div
             key={`${track.title}-${i}`}
-            className="flex items-center justify-between rounded-lg px-3 py-2 text-sm hover:bg-dark-600 transition-colors"
+            className="flex items-center justify-between rounded-[11px] px-3 py-2 text-sm hover:bg-dark-600 transition-colors"
           >
             <div className="flex items-center gap-3">
-              <span className="w-6 text-center text-xs font-bold text-dark-400">
+              <span className="w-6 text-center text-xs font-bold text-gradient">
                 {i + 1}
               </span>
               <div className="min-w-0">

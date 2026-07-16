@@ -1,9 +1,9 @@
 export default function PlayerPreview() {
   return (
-    <section id="player" className="border-y border-white/5 bg-dark-800/20 px-6 py-24">
+    <section id="player" className="border-y border-dark-500 bg-dark-800/20 px-6 py-24">
       <div className="mx-auto max-w-3xl">
         <div className="mb-12 text-center">
-          <h2 className="mb-4 text-3xl font-medium tracking-tight text-white md:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl font-[family-name:var(--font-heading)]">
             Discord embed player
           </h2>
           <p className="text-dark-300">
@@ -11,9 +11,9 @@ export default function PlayerPreview() {
             playback.
           </p>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-white/10 glass">
+        <div className="overflow-hidden rounded-2xl border border-dark-500 glass">
           {/* Header */}
-          <div className="flex items-center gap-2 border-b border-white/5 p-6">
+          <div className="flex items-center gap-2 border-b border-dark-500 p-6">
             <div className="h-8 w-8 rounded-full bg-gradient-to-br from-accent-violet to-accent-fuchsia" />
             <div>
               <div className="text-sm font-medium text-white">Nightmare Music</div>

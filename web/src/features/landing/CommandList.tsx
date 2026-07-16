@@ -60,7 +60,7 @@ export default function CommandList() {
     <section id="commands" className="px-6 py-24">
       <div className="mx-auto max-w-5xl">
         <div className="mb-16 text-center">
-          <h2 className="mb-4 text-3xl font-medium tracking-tight text-white md:text-4xl">
+          <h2 className="mb-4 text-3xl font-bold tracking-tight text-white md:text-4xl font-[family-name:var(--font-heading)]">
             Commands
           </h2>
           <p className="text-dark-300">
@@ -69,9 +69,9 @@ export default function CommandList() {
             <span className="font-mono text-accent-violet">!help</span>.
           </p>
         </div>
-        <div className="overflow-hidden rounded-2xl border border-white/10 glass">
+        <div className="overflow-hidden rounded-2xl border border-dark-500 glass">
           {/* Search & filters */}
-          <div className="border-b border-white/5 bg-dark-800/50 p-6">
+          <div className="border-b border-dark-500 bg-dark-800/50 p-6">
             <div className="flex flex-col items-center justify-between gap-4 md:flex-row">
               <div className="relative w-full md:w-96">
                 <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-dark-400" />
@@ -80,7 +80,7 @@ export default function CommandList() {
                   placeholder="Search commands..."
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  className="w-full rounded-lg border border-white/10 bg-dark-900 py-2.5 pl-10 pr-4 text-sm text-dark-200 placeholder-dark-500 focus:border-accent-violet/50 focus:outline-none transition-colors"
+                  className="w-full rounded-[11px] border border-dark-500 bg-dark-900 py-2.5 pl-10 pr-4 text-sm text-dark-200 placeholder-dark-500 focus:border-accent-violet/50 focus:outline-none transition-colors"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
@@ -91,7 +91,7 @@ export default function CommandList() {
                     className={`rounded-full px-4 py-1.5 text-xs font-medium border transition-colors ${
                       activeFilter === f.key
                         ? "bg-accent-violet/10 text-accent-violet border-accent-violet/20"
-                        : "bg-dark-700/50 text-dark-300 border-white/5 hover:text-white"
+                        : "bg-dark-700/50 text-dark-300 border-dark-500 hover:text-white"
                     }`}
                   >
                     {f.label}
@@ -101,11 +101,11 @@ export default function CommandList() {
             </div>
           </div>
           {/* Command list */}
-          <div className="divide-y divide-white/5">
+          <div className="divide-y divide-dark-500">
             {filtered.map((c) => (
               <div
                 key={c.cmd}
-                className="flex flex-col justify-between gap-4 p-4 transition-colors hover:bg-white/5 md:flex-row md:items-center"
+                className="flex flex-col justify-between gap-4 p-4 transition-colors hover:bg-dark-600/50 md:flex-row md:items-center"
               >
                 <div className="flex items-start gap-4">
                   <span
