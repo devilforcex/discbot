@@ -1,6 +1,7 @@
 import { Activity, Clock, Menu } from "lucide-react";
 import { useStatus } from "../../hooks/use-status";
 import StatusBadge from "../ui/StatusBadge";
+import ConnectionStatus from "../shared/ConnectionStatus";
 
 interface TopBarProps {
   onMenuToggle?: () => void;
@@ -26,6 +27,7 @@ export default function TopBar({ onMenuToggle }: TopBarProps) {
       </div>
 
       <div className="flex items-center gap-4 text-sm text-dark-300">
+        <ConnectionStatus />
         {status?.latency_ms != null && (
           <div className="flex items-center gap-1.5">
             <Activity className="h-3.5 w-3.5" />

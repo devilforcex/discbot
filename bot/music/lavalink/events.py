@@ -5,12 +5,66 @@ from __future__ import annotations
 import contextlib
 import logging
 
+import discord
 import wavelink
 from discord.ext import commands
 
 from bot.music.player import Player
 
 logger = logging.getLogger(__name__)
+
+
+def _get_now_playing_data(bot: commands.Bot, guild_id: int) -> dict:
+    """Build the now-playing payload for WebSocket broadcast."""
+    player = discord.utils.get(bot.voice_clients, guild__id=guild_id)
+    if player and getattr(player, "playing", False) and getattr(player, "last_track", None):
+        track = player.last_track
+        loop_mode = None
+        try:
+            mode = bot.queue_manager.get_loop(guild_id)
+            loop_mode = mode.value if hasattr(mode, "value") else str(mode)
+        except Exception:
+            pass
+        return {
+            "playing": True,
+            "title": track.title,
+            "author": track.author,
+            "uri": track.uri,
+            "length": track.length,
+            "position": player.position if hasattr(player, "position") else 0,
+            "paused": player.paused,
+            "volume": player.get_volume() if hasattr(player, "get_volume") else 50,
+            "artwork_url": getattr(track, "artwork_url", None),
+            "autoplay": getattr(player, "autoplay_enabled", False),
+            "loop": loop_mode,
+            "queue_length": bot.queue_manager.get_length(guild_id),
+        }
+    return {"playing": False, "queue_length": bot.queue_manager.get_length(guild_id)}
+
+
+def _get_queue_data(bot: commands.Bot, guild_id: int) -> dict:
+    """Build the queue payload for WebSocket broadcast."""
+    tracks = bot.queue_manager.get_all_as_dicts(guild_id)
+    return {
+        "guild_id": guild_id,
+        "queue_length": len(tracks),
+        "tracks": tracks,
+    }
+
+
+async def _broadcast_player_update(bot: commands.Bot, guild_id: int) -> None:
+    """Broadcast now-playing + queue update to all connected WebSocket clients."""
+    try:
+        from bot.dashboard.ws_manager import ws_manager
+
+        now_playing = _get_now_playing_data(bot, guild_id)
+        queue = _get_queue_data(bot, guild_id)
+        await ws_manager.broadcast(guild_id, "player_update", {
+            "now_playing": now_playing,
+            "queue": queue,
+        })
+    except Exception as e:
+        logger.debug("WS broadcast failed for guild %s: %s", guild_id, e)
 
 
 class WavelinkEvents(commands.Cog):
@@ -54,6 +108,7 @@ class WavelinkEvents(commands.Cog):
                     await mgr.update_now_playing(guild_id)
                 except Exception as e:
                     logger.debug("Player message update on track_start failed: %s", e)
+            await _broadcast_player_update(self.bot, guild_id)
 
     @commands.Cog.listener()
     async def on_wavelink_track_end(self, payload: wavelink.TrackEndEventPayload) -> None:
@@ -86,6 +141,7 @@ class WavelinkEvents(commands.Cog):
                     await mgr.set_idle(guild_id)
                 except Exception as e:
                     logger.debug("Player idle update failed: %s", e)
+        await _broadcast_player_update(self.bot, guild_id)
 
     @commands.Cog.listener()
     async def on_wavelink_track_stuck(self, payload: wavelink.TrackStuckEventPayload) -> None:
@@ -98,6 +154,7 @@ class WavelinkEvents(commands.Cog):
         )
         if player:
             await self._play_next(player)
+            await _broadcast_player_update(self.bot, player.guild.id)
 
     @commands.Cog.listener()
     async def on_wavelink_track_exception(
@@ -112,6 +169,7 @@ class WavelinkEvents(commands.Cog):
         )
         if player:
             await self._play_next(player)
+            await _broadcast_player_update(self.bot, player.guild.id)
 
     async def _handle_autoplay(self, player: Player, guild_id: int) -> None:
         # Circuit breaker: skip autoplay if too many failures

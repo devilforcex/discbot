@@ -33,6 +33,15 @@ class PlayerController:
     def __init__(self, bot):
         self.bot = bot
 
+    async def _broadcast(self, guild_id: int) -> None:
+        """Broadcast player state update via WebSocket."""
+        try:
+            from bot.music.lavalink.events import _broadcast_player_update
+
+            await _broadcast_player_update(self.bot, guild_id)
+        except Exception as e:
+            logger.debug("WS broadcast from controller failed: %s", e)
+
     # Helpers — now delegate to services
     def check_authorized(self, user_id: int) -> tuple[bool, str]:
         return check_authorized_sync_from_bot(self.bot, user_id)
@@ -120,6 +129,7 @@ class PlayerController:
             return res
         await player.stop()
         self.bot.queue_manager.clear(guild_id)
+        await self._broadcast(guild_id)
         return ActionResult(True, f"{EMOJI['stop']} Stopped and cleared queue.")
 
     async def shuffle(self, guild_id: int, user: discord.Member) -> ActionResult:
@@ -131,6 +141,7 @@ class PlayerController:
         if self.bot.queue_manager.is_empty(guild_id):
             return ActionResult(False, f"{EMOJI['error']} The queue is empty.")
         self.bot.queue_manager.shuffle(guild_id)
+        await self._broadcast(guild_id)
         return ActionResult(True, f"{EMOJI['shuffle']} Queue shuffled.")
 
     async def cycle_loop(self, guild_id: int, user: discord.Member) -> ActionResult:

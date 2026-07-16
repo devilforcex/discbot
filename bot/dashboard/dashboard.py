@@ -36,7 +36,7 @@ class DashboardServer:
     async def start(self) -> None:
         if not HAS_FASTAPI:
             logger.warning(
-                "Dashboard dependencies not installed. Install: pip install fastapi uvicorn jinja2 aiofiles"
+                "Dashboard dependencies not installed. Install: pip install fastapi uvicorn"
             )
             return
 
@@ -66,13 +66,14 @@ class DashboardServer:
             from fastapi.responses import FileResponse
 
             @self._app.get("/{full_path:path}")
-            async def serve_spa(full_path: str):
+            async def serve_spa(full_path: str):  # pyright: ignore[reportUnusedFunction]
                 if full_path.startswith("api/"):
                     raise HTTPException(status_code=404, detail="API endpoint not found")
                 file_path = dist_dir / full_path
                 if full_path and file_path.is_file():
                     return FileResponse(file_path)
                 return FileResponse(dist_dir / "index.html")
+
         else:
             logger.warning(
                 "React SPA build not found at %s. Run 'cd web && npm run build' to build the frontend.",
@@ -138,3 +139,19 @@ class DashboardServer:
         except ImportError as e:
             logger.error("Failed to load dashboard routes: %s", e)
             raise
+
+        # WebSocket endpoint for real-time player updates
+        from fastapi import WebSocket, WebSocketDisconnect
+
+        from .ws_manager import ws_manager
+
+        @app.websocket("/ws/{guild_id}")
+        async def websocket_endpoint(websocket: WebSocket, guild_id: int):
+            await ws_manager.connect(websocket, guild_id)
+            try:
+                while True:
+                    await websocket.receive_text()
+            except WebSocketDisconnect:
+                ws_manager.disconnect(websocket, guild_id)
+            except Exception:
+                ws_manager.disconnect(websocket, guild_id)

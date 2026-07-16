@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import logging
 from typing import Any
 
@@ -10,7 +11,21 @@ from fastapi import Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials
 from pydantic import BaseModel, Field
 
+from bot.database import favorites_manager as fm
+from bot.database import guild_settings as gs
+from bot.database import history_manager as hm
+
 logger = logging.getLogger(__name__)
+
+
+async def _broadcast_ws(bot: Any, guild_id: int) -> None:
+    """Broadcast player state update via WebSocket to connected clients."""
+    try:
+        from bot.music.lavalink.events import _broadcast_player_update
+
+        await _broadcast_player_update(bot, guild_id)
+    except Exception as e:
+        logger.debug("WS broadcast from route failed: %s", e)
 
 # pyright: reportUnusedFunction=false
 
@@ -147,8 +162,6 @@ def register_routes(app, bot, security, check_write_auth):
 
     @app.get("/api/stats/{guild_id}")
     async def api_stats(guild_id: str):
-        from bot.database import history_manager as hm
-
         try:
             return hm.get_stats(guild_id, bot.config.database_path)
         except Exception as e:
@@ -157,8 +170,6 @@ def register_routes(app, bot, security, check_write_auth):
     @app.get("/api/history/{guild_id}")
     async def api_history(guild_id: str, limit: int = 10):
         """Return recent playback history for a guild."""
-        from bot.database import history_manager as hm
-
         try:
             safe_limit = max(1, min(50, int(limit)))
             return {
@@ -172,9 +183,6 @@ def register_routes(app, bot, security, check_write_auth):
     @app.get("/api/overview/{guild_id}")
     async def api_overview(guild_id: int):
         """Combined dashboard payload to reduce frontend round-trips."""
-        from bot.database import guild_settings as gs
-        from bot.database import history_manager as hm
-
         try:
             status = await _status_payload()
             queue = bot.queue_manager.get_all_as_dicts(guild_id)
@@ -192,8 +200,6 @@ def register_routes(app, bot, security, check_write_auth):
 
     @app.get("/api/settings/{guild_id}")
     async def api_get_settings(guild_id: str):
-        from bot.database import guild_settings as gs
-
         try:
             settings = gs.get(guild_id, bot.config.database_path)
             return {
@@ -213,8 +219,6 @@ def register_routes(app, bot, security, check_write_auth):
         credentials: HTTPAuthorizationCredentials | None = Depends(security),
     ):
         check_write_auth(credentials)
-        from bot.database import guild_settings as gs
-
         updates = payload.model_dump(exclude_unset=True)
         if "autoplay" in updates:
             updates["autoplay"] = _coerce_bool(updates["autoplay"])
@@ -225,8 +229,6 @@ def register_routes(app, bot, security, check_write_auth):
 
     @app.get("/api/favorites/{user_id}")
     async def api_favorites(user_id: str, page: int = 1):
-        from bot.database import favorites_manager as fm
-
         try:
             favs, total = fm.get_favorites(user_id, page=page, db_path=bot.config.database_path)
             return {
@@ -268,6 +270,152 @@ def register_routes(app, bot, security, check_write_auth):
         except Exception as e:
             raise HTTPException(status_code=500, detail=str(e)) from None
 
+    # --- Library write endpoints ---
+
+    @app.post("/api/favorites/{user_id}")
+    async def api_add_favorite(
+        user_id: str,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    ):
+        check_write_auth(credentials)
+        body = await request.json()
+        required = ["title", "author", "uri", "identifier", "length"]
+        missing = [f for f in required if f not in body]
+        if missing:
+            raise HTTPException(status_code=400, detail=f"Missing fields: {', '.join(missing)}")
+        ok = fm.add_favorite(
+            user_id=user_id,
+            title=body["title"],
+            author=body["author"],
+            uri=body["uri"],
+            identifier=body["identifier"],
+            length=int(body["length"]),
+            artwork_url=body.get("artwork_url"),
+            db_path=bot.config.database_path,
+        )
+        if not ok:
+            return {"success": True, "message": "Already in favorites"}
+        return {"success": True, "message": "Added to favorites"}
+
+    @app.delete("/api/favorites/{user_id}/{identifier}")
+    async def api_remove_favorite(
+        user_id: str,
+        identifier: str,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    ):
+        check_write_auth(credentials)
+        ok = fm.remove_favorite(user_id, identifier, db_path=bot.config.database_path)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Favorite not found")
+        return {"success": True, "message": "Removed from favorites"}
+
+    @app.get("/api/playlists/{user_id}/{playlist_id}")
+    async def api_get_playlist(user_id: str, playlist_id: str):
+        from bot.database.playlist_manager import get_playlist
+
+        playlist = get_playlist(playlist_id, db_path=bot.config.database_path)
+        if not playlist or playlist.get("user_id") != user_id:
+            raise HTTPException(status_code=404, detail="Playlist not found")
+        return playlist
+
+    @app.post("/api/playlists/{user_id}")
+    async def api_create_playlist(
+        user_id: str,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    ):
+        check_write_auth(credentials)
+        body = await request.json()
+        name = (body.get("name") or "").strip()
+        if not name:
+            raise HTTPException(status_code=400, detail="Playlist name is required")
+        guild_id = body.get("guild_id", "0")
+        description = body.get("description", "")
+        from bot.database.playlist_manager import create_playlist
+
+        playlist_id = create_playlist(
+            user_id=user_id,
+            guild_id=str(guild_id),
+            name=name,
+            description=description,
+            db_path=bot.config.database_path,
+        )
+        if not playlist_id:
+            raise HTTPException(status_code=409, detail="Playlist with this name already exists")
+        return {"success": True, "playlist_id": playlist_id, "name": name}
+
+    @app.delete("/api/playlists/{playlist_id}")
+    async def api_delete_playlist(
+        playlist_id: str,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    ):
+        check_write_auth(credentials)
+        body = {}
+        with contextlib.suppress(Exception):
+            body = await request.json()
+        user_id = body.get("user_id", "")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        from bot.database.playlist_manager import delete_playlist
+
+        ok = delete_playlist(playlist_id, user_id, db_path=bot.config.database_path)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Playlist not found or unauthorized")
+        return {"success": True, "message": "Playlist deleted"}
+
+    @app.post("/api/playlists/{playlist_id}/tracks")
+    async def api_add_playlist_track(
+        playlist_id: str,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    ):
+        check_write_auth(credentials)
+        body = await request.json()
+        required = ["title", "author", "uri", "identifier", "length", "added_by"]
+        missing = [f for f in required if f not in body]
+        if missing:
+            raise HTTPException(status_code=400, detail=f"Missing fields: {', '.join(missing)}")
+        from bot.database.playlist_manager import add_track
+
+        ok = add_track(
+            playlist_id=playlist_id,
+            title=body["title"],
+            author=body["author"],
+            uri=body["uri"],
+            identifier=body["identifier"],
+            length=int(body["length"]),
+            added_by=body["added_by"],
+            artwork_url=body.get("artwork_url"),
+            db_path=bot.config.database_path,
+        )
+        if not ok:
+            raise HTTPException(status_code=400, detail="Playlist not found or full")
+        return {"success": True, "message": "Track added to playlist"}
+
+    @app.delete("/api/playlists/{playlist_id}/tracks/{position}")
+    async def api_remove_playlist_track(
+        playlist_id: str,
+        position: int,
+        request: Request,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    ):
+        check_write_auth(credentials)
+        body = {}
+        with contextlib.suppress(Exception):
+            body = await request.json()
+
+        user_id = body.get("user_id", "")
+        if not user_id:
+            raise HTTPException(status_code=400, detail="user_id is required")
+        from bot.database.playlist_manager import remove_track
+
+        ok = remove_track(playlist_id, position, user_id, db_path=bot.config.database_path)
+        if not ok:
+            raise HTTPException(status_code=404, detail="Track not found or unauthorized")
+        return {"success": True, "message": "Track removed from playlist"}
+
     @app.post("/api/control/{guild_id}/{action}")
     async def api_control(
         guild_id: int,
@@ -293,20 +441,24 @@ def register_routes(app, bot, security, check_write_auth):
                 if not player.playing:
                     raise HTTPException(status_code=400, detail="Nothing playing")
                 await player.pause(True)
+                await _broadcast_ws(bot, guild_id)
                 return {"success": True, "message": "Paused"}
 
             if action == "resume":
                 if not player.paused:
                     raise HTTPException(status_code=400, detail="Not paused")
                 await player.pause(False)
+                await _broadcast_ws(bot, guild_id)
                 return {"success": True, "message": "Resumed"}
 
             if action == "play_pause":
                 if player.paused:
                     await player.pause(False)
+                    await _broadcast_ws(bot, guild_id)
                     return {"success": True, "message": "Resumed"}
                 if player.playing:
                     await player.pause(True)
+                    await _broadcast_ws(bot, guild_id)
                     return {"success": True, "message": "Paused"}
                 raise HTTPException(status_code=400, detail="Nothing playing")
 
@@ -314,17 +466,20 @@ def register_routes(app, bot, security, check_write_auth):
                 if not player.playing:
                     raise HTTPException(status_code=400, detail="Nothing playing")
                 await player.stop()
+                await _broadcast_ws(bot, guild_id)
                 return {"success": True, "message": "Skipped"}
 
             if action == "stop":
                 await player.stop()
                 bot.queue_manager.clear(guild_id)
+                await _broadcast_ws(bot, guild_id)
                 return {"success": True, "message": "Stopped and cleared queue"}
 
             if action == "shuffle":
                 if bot.queue_manager.is_empty(guild_id):
                     raise HTTPException(status_code=400, detail="Queue is empty")
                 bot.queue_manager.shuffle(guild_id)
+                await _broadcast_ws(bot, guild_id)
                 return {"success": True, "message": "Queue shuffled"}
 
             if action == "volume":
@@ -339,6 +494,7 @@ def register_routes(app, bot, security, check_write_auth):
                     gs.set(str(guild_id), bot.config.database_path, volume=vol)
                 except Exception:
                     pass
+                await _broadcast_ws(bot, guild_id)
                 return {"success": True, "message": f"Volume set to {vol}%", "volume": vol}
 
             raise HTTPException(status_code=400, detail=f"Unknown action: {action}")
