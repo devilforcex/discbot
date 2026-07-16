@@ -1,4 +1,6 @@
 """Filters & seek cog."""
+
+import contextlib
 import logging
 
 import discord
@@ -7,9 +9,8 @@ from discord.ext import commands
 from bot.core.errors import build_error_embed
 from bot.music.audio_filters import get_filter_choices
 from bot.music.embed_manager import EmbedManager
-from bot.music.emoji import EMOJI
 
-from .base import check_guild_and_channel, get_player_from_ctx, is_authorized
+from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, MusicCogMixin
 
 logger = logging.getLogger(__name__)
 
@@ -29,7 +30,13 @@ class FilterSelectView(discord.ui.View):
             is_active = value == active_filter
             desc_display = (desc + (" (active)" if is_active else ""))[:100]
             options.append(
-                discord.SelectOption(label=label[:100], description=desc_display, value=value, emoji=emoji, default=is_active)
+                discord.SelectOption(
+                    label=label[:100],
+                    description=desc_display,
+                    value=value,
+                    emoji=emoji,
+                    default=is_active,
+                )
             )
 
         select = discord.ui.Select(
@@ -55,25 +62,27 @@ class FilterSelectView(discord.ui.View):
             await interaction.response.send_message(err, ephemeral=True)
             return
 
-        filter_name = interaction.data["values"][0]
+        filter_name = interaction.data.get("values", [""])[0]  # type: ignore[attr-defined]
         await interaction.response.defer(ephemeral=True)
 
         guild = self.bot.get_guild(self.guild_id)
         member = guild.get_member(interaction.user.id) if guild else None
         if not member:
-            member = interaction.user  # type: ignore
+            member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+        if not member:
+            member = interaction.user  # type: ignore[assignment]
 
-        result = await controller.set_filter(self.guild_id, member, filter_name)
+        result = await controller.set_filter(self.guild_id, member, filter_name)  # type: ignore[arg-type]
         await interaction.followup.send(result.message, ephemeral=True)
 
         if result.refresh_player and hasattr(self.bot, "player_messages"):
-            try:
+            with contextlib.suppress(Exception):
                 await self.bot.player_messages.update_now_playing(self.guild_id)
-            except Exception:
-                pass
 
         try:
-            embed = EmbedManager.filter_embed(active_filter=filter_name if filter_name != "reset" else "off")
+            embed = EmbedManager.filter_embed(
+                active_filter=filter_name if filter_name != "reset" else "off"
+            )
             await interaction.message.edit(embed=embed, view=self)
         except Exception:
             pass
@@ -94,14 +103,17 @@ class FilterSelectView(discord.ui.View):
 
         await interaction.response.defer(ephemeral=True)
         guild = self.bot.get_guild(self.guild_id)
-        member = guild.get_member(interaction.user.id) if guild else interaction.user  # type: ignore
-        result = await controller.set_filter(self.guild_id, member, "reset")
+        member = guild.get_member(interaction.user.id) if guild else None
+        if not member:
+            member = interaction.guild.get_member(interaction.user.id) if interaction.guild else None
+        if not member:
+            member = interaction.user  # type: ignore[assignment]
+
+        result = await controller.set_filter(self.guild_id, member, "reset")  # type: ignore[arg-type]
         await interaction.followup.send(result.message, ephemeral=True)
         if hasattr(self.bot, "player_messages"):
-            try:
+            with contextlib.suppress(Exception):
                 await self.bot.player_messages.update_now_playing(self.guild_id)
-            except Exception:
-                pass
         try:
             embed = EmbedManager.filter_embed(active_filter="off")
             await interaction.message.edit(embed=embed, view=self)
@@ -116,13 +128,11 @@ class FilterSelectView(discord.ui.View):
         try:
             await interaction.message.delete()
         except Exception:
-            try:
+            with contextlib.suppress(Exception):
                 await interaction.response.edit_message(view=self)
-            except Exception:
-                pass
 
 
-class FiltersCog(commands.Cog):
+class FiltersCog(commands.Cog, MusicCogMixin):
     def __init__(self, bot):
         self.bot = bot
 
@@ -135,7 +145,11 @@ class FiltersCog(commands.Cog):
     async def _run_controller(self, ctx, coro):
         result = await coro
         color = discord.Color.green() if result.ok else discord.Color.red()
-        await ctx.send(embed=discord.Embed(description=result.message, color=color), delete_after=8 if result.ok else 12)
+        await self._send_to_response(
+            ctx,
+            embed=discord.Embed(description=result.message, color=color),
+            delete_after=8 if result.ok else 12,
+        )
         if result.refresh_player and hasattr(self.bot, "player_messages"):
             await self.bot.player_messages.update_now_playing(ctx.guild.id)
 
@@ -147,14 +161,20 @@ class FiltersCog(commands.Cog):
             return
         player = get_player_from_ctx(ctx)
         if not player or not player.playing:
-            await ctx.send(embed=build_error_embed(description="Nothing is currently playing."))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description="Nothing is currently playing."))
             return
         try:
             ms = seconds * 1000
             await player.seek(ms)
-            await ctx.send(embed=discord.Embed(description=f"⏩ Seeked to `{EmbedManager._format_duration(ms)}`.", color=discord.Color.green()))
+            await self._send_embed_to_response(
+                ctx,
+                embed=discord.Embed(
+                    description=f"⏩ Seeked to `{EmbedManager._format_duration(ms)}`.",
+                    color=discord.Color.green(),
+                ),
+            )
         except Exception as e:
-            await ctx.send(embed=build_error_embed(description=f"Seek failed: {e}"))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description=f"Seek failed: {e}"))
 
     @commands.command(name="forward", aliases=["fwd", "seekfwd"])
     async def forward(self, ctx, seconds: int = 10):
@@ -162,7 +182,9 @@ class FiltersCog(commands.Cog):
             return
         if not await self._require_authorized(ctx):
             return
-        await self._run_controller(ctx, self.bot.player_controller.seek_forward(ctx.guild.id, ctx.author, seconds))
+        await self._run_controller(
+            ctx, self.bot.player_controller.seek_forward(ctx.guild.id, ctx.author, seconds)
+        )
 
     @commands.command(name="rewind", aliases=["rew", "seekback"])
     async def rewind(self, ctx, seconds: int = 10):
@@ -170,7 +192,9 @@ class FiltersCog(commands.Cog):
             return
         if not await self._require_authorized(ctx):
             return
-        await self._run_controller(ctx, self.bot.player_controller.seek_backward(ctx.guild.id, ctx.author, seconds))
+        await self._run_controller(
+            ctx, self.bot.player_controller.seek_backward(ctx.guild.id, ctx.author, seconds)
+        )
 
     @commands.command(name="replay", aliases=["restart"])
     async def replay(self, ctx):
@@ -186,7 +210,9 @@ class FiltersCog(commands.Cog):
             return
         if not await self._require_authorized(ctx):
             return
-        await self._run_controller(ctx, self.bot.player_controller.set_filter(ctx.guild.id, ctx.author, filter_name))
+        await self._run_controller(
+            ctx, self.bot.player_controller.set_filter(ctx.guild.id, ctx.author, filter_name)
+        )
 
     @commands.command(name="filters", aliases=["filterlist", "listfilters"])
     async def filters(self, ctx):
@@ -197,8 +223,10 @@ class FiltersCog(commands.Cog):
         player = get_player_from_ctx(ctx)
         active = getattr(player, "active_filter", "off") if player else "off"
         embed = EmbedManager.filter_embed(active_filter=active)
-        view = FilterSelectView(bot=self.bot, guild_id=ctx.guild.id, requester_id=ctx.author.id, active_filter=active)
-        await ctx.send(embed=embed, view=view)
+        view = FilterSelectView(
+            bot=self.bot, guild_id=ctx.guild.id, requester_id=ctx.author.id, active_filter=active
+        )
+        await self._send_to_response(ctx, embed=embed, view=view)
 
 
 async def setup(bot):

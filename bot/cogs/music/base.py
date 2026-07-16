@@ -1,16 +1,13 @@
 """Shared helpers for music cogs."""
+
 from __future__ import annotations
 
 import logging
-from typing import Optional, Tuple
 
 import discord
 
-from bot.core.errors import DifferentVoiceChannel, NotInVoiceChannel, build_error_embed
-from bot.core.services.auth import check_authorized, is_owner, resolve_user_id
-from bot.core.services.voice import get_player
+from bot.core.errors import DifferentVoiceChannel, NotInVoiceChannel
 from bot.database.database import get_connection
-from bot.music.emoji import EMOJI
 from bot.music.player import Player
 
 logger = logging.getLogger(__name__)
@@ -32,24 +29,52 @@ def voice_check(ctx) -> tuple:
     return voice_channel, None
 
 
-def get_player_from_ctx(ctx) -> Optional[Player]:
-    return discord.utils.get(ctx.bot.voice_clients, guild__id=ctx.guild.id)
+def get_player_from_ctx(ctx) -> Player | None:
+    return discord.utils.get(ctx.bot.voice_clients, guild__id=ctx.guild.id)  # type: ignore[return-value]
 
 
 async def check_guild_and_channel(ctx, config) -> bool:
+    """Check if command is used in the correct guild. Allows commands from any channel,
+    but responses will be routed to the music channel."""
     if ctx.guild is None:
         await ctx.send("❌ Music commands can only be used inside the configured server.")
         return False
     if ctx.guild.id != config.guild_id:
         await ctx.send("❌ This bot is restricted to its configured server.")
         return False
-    command_name = ctx.command.name if ctx.command else ""
-    if command_name in ALLOWED_OUTSIDE_MUSIC_CHANNEL:
-        return True
-    if ctx.channel.id != config.music_channel_id:
-        await ctx.send("❌ Music commands may only be used in the designated music channel.")
-        return False
     return True
+
+
+def get_response_channel(ctx, config) -> discord.TextChannel | None:
+    """Get the channel where bot responses should be sent.
+    Returns the music channel, or the current channel if it's the music channel,
+    or None if music channel not found."""
+    if ctx.guild is None:
+        return None
+    music_channel = ctx.guild.get_channel(config.music_channel_id)
+    if isinstance(music_channel, discord.TextChannel):
+        return music_channel
+    # Fallback to current channel if music channel not found or not a text channel
+    return ctx.channel if isinstance(ctx.channel, discord.TextChannel) else None
+
+
+class MusicCogMixin:
+    """Mixin to provide response channel handling for music cogs."""
+
+    async def _get_response_channel(self, ctx) -> discord.TextChannel | None:
+        return get_response_channel(ctx, self.bot.config)
+
+    async def _send_to_response(self, ctx, **kwargs) -> discord.Message | None:
+        """Send a message to the music channel instead of the command channel."""
+        channel = await self._get_response_channel(ctx)
+        if channel is None:
+            # Fallback to original channel
+            return await ctx.send(**kwargs)
+        return await channel.send(**kwargs)
+
+    async def _send_embed_to_response(self, ctx, embed, **kwargs) -> discord.Message | None:
+        """Send an embed to the music channel instead of the command channel."""
+        return await self._send_to_response(ctx, embed=embed, **kwargs)
 
 
 async def is_authorized(ctx, bot) -> bool:

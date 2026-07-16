@@ -1,10 +1,12 @@
 """Misc admin: whoami, status, 247."""
+
 import logging
+
 import discord
 from discord.ext import commands
 
-from bot.database.database import get_connection
 from bot.core.services.auth import check_authorized
+from bot.database.database import get_connection
 
 logger = logging.getLogger(__name__)
 
@@ -30,7 +32,9 @@ class MiscAdminCog(commands.Cog):
         guild = ctx.guild.name if ctx.guild else "N/A"
         channel = ctx.channel.name if ctx.channel else "N/A"
 
-        allowed, _ = check_authorized(ctx.author.id, self.bot.config.owner_id, self.bot.config.database_path)
+        allowed, _ = check_authorized(
+            ctx.author.id, self.bot.config.owner_id, self.bot.config.database_path
+        )
         is_blacklisted = False
         try:
             conn = get_connection(self.bot.config.database_path)
@@ -49,8 +53,16 @@ class MiscAdminCog(commands.Cog):
         embed.add_field(name="User ID", value=f"`{user_id}`", inline=False)
         embed.add_field(name="Guild", value=guild, inline=True)
         embed.add_field(name="Channel", value=channel, inline=True)
-        embed.add_field(name="Access Status", value="✅ Authorized" if allowed else "❌ Not Authorized", inline=False)
-        embed.add_field(name="Blacklist Status", value="🚫 Blacklisted" if is_blacklisted else "✅ Not Blacklisted", inline=False)
+        embed.add_field(
+            name="Access Status",
+            value="✅ Authorized" if allowed else "❌ Not Authorized",
+            inline=False,
+        )
+        embed.add_field(
+            name="Blacklist Status",
+            value="🚫 Blacklisted" if is_blacklisted else "✅ Not Blacklisted",
+            inline=False,
+        )
         await ctx.send(embed=embed)
 
     @commands.command(name="status")
@@ -59,6 +71,7 @@ class MiscAdminCog(commands.Cog):
         lavalink_status = "Disconnected"
         try:
             import wavelink
+
             node = wavelink.Pool.get_node()
             if node and getattr(node, "is_connected", False):
                 lavalink_status = f"Connected ({round(node.latency)}ms)"
@@ -69,7 +82,11 @@ class MiscAdminCog(commands.Cog):
         queue_length = self.bot.queue_manager.get_length(guild_id)
         current_track = "None"
         player = discord.utils.get(self.bot.voice_clients, guild__id=guild_id)
-        if player and (getattr(player, "playing", False) or getattr(player, "paused", False)) and player.last_track:
+        if (
+            player
+            and (getattr(player, "playing", False) or getattr(player, "paused", False))
+            and player.last_track
+        ):
             current_track = player.last_track.title
 
         uptime = "N/A"
@@ -97,7 +114,10 @@ class MiscAdminCog(commands.Cog):
         try:
             conn = get_connection(self.bot.config.database_path)
             cur = conn.cursor()
-            cur.execute("INSERT OR REPLACE INTO bot_settings (key, value) VALUES ('247_enabled', ?)", (value,))
+            cur.execute(
+                "INSERT OR REPLACE INTO bot_settings (key, value) VALUES ('247_enabled', ?)",
+                (value,),
+            )
             conn.commit()
         except Exception as e:
             logger.error("Failed to update 24/7 setting: %s", e)

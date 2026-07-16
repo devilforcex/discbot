@@ -1,4 +1,5 @@
 """Help embeds."""
+
 from __future__ import annotations
 
 import discord
@@ -30,7 +31,9 @@ def build_main_help_embed(bot_user: discord.ClientUser | None = None) -> discord
     return embed
 
 
-def build_category_embed(category_key: str, bot_user: discord.ClientUser | None = None) -> discord.Embed:
+def build_category_embed(
+    category_key: str, bot_user: discord.ClientUser | None = None
+) -> discord.Embed:
     cat = CATEGORIES.get(category_key)
     if not cat:
         return build_main_help_embed(bot_user)
@@ -47,5 +50,7 @@ def build_category_embed(category_key: str, bot_user: discord.ClientUser | None 
     for cmd, desc in cat["commands"]:
         embed.add_field(name=cmd, value=desc, inline=False)
 
-    embed.set_footer(text=f"DrusaBota | {cat['label']} • Made with ❤️ by Steel • Use dropdown to switch category")
+    embed.set_footer(
+        text=f"DrusaBota | {cat['label']} • Made with ❤️ by Steel • Use dropdown to switch category"
+    )
     return embed

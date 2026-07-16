@@ -4,8 +4,11 @@ Handles guild join/leave, voice state updates, and bot lifecycle events.
 """
 
 import logging
+
 import discord
 from discord.ext import commands
+
+from bot.core.bot import Bot
 
 logger = logging.getLogger(__name__)
 
@@ -13,7 +16,7 @@ logger = logging.getLogger(__name__)
 class EventCog(commands.Cog):
     """Handles Discord events for guild management and voice state tracking."""
 
-    def __init__(self, bot: commands.Bot):
+    def __init__(self, bot: Bot):
         self.bot = bot
 
     def _is_247_enabled(self) -> bool:
@@ -42,6 +45,7 @@ class EventCog(commands.Cog):
         # Initialize guild settings
         try:
             from bot.database import guild_settings as gs
+
             gs.get(str(guild.id), self.bot.config.database_path)
             logger.info("Initialized settings for guild: %s", guild.name)
         except Exception as e:
@@ -62,6 +66,7 @@ class EventCog(commands.Cog):
         # Remove guild settings
         try:
             from bot.database import guild_settings as gs
+
             gs.remove(str(guild.id), self.bot.config.database_path)
             logger.info("Removed settings for guild: %s", guild.name)
         except Exception as e:
@@ -104,6 +109,7 @@ class EventCog(commands.Cog):
             return
 
         voice_channel = voice_client.channel
+        assert isinstance(voice_channel, discord.VoiceChannel)
         if len(voice_channel.members) <= 1:  # Only the bot
             logger.info(
                 "Bot is alone in voice channel %s (guild: %s). Disconnecting...",
@@ -113,11 +119,12 @@ class EventCog(commands.Cog):
 
             # Delay disconnect to prevent quick reconnects
             import asyncio
+
             await asyncio.sleep(30)
 
             # Re-check if still alone and 24/7 was not enabled while waiting.
             if voice_channel and len(voice_channel.members) <= 1 and not self._is_247_enabled():
-                await voice_client.disconnect()
+                await voice_client.disconnect(force=True)
                 self.bot.queue_manager.cleanup(member.guild.id)
                 logger.info("Auto-disconnected from guild %s (alone)", member.guild.name)
 
@@ -127,7 +134,7 @@ class EventCog(commands.Cog):
         logger.info("Bot resumed connection to Discord")
 
 
-async def setup(bot: commands.Bot) -> None:
+async def setup(bot: Bot) -> None:
     """Add the events cog to the bot."""
     await bot.add_cog(EventCog(bot))
     logger.info("Events cog loaded")

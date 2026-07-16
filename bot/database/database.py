@@ -3,11 +3,11 @@ Database module for the Discord Music Bot.
 Provides SQLite connection management, table creation, and migration helpers.
 """
 
+import contextlib
 import logging
 import sqlite3
 import threading
 from pathlib import Path
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
@@ -35,10 +35,8 @@ def _unregister_connection(cache_key: str, conn: sqlite3.Connection) -> None:
         connections = _connection_registry.get(cache_key)
         if connections is None:
             return
-        try:
+        with contextlib.suppress(ValueError):
             connections.remove(conn)
-        except ValueError:
-            pass
         if not connections:
             _connection_registry.pop(cache_key, None)
 
@@ -87,7 +85,7 @@ def get_connection(db_path: str) -> sqlite3.Connection:
     return conn
 
 
-def close_connection(db_path: Optional[str] = None) -> None:
+def close_connection(db_path: str | None = None) -> None:
     """Close thread-local database connection(s).
 
     Args:

@@ -1,10 +1,12 @@
 """Blacklist management."""
+
 import logging
-import discord
+
 from discord.ext import commands
 
 from bot.database.database import get_connection
-from .base import resolve_user_id, log_audit
+
+from .base import log_audit, resolve_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -50,7 +52,9 @@ class BlacklistCog(commands.Cog):
             logger.error("Failed to blacklist user %s: %s", user_id, e)
             await ctx.send("❌ Failed to blacklist user.")
             return
-        await log_audit("blacklist", user_id, username, str(ctx.author.id), self.bot.config.database_path)
+        await log_audit(
+            "blacklist", user_id, username, str(ctx.author.id), self.bot.config.database_path
+        )
         await ctx.send("✅ User blacklisted.")
 
     @commands.command(name="unblacklist")
@@ -73,7 +77,13 @@ class BlacklistCog(commands.Cog):
             logger.error("Failed to unblacklist user %s: %s", user_id, e)
             await ctx.send("❌ Failed to unblacklist user.")
             return
-        await log_audit("unblacklist", user_id, target_username, str(ctx.author.id), self.bot.config.database_path)
+        await log_audit(
+            "unblacklist",
+            user_id,
+            target_username,
+            str(ctx.author.id),
+            self.bot.config.database_path,
+        )
         await ctx.send("✅ User unblacklisted.")
 
 

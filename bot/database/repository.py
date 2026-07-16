@@ -3,13 +3,14 @@ Database repository abstraction layer.
 Provides a unified interface for SQLite (local) and PostgreSQL (cloud).
 Auto-detects which backend to use based on DATABASE_URL config.
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Any, Optional
+from typing import Any
 
 from bot.database.database import get_connection, initialize_database
-from bot.database.postgres import PostgresManager, get_postgres, set_postgres
+from bot.database.postgres import PostgresManager, set_postgres
 
 logger = logging.getLogger(__name__)
 
@@ -20,11 +21,11 @@ DB_BACKEND_POSTGRES = "postgres"
 class DatabaseRepository:
     """Unified database repository that works with SQLite or PostgreSQL."""
 
-    def __init__(self, db_path: str, database_url: Optional[str] = None):
+    def __init__(self, db_path: str, database_url: str | None = None):
         self._db_path = db_path
         self._database_url = database_url
         self._backend: str = DB_BACKEND_SQLITE
-        self._postgres: Optional[PostgresManager] = None
+        self._postgres: PostgresManager | None = None
 
     @property
     def backend(self) -> str:
@@ -68,6 +69,7 @@ class DatabaseRepository:
             await self._postgres.disconnect()
         else:
             from bot.database.database import close_connection
+
             close_connection(self._db_path)
 
     # --- Query helpers ---
@@ -94,7 +96,7 @@ class DatabaseRepository:
             cursor.execute(query, args)
             return [dict(row) for row in cursor.fetchall()]
 
-    async def fetchrow(self, query: str, *args: Any) -> Optional[dict[str, Any]]:
+    async def fetchrow(self, query: str, *args: Any) -> dict[str, Any] | None:
         """Fetch a single row as dict."""
         if self._postgres:
             record = await self._postgres.fetchrow(query, *args)
@@ -256,22 +258,36 @@ class DatabaseRepository:
         """)
 
         # Create indexes
-        await self._postgres.execute("CREATE INDEX IF NOT EXISTS idx_favorites_user ON user_favorites(user_id)")
-        await self._postgres.execute("CREATE INDEX IF NOT EXISTS idx_playlists_user ON playlists(user_id)")
-        await self._postgres.execute("CREATE INDEX IF NOT EXISTS idx_playlist_tracks_playlist ON playlist_tracks(playlist_id)")
-        await self._postgres.execute("CREATE INDEX IF NOT EXISTS idx_history_guild ON playback_history(guild_id)")
-        await self._postgres.execute("CREATE INDEX IF NOT EXISTS idx_playlist_tracks_position ON playlist_tracks(playlist_id, position)")
-        await self._postgres.execute("CREATE INDEX IF NOT EXISTS idx_access_requests_status ON access_requests(status)")
-        await self._postgres.execute("CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)")
+        await self._postgres.execute(
+            "CREATE INDEX IF NOT EXISTS idx_favorites_user ON user_favorites(user_id)"
+        )
+        await self._postgres.execute(
+            "CREATE INDEX IF NOT EXISTS idx_playlists_user ON playlists(user_id)"
+        )
+        await self._postgres.execute(
+            "CREATE INDEX IF NOT EXISTS idx_playlist_tracks_playlist ON playlist_tracks(playlist_id)"
+        )
+        await self._postgres.execute(
+            "CREATE INDEX IF NOT EXISTS idx_history_guild ON playback_history(guild_id)"
+        )
+        await self._postgres.execute(
+            "CREATE INDEX IF NOT EXISTS idx_playlist_tracks_position ON playlist_tracks(playlist_id, position)"
+        )
+        await self._postgres.execute(
+            "CREATE INDEX IF NOT EXISTS idx_access_requests_status ON access_requests(status)"
+        )
+        await self._postgres.execute(
+            "CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)"
+        )
 
         logger.info("PostgreSQL tables created/verified")
 
 
 # Global repository instance
-_repository: Optional[DatabaseRepository] = None
+_repository: DatabaseRepository | None = None
 
 
-def get_repository() -> Optional[DatabaseRepository]:
+def get_repository() -> DatabaseRepository | None:
     """Get the global repository instance."""
     global _repository
     return _repository
@@ -283,7 +299,7 @@ def set_repository(repo: DatabaseRepository) -> None:
     _repository = repo
 
 
-async def create_repository(db_path: str, database_url: Optional[str] = None) -> DatabaseRepository:
+async def create_repository(db_path: str, database_url: str | None = None) -> DatabaseRepository:
     """Create and initialize a database repository.
 
     Args:

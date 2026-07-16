@@ -2,26 +2,26 @@
 Facade for embeds — keeps old import path working while actual logic lives in
 bot.music.embeds/* modules.
 """
-from __future__ import annotations
 
-from typing import Optional, Union
+from __future__ import annotations
 
 import discord
 
 from bot.music.queue_manager import LoopMode
-from .embeds.common import build_progress_bar as _build_bar
-from .embeds.common import format_duration as _fmt
+
 from .embeds import (
-    player_idle_embed,
-    player_now_playing_embed,
-    queue_embed,
-    playlist_embed,
     favorites_embed,
-    search_results_embed,
-    track_added,
     filter_embed,
     help_embed,
+    player_idle_embed,
+    player_now_playing_embed,
+    playlist_embed,
+    queue_embed,
+    search_results_embed,
+    track_added,
 )
+from .embeds.common import build_progress_bar as _build_bar
+from .embeds.common import format_duration as _fmt
 
 
 class EmbedManager:
@@ -34,11 +34,11 @@ class EmbedManager:
         uri: str,
         length: int,
         position: int = 0,
-        thumbnail_url: Optional[str] = None,
-        requester: Optional[str] = None,
+        thumbnail_url: str | None = None,
+        requester: str | None = None,
         volume: int = 50,
         paused: bool = False,
-        loop: Optional[Union[LoopMode, str]] = None,
+        loop: LoopMode | str | None = None,
         autoplay: bool = False,
         queue_len: int = 0,
         active_filter: str = "off",
@@ -101,5 +101,7 @@ class EmbedManager:
         return _fmt(milliseconds)
 
     @staticmethod
-    def _build_progress_bar(current: int, total: int, length: int = 18, bar_len: Optional[int] = None) -> str:
+    def _build_progress_bar(
+        current: int, total: int, length: int = 18, bar_len: int | None = None
+    ) -> str:
         return _build_bar(current, total, length, bar_len)

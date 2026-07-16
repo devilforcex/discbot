@@ -1,8 +1,8 @@
 """Persistence for player message IDs."""
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from bot.database.database import get_connection
 
@@ -35,13 +35,17 @@ class PlayerPersistence:
         except Exception as e:
             logger.debug("Failed to save player message ids: %s", e)
 
-    def load_ids(self, guild_id: int) -> tuple[Optional[int], Optional[int]]:
+    def load_ids(self, guild_id: int) -> tuple[int | None, int | None]:
         try:
             conn = get_connection(self.bot.config.database_path)
             cur = conn.cursor()
-            cur.execute("SELECT value FROM bot_settings WHERE key = ?", (self._db_key(guild_id, "channel"),))
+            cur.execute(
+                "SELECT value FROM bot_settings WHERE key = ?", (self._db_key(guild_id, "channel"),)
+            )
             ch = cur.fetchone()
-            cur.execute("SELECT value FROM bot_settings WHERE key = ?", (self._db_key(guild_id, "message"),))
+            cur.execute(
+                "SELECT value FROM bot_settings WHERE key = ?", (self._db_key(guild_id, "message"),)
+            )
             msg = cur.fetchone()
             channel_id = int(ch["value"]) if ch and ch["value"] else None
             message_id = int(msg["value"]) if msg and msg["value"] else None

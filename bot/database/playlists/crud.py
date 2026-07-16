@@ -1,16 +1,18 @@
 """Playlist CRUD operations."""
+
 from __future__ import annotations
 
 import logging
 import uuid
-from typing import Optional
 
 from bot.database.database import get_connection
 
 logger = logging.getLogger(__name__)
 
 
-def create_playlist(user_id: str, guild_id: str, name: str, description: str = "", db_path: str = "data/musicbot.db") -> Optional[str]:
+def create_playlist(
+    user_id: str, guild_id: str, name: str, description: str = "", db_path: str = "data/musicbot.db"
+) -> str | None:
     conn = get_connection(db_path)
     cur = conn.cursor()
     cur.execute("SELECT 1 FROM playlists WHERE user_id = ? AND name = ?", (user_id, name))
@@ -28,7 +30,7 @@ def create_playlist(user_id: str, guild_id: str, name: str, description: str = "
     return playlist_id
 
 
-def get_playlist(playlist_id: str, db_path: str = "data/musicbot.db") -> Optional[dict]:
+def get_playlist(playlist_id: str, db_path: str = "data/musicbot.db") -> dict | None:
     conn = get_connection(db_path)
     cur = conn.cursor()
     cur.execute("SELECT * FROM playlists WHERE playlist_id = ?", (playlist_id,))
@@ -36,7 +38,10 @@ def get_playlist(playlist_id: str, db_path: str = "data/musicbot.db") -> Optiona
     if not row:
         return None
     playlist = dict(row)
-    cur.execute("""SELECT * FROM playlist_tracks WHERE playlist_id = ? ORDER BY position ASC""", (playlist_id,))
+    cur.execute(
+        """SELECT * FROM playlist_tracks WHERE playlist_id = ? ORDER BY position ASC""",
+        (playlist_id,),
+    )
     playlist["tracks"] = [dict(r) for r in cur.fetchall()]
     playlist["track_count"] = len(playlist["tracks"])
     return playlist

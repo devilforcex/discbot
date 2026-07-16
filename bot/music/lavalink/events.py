@@ -1,13 +1,14 @@
 """Wavelink event handlers — split from monolithic lavalink_client.py."""
+
 from __future__ import annotations
 
+import contextlib
 import logging
 
 import wavelink
 from discord.ext import commands
 
 from bot.music.player import Player
-from bot.music.search import search_tracks
 
 logger = logging.getLogger(__name__)
 
@@ -15,6 +16,8 @@ logger = logging.getLogger(__name__)
 class WavelinkEvents(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
+        self._autoplay_failures: dict[int, int] = {}
+        self._max_autoplay_failures = 3
 
     @commands.Cog.listener()
     async def on_wavelink_node_ready(self, payload: wavelink.NodeReadyEventPayload) -> None:
@@ -29,13 +32,13 @@ class WavelinkEvents(commands.Cog):
         logger.info("Wavelink node ready: %s | Resumed: %s", payload.node.uri, payload.resumed)
 
     @commands.Cog.listener()
-    async def on_wavelink_node_disconnected(self, payload: wavelink.NodeDisconnectedEventPayload) -> None:
+    async def on_wavelink_node_disconnected(
+        self, payload: wavelink.NodeDisconnectedEventPayload
+    ) -> None:
         if hasattr(self.bot, "lavalink"):
             self.bot.lavalink._ready = False
-        logger.warning("Wavelink node disconnected: %s | Code: %s", payload.node.uri, payload.code)
-        scheduler = getattr(self.bot, "_schedule_lavalink_reconnect", None)
-        if scheduler:
-            scheduler()
+            self.bot.lavalink.schedule_reconnect()
+        logger.warning("Wavelink node disconnected: %s", payload.node.uri)
 
     @commands.Cog.listener()
     async def on_wavelink_track_start(self, payload: wavelink.TrackStartEventPayload) -> None:
@@ -59,7 +62,9 @@ class WavelinkEvents(commands.Cog):
         if not player or not track:
             return
         guild_id = player.guild.id
-        logger.info("Track ended: %s in guild %s | Reason: %s", track.title, guild_id, payload.reason)
+        logger.info(
+            "Track ended: %s in guild %s | Reason: %s", track.title, guild_id, payload.reason
+        )
         self._save_playback_history(guild_id, track, player)
         loop_mode = self.bot.queue_manager.get_loop(guild_id)
         from bot.music.queue_manager import LoopMode
@@ -95,7 +100,9 @@ class WavelinkEvents(commands.Cog):
             await self._play_next(player)
 
     @commands.Cog.listener()
-    async def on_wavelink_track_exception(self, payload: wavelink.TrackExceptionEventPayload) -> None:
+    async def on_wavelink_track_exception(
+        self, payload: wavelink.TrackExceptionEventPayload
+    ) -> None:
         player = payload.player
         logger.error(
             "Track exception in guild %s: %s | Error: %s",
@@ -107,72 +114,61 @@ class WavelinkEvents(commands.Cog):
             await self._play_next(player)
 
     async def _handle_autoplay(self, player: Player, guild_id: int) -> None:
+        # Circuit breaker: skip autoplay if too many failures
+        if self._autoplay_failures.get(guild_id, 0) >= self._max_autoplay_failures:
+            logger.warning("Autoplay circuit breaker open for guild %s", guild_id)
+            return
         if not self.bot.queue_manager.is_empty(guild_id):
             await self._play_next(player)
         else:
             autoplay_track = await player.get_autoplay_track()
             if autoplay_track:
-                self.bot.queue_manager.add_front(
-                    guild_id,
-                    {
-                        "title": autoplay_track.title,
-                        "author": autoplay_track.author,
-                        "uri": autoplay_track.uri,
-                        "identifier": autoplay_track.identifier,
-                        "length": autoplay_track.length,
-                        "artwork_url": getattr(autoplay_track, "artwork_url", None),
-                    },
-                )
+                self.bot.queue_manager.add_front(guild_id, autoplay_track)
                 await self._play_next(player)
+            else:
+                # Track autoplay failure for circuit breaker
+                self._autoplay_failures[guild_id] = self._autoplay_failures.get(guild_id, 0) + 1
+                logger.debug(
+                    "Autoplay failed for guild %s (count: %d)",
+                    guild_id,
+                    self._autoplay_failures.get(guild_id),
+                )
 
     async def _play_next(self, player: Player) -> None:
         guild_id = player.guild.id
         max_attempts = max(1, self.bot.queue_manager.get_length(guild_id) + 1)
         for _ in range(max_attempts):
-            next_track_data = self.bot.queue_manager.get_next(guild_id)
-            if next_track_data is None:
+            next_track = self.bot.queue_manager.get_next(guild_id)
+            if next_track is None:
                 logger.info("Queue empty for guild %s, playback stopped", guild_id)
                 mgr = getattr(self.bot, "player_messages", None)
                 if mgr:
-                    try:
+                    with contextlib.suppress(Exception):
                         await mgr.set_idle(guild_id)
-                    except Exception:
-                        pass
                 return
-            uri = next_track_data.get("uri")
-            if not uri:
-                logger.warning("Skipping queued track without URI in guild %s: %s", guild_id, next_track_data)
-                self._discard_queued_track(guild_id, next_track_data)
-                continue
             try:
-                tracks = await search_tracks(uri, source=None, fallbacks=False)
+                await player.play(next_track)
+                self.bot.queue_manager.add_history(guild_id, next_track)
+                logger.info(
+                    "Playing next track: %s in guild %s",
+                    getattr(next_track, "title", "?"),
+                    guild_id,
+                )
+                return
             except Exception as e:
-                logger.error("Failed to resolve queued track in guild %s: %s", guild_id, e)
+                logger.error("Failed to play queued track in guild %s: %s", guild_id, e)
                 continue
-            if not tracks:
-                logger.warning("Queued track no longer found in guild %s: %s", guild_id, uri)
-                self._discard_queued_track(guild_id, next_track_data)
-                continue
-            track = tracks[0]
-            await player.play(track)
-            self.bot.queue_manager.add_history(guild_id, next_track_data)
-            logger.info("Playing next track: %s in guild %s", track.title, guild_id)
-            return
-        logger.warning("No playable queued tracks for guild %s after %d attempt(s)", guild_id, max_attempts)
+        logger.warning(
+            "No playable queued tracks for guild %s after %d attempt(s)", guild_id, max_attempts
+        )
         mgr = getattr(self.bot, "player_messages", None)
         if mgr:
-            try:
+            with contextlib.suppress(Exception):
                 await mgr.set_idle(guild_id)
-            except Exception:
-                pass
 
-    def _discard_queued_track(self, guild_id: int, track_data: dict) -> None:
-        try:
-            self.bot.queue_manager.remove_by_uri(guild_id, track_data)
-        except Exception as e:
-            logger.debug("Failed to discard bad queued track in guild %s: %s", guild_id, e)
-
-    def _save_playback_history(self, guild_id: int, track: wavelink.Playable, player: Player) -> None:
+    def _save_playback_history(
+        self, guild_id: int, track: wavelink.Playable, player: Player
+    ) -> None:
         try:
             from bot.database import history_manager
 

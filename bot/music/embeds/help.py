@@ -1,4 +1,5 @@
 """Help embed (static version)."""
+
 import discord
 
 from bot.music.emoji import COLOR_PLAYING, EMOJI
@@ -112,5 +113,7 @@ def help_embed() -> discord.Embed:
         inline=False,
     )
 
-    embed.set_footer(text="DrusaBota • Made with ❤️ by Steel • Use dropdown to switch category • Discord link in buttons below")
+    embed.set_footer(
+        text="DrusaBota • Made with ❤️ by Steel • Use dropdown to switch category • Discord link in buttons below"
+    )
     return embed

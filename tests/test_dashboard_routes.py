@@ -40,7 +40,7 @@ class DashboardRoutesTests(unittest.TestCase):
             if credentials is None or credentials.credentials != "secret":
                 raise HTTPException(status_code=401, detail="Invalid or missing Bearer token")
 
-        register_routes(app, self.bot, templates=None, security=security, check_write_auth=check_write_auth)
+        register_routes(app, self.bot, security=security, check_write_auth=check_write_auth)
         self.client = TestClient(app)
 
     def tearDown(self):
@@ -69,16 +69,16 @@ class DashboardRoutesTests(unittest.TestCase):
             headers={"Authorization": "Bearer secret"},
             json={"default_source": "bad"},
         )
-        self.assertEqual(invalid.status_code, 400)
+        self.assertEqual(invalid.status_code, 422)
 
         saved = self.client.post(
             "/api/settings/123",
             headers={"Authorization": "Bearer secret"},
-            json={"volume": 150, "autoplay": "false", "announce_songs": "yes", "default_source": "scsearch"},
+            json={"volume": 80, "autoplay": "false", "announce_songs": "yes", "default_source": "scsearch"},
         )
         self.assertEqual(saved.status_code, 200)
         settings = saved.json()["settings"]
-        self.assertEqual(settings["volume"], 100)
+        self.assertEqual(settings["volume"], 80)
         self.assertEqual(settings["autoplay"], 0)
         self.assertEqual(settings["default_source"], "scsearch")
 
@@ -94,6 +94,9 @@ class FakeQueueManager:
                 "requester_id": 1,
             }
         ]
+
+    def get_all_as_dicts(self, guild_id):
+        return self.get_all(guild_id)
 
     def get_length(self, guild_id):
         return len(self.get_all(guild_id))

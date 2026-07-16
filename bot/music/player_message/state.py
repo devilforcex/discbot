@@ -1,7 +1,6 @@
 """Player state builder and embed rendering."""
-from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations
 
 import discord
 
@@ -13,7 +12,7 @@ class PlayerStateBuilder:
     def __init__(self, bot):
         self.bot = bot
 
-    def get_channel(self, guild_id: int) -> Optional[discord.TextChannel]:
+    def get_channel(self, guild_id: int) -> discord.TextChannel | None:
         guild = self.bot.get_guild(guild_id)
         if not guild:
             return None
@@ -35,7 +34,9 @@ class PlayerStateBuilder:
         loop = self.bot.queue_manager.get_loop(guild_id)
         queue_len = self.bot.queue_manager.get_length(guild_id)
 
-        is_active = bool(player and (getattr(player, "playing", False) or getattr(player, "paused", False)))
+        is_active = bool(
+            player and (getattr(player, "playing", False) or getattr(player, "paused", False))
+        )
         if not player or not getattr(player, "last_track", None) or not is_active:
             return {
                 "playing": False,

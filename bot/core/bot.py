@@ -4,10 +4,11 @@ Manages subsystem lifecycle, cog loading, and global state.
 """
 
 import asyncio
+import contextlib
 import logging
 import os
-from datetime import datetime, timezone
-from typing import Optional
+from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 
 import discord
 import wavelink
@@ -16,6 +17,11 @@ from discord.ext import commands
 from bot.config import Config, load_config
 from bot.music.lavalink_client import LavalinkClient
 from bot.music.queue_manager import QueueManager
+
+if TYPE_CHECKING:
+    from bot.database.repository import Repository
+    from bot.music.player_controller import PlayerController
+    from bot.music.player_message import PlayerMessageManager
 
 logger = logging.getLogger(__name__)
 
@@ -27,15 +33,21 @@ class Bot(commands.Bot):
     auto-reconnect, 24/7 mode, and optional dashboard as first-class attributes.
     """
 
-    def __init__(self, config: Optional[Config] = None):
+    queue_manager: QueueManager
+    lavalink: LavalinkClient
+    player_controller: "PlayerController"
+    player_messages: "PlayerMessageManager"
+    db: "Repository | None"
+
+    def __init__(self, config: Config | None = None):
         # Load configuration if not provided
         self._config = config or load_config()
 
         # Bot intents
         intents = discord.Intents.default()
-        intents.message_content = True   # Required for prefix commands
-        intents.voice_states = True      # Required for voice channel tracking
-        intents.guilds = True            # Required for guild tracking
+        intents.message_content = True  # Required for prefix commands
+        intents.voice_states = True  # Required for voice channel tracking
+        intents.guilds = True  # Required for guild tracking
 
         super().__init__(
             command_prefix="!",
@@ -44,8 +56,8 @@ class Bot(commands.Bot):
         )
 
         # Initialize subsystems
-         # Remove default help command to allow custom !help
-        self._io_loop: Optional[asyncio.AbstractEventLoop] = None
+        # Remove default help command to allow custom !help
+        self._io_loop: asyncio.AbstractEventLoop | None = None
         self.queue_manager = QueueManager()
         self.lavalink = LavalinkClient(self)
         self._dashboard = None
@@ -58,11 +70,11 @@ class Bot(commands.Bot):
         self.player_messages = PlayerMessageManager(self)
 
         # Uptime tracking
-        self._start_time: Optional[datetime] = None
+        self._start_time: datetime | None = None
 
         # Lavalink auto-reconnect
         self._lavalink_reconnect_attempt: int = 0
-        self._lavalink_reconnect_task: Optional[asyncio.Task] = None
+        self._lavalink_reconnect_task: asyncio.Task | None = None
 
     @property
     def config(self) -> Config:
@@ -127,6 +139,7 @@ class Bot(commands.Bot):
         """Initialize database via the unified repository (PostgreSQL or SQLite fallback)."""
         try:
             from bot.database.repository import create_repository
+
             self.db = await create_repository(
                 db_path=self._config.database_path,
                 database_url=self._config.database_url,
@@ -141,6 +154,7 @@ class Bot(commands.Bot):
         """Setup the optional web dashboard."""
         try:
             from bot.dashboard.dashboard import DashboardServer
+
             self._dashboard = DashboardServer(self)
 
             # Start dashboard in background
@@ -157,7 +171,7 @@ class Bot(commands.Bot):
 
     async def on_ready(self) -> None:
         """Handle bot ready event."""
-        self._start_time = datetime.now(timezone.utc)
+        self._start_time = datetime.now(UTC)
 
         logger.info(
             "Bot is ready! Logged in as %s (ID: %s)",
@@ -189,13 +203,11 @@ class Bot(commands.Bot):
         await self.process_commands(message)
 
     async def _auto_join_music_channel(self) -> None:
-        """Auto-join the configured music channel's voice if 24/7 mode is enabled."""
+        """Auto-join the configured music voice channel if 24/7 mode is enabled."""
         try:
             if not hasattr(self, "db") or not self.db:
                 return
-            row = await self.db.fetchrow(
-                "SELECT value FROM bot_settings WHERE key = '247_enabled'"
-            )
+            row = await self.db.fetchrow("SELECT value FROM bot_settings WHERE key = '247_enabled'")
             if not row or row.get("value") != "true":
                 return
         except Exception as e:
@@ -208,24 +220,28 @@ class Bot(commands.Bot):
             logger.warning("Cannot auto-join: guild %s not found", self._config.guild_id)
             return
 
-        # Find the music channel and the most likely voice channel
-        music_channel = guild.get_channel(self._config.music_channel_id)
-        if not music_channel:
-            logger.warning("Cannot auto-join: music channel %s not found", self._config.music_channel_id)
+        # Try to join the configured voice channel directly
+        voice_channel_id = getattr(self._config, "music_voice_channel_id", None)
+        if not voice_channel_id:
+            logger.warning("Cannot auto-join: music_voice_channel_id not configured")
             return
 
-        # Try to find a voice channel with members, or use the first available
-        for vc in guild.voice_channels:
-            if len(vc.members) > 0 and not all(m.bot for m in vc.members):
-                try:
-                    await self.lavalink.get_player(guild.id, vc)
-                    logger.info("24/7 auto-joined voice channel: %s", vc.name)
-                    return
-                except Exception as e:
-                    logger.error("24/7 auto-join failed: %s", e)
-                    return
+        voice_channel = guild.get_channel(voice_channel_id)
+        if not voice_channel:
+            logger.warning(
+                "Cannot auto-join: voice channel %s not found", voice_channel_id
+            )
+            return
 
-        logger.info("24/7 mode enabled but no voice channel with members found")
+        if not isinstance(voice_channel, discord.VoiceChannel):
+            logger.warning("Configured channel %s is not a voice channel", voice_channel_id)
+            return
+
+        try:
+            await self.lavalink.get_player(guild.id, voice_channel)
+            logger.info("24/7 auto-joined voice channel: %s", voice_channel.name)
+        except Exception as e:
+            logger.error("24/7 auto-join failed: %s", e)
 
     def _schedule_lavalink_reconnect(self) -> None:
         """Start a single Lavalink reconnect task if one is not already running."""
@@ -246,7 +262,7 @@ class Bot(commands.Bot):
                     self._lavalink_reconnect_attempt = 0
                     return
 
-                delay = min(base_delay * (2 ** self._lavalink_reconnect_attempt), max_delay)
+                delay = min(base_delay * (2**self._lavalink_reconnect_attempt), max_delay)
                 self._lavalink_reconnect_attempt += 1
 
                 logger.warning(
@@ -259,7 +275,10 @@ class Bot(commands.Bot):
 
                 # Try to reconnect
                 await self.lavalink.setup(self._config)
-                logger.info("Lavalink reconnected successfully after %d attempts", self._lavalink_reconnect_attempt)
+                logger.info(
+                    "Lavalink reconnected successfully after %d attempts",
+                    self._lavalink_reconnect_attempt,
+                )
                 self._lavalink_reconnect_attempt = 0
                 return
 
@@ -272,7 +291,7 @@ class Bot(commands.Bot):
         """Get the bot's uptime as a formatted string."""
         if self._start_time is None:
             return "N/A"
-        delta = datetime.now(timezone.utc) - self._start_time
+        delta = datetime.now(UTC) - self._start_time
         days = delta.days
         hours, remainder = divmod(delta.seconds, 3600)
         minutes, seconds = divmod(remainder, 60)
@@ -293,10 +312,8 @@ class Bot(commands.Bot):
         # Stop reconnect loop first so shutdown doesn't spawn a new node task.
         if self._lavalink_reconnect_task and not self._lavalink_reconnect_task.done():
             self._lavalink_reconnect_task.cancel()
-            try:
+            with contextlib.suppress(asyncio.CancelledError):
                 await self._lavalink_reconnect_task
-            except asyncio.CancelledError:
-                pass
 
         # Stop dashboard if running
         if self._dashboard:
@@ -332,6 +349,7 @@ def run_bot() -> None:
 
     # Setup logging
     from bot.core.logging_setup import setup_logging
+
     setup_logging(config.log_level)
 
     # Create and run bot

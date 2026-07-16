@@ -5,15 +5,15 @@ Provides presets like Bassboost, Nightcore, Vaporwave, Pop, etc.
 
 from __future__ import annotations
 
+import contextlib
 import logging
-from typing import Dict, Optional
 
 import wavelink
 
 logger = logging.getLogger(__name__)
 
 # Human readable descriptions matching screenshot
-FILTER_INFO: Dict[str, Dict[str, str]] = {
+FILTER_INFO: dict[str, dict[str, str]] = {
     "reset": {
         "label": "Reset Filters",
         "description": "Remove all audio filters",
@@ -77,7 +77,7 @@ def _equalizer_bands(gains: list[float]) -> list[dict]:
     return bands
 
 
-def build_filter(filter_name: str) -> Optional[wavelink.Filters]:
+def build_filter(filter_name: str) -> wavelink.Filters | None:
     """Build wavelink.Filters for given preset. None for reset."""
     name = filter_name.lower().strip()
 
@@ -105,7 +105,23 @@ def build_filter(filter_name: str) -> Optional[wavelink.Filters]:
 
     if name == "pop":
         # Pop optimized EQ: slight boost in vocal ranges
-        gains = [-0.05, 0.02, 0.08, 0.12, 0.10, 0.05, 0.02, -0.02, -0.02, 0.02, 0.05, 0.08, 0.10, 0.08, 0.05]
+        gains = [
+            -0.05,
+            0.02,
+            0.08,
+            0.12,
+            0.10,
+            0.05,
+            0.02,
+            -0.02,
+            -0.02,
+            0.02,
+            0.05,
+            0.08,
+            0.10,
+            0.08,
+            0.05,
+        ]
         filters.equalizer.set(bands=_equalizer_bands(gains))
         return filters
 
@@ -126,7 +142,23 @@ def build_filter(filter_name: str) -> Optional[wavelink.Filters]:
         # Lo-fi: low-pass + slight distortion + slow
         filters.low_pass.set(smoothing=20.0)
         filters.timescale.set(speed=0.9, pitch=0.9, rate=1.0)
-        gains = [0.1, 0.1, 0.05, 0.0, -0.05, -0.05, -0.05, -0.05, -0.05, -0.05, 0.0, 0.0, 0.0, 0.0, 0.0]
+        gains = [
+            0.1,
+            0.1,
+            0.05,
+            0.0,
+            -0.05,
+            -0.05,
+            -0.05,
+            -0.05,
+            -0.05,
+            -0.05,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+            0.0,
+        ]
         filters.equalizer.set(bands=_equalizer_bands(gains))
         return filters
 
@@ -137,7 +169,17 @@ def build_filter(filter_name: str) -> Optional[wavelink.Filters]:
 def get_filter_choices() -> list[tuple[str, str, str, str]]:
     """Return list of (value, label, description, emoji) for select menus, excluding extra."""
     # Core 5 like screenshot + extras
-    order = ["reset", "bassboost", "nightcore", "vaporwave", "pop", "8d", "lofi", "karaoke", "tremolo"]
+    order = [
+        "reset",
+        "bassboost",
+        "nightcore",
+        "vaporwave",
+        "pop",
+        "8d",
+        "lofi",
+        "karaoke",
+        "tremolo",
+    ]
     choices = []
     for key in order:
         if key in FILTER_INFO:
@@ -169,10 +211,8 @@ async def apply_filter_to_player(player, filter_name: str) -> str:
         raise
 
     # Track active filter on player for embed display
-    try:
-        setattr(player, "active_filter", normalized if normalized != "reset" else "off")
-    except Exception:
-        pass
+    with contextlib.suppress(Exception):
+        player.active_filter = normalized if normalized != "reset" else "off"
 
     logger.info("Applied filter %s to guild %s", normalized, getattr(player, "guild", None))
     return normalized

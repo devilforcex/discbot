@@ -1,21 +1,23 @@
 """Search view — TrackSelect + SearchView."""
+
 from __future__ import annotations
 
+import contextlib
 import logging
-from typing import List
 
 import discord
 import wavelink
 
 from bot.music.embed_manager import EmbedManager
 from bot.music.emoji import EMOJI
-from .base import auth_ok, ensure_voice_player_shared, play_wavelink_track_shared
+
+from .base import auth_ok, play_wavelink_track_shared
 
 logger = logging.getLogger(__name__)
 
 
 class TrackSelect(discord.ui.Select):
-    def __init__(self, tracks: List[wavelink.Playable], requester_id: int, bot, guild_id: int):
+    def __init__(self, tracks: list[wavelink.Playable], requester_id: int, bot, guild_id: int):
         self.tracks = tracks[:5]
         self.bot = bot
         self.guild_id = guild_id
@@ -57,7 +59,9 @@ class TrackSelect(discord.ui.Select):
             member = interaction.user  # type: ignore
 
         try:
-            playing, embed, _ = await play_wavelink_track_shared(self.bot, self.guild_id, member, track)
+            _, embed, _ = await play_wavelink_track_shared(
+                self.bot, self.guild_id, member, track
+            )
         except ValueError as ve:
             await interaction.followup.send(str(ve), ephemeral=True)
             return
@@ -71,16 +75,16 @@ class TrackSelect(discord.ui.Select):
             child.disabled = True
         view.stop()
 
-        try:
+        with contextlib.suppress(Exception):
             await interaction.message.edit(view=view)
-        except Exception:
-            pass
 
         await interaction.followup.send(embed=embed)
 
 
 class SearchView(discord.ui.View):
-    def __init__(self, tracks: List[wavelink.Playable], requester_id: int, bot, guild_id: int, query: str):
+    def __init__(
+        self, tracks: list[wavelink.Playable], requester_id: int, bot, guild_id: int, query: str
+    ):
         super().__init__(timeout=60)
         self.bot = bot
         self.guild_id = guild_id
@@ -95,13 +99,20 @@ class SearchView(discord.ui.View):
         if not ok:
             await interaction.response.send_message(err, ephemeral=True)
             return
-        if interaction.user.id != self.requester_id and interaction.user.id != self.bot.config.owner_id:
-            await interaction.response.send_message(f"{EMOJI['error']} Only the requester can cancel.", ephemeral=True)
+        if (
+            interaction.user.id != self.requester_id
+            and interaction.user.id != self.bot.config.owner_id
+        ):
+            await interaction.response.send_message(
+                f"{EMOJI['error']} Only the requester can cancel.", ephemeral=True
+            )
             return
         for child in self.children:
             child.disabled = True
         self.stop()
-        await interaction.response.edit_message(content=f"{EMOJI['error']} Search canceled.", embed=None, view=self)
+        await interaction.response.edit_message(
+            content=f"{EMOJI['error']} Search canceled.", embed=None, view=self
+        )
 
     async def on_timeout(self):
         for child in self.children:

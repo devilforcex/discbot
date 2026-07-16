@@ -69,3 +69,8 @@ scripts/windows/*.ico
 generated-page.html
 /update.bat
 
+# React SPA
+web/node_modules/
+web/dist/
+web/.env.local
+

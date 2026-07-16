@@ -1,18 +1,19 @@
 """Queue embed."""
+
 from __future__ import annotations
 
 import math
-from typing import Optional
 
 import discord
 
 from bot.music.emoji import COLOR_PLAYING, EMOJI
+
 from .common import format_duration
 
 
 def queue_embed(
     queue: list[dict],
-    current_track: Optional[dict] = None,
+    current_track: dict | None = None,
     page: int = 1,
     page_size: int = 10,
     guild_name: str = "Server",
@@ -64,10 +65,14 @@ def queue_embed(
                 inline=False,
             )
     else:
-        embed.add_field(name="Queue", value="The queue is empty. Add songs with `!play <song>`.", inline=False)
+        embed.add_field(
+            name="Queue", value="The queue is empty. Add songs with `!play <song>`.", inline=False
+        )
 
     if total_pages > 1:
-        embed.set_footer(text=f"Page {page}/{total_pages} • {len(queue)} queued • {total_dur} total — Buttons below to navigate")
+        embed.set_footer(
+            text=f"Page {page}/{total_pages} • {len(queue)} queued • {total_dur} total — Buttons below to navigate"
+        )
     else:
         embed.set_footer(text=f"{len(queue)} queued • {total_dur} total — Shuffle/Refresh buttons")
 

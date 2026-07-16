@@ -4,7 +4,6 @@ Provides error hierarchy, error embeds, and a global error handler cog.
 """
 
 import logging
-from typing import Optional
 
 import discord
 from discord.ext import commands
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 class MusicBotError(Exception):
     """Base exception for all music bot errors."""
 
-    def __init__(self, message: str, user_message: Optional[str] = None):
+    def __init__(self, message: str, user_message: str | None = None):
         self.message = message
         self.user_message = user_message or message
         super().__init__(self.message)
@@ -160,6 +159,7 @@ class ErrorHandler(commands.Cog):
         logger.error("Command error in %s: %s", ctx.command, error)
         embed = build_error_embed(description=str(error))
         await ctx.send(embed=embed, delete_after=10)
+
 
 async def setup(bot: commands.Bot) -> None:
     """Add the error handler cog to the bot."""

@@ -1,18 +1,18 @@
 """Shared helpers for all interactive views — single source of truth."""
+
 from __future__ import annotations
 
 import logging
 from typing import TYPE_CHECKING
 
 from bot.core.services.auth import check_authorized_sync_from_bot
-from bot.core.services.voice import ensure_voice_player
 from bot.core.services.playback import play_or_queue_track
+from bot.core.services.voice import ensure_voice_player
 
 logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
-    import wavelink
-    import discord
+    pass
 
 
 def is_url(query: str) -> bool:

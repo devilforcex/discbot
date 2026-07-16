@@ -1,7 +1,6 @@
 """Common embed helpers."""
-from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations
 
 
 def format_duration(milliseconds: int) -> str:
@@ -20,7 +19,7 @@ def build_progress_bar(
     current: int,
     total: int,
     length: int = 18,
-    bar_len: Optional[int] = None,
+    bar_len: int | None = None,
 ) -> str:
     size = bar_len if bar_len is not None else length
     if total <= 0:

@@ -1,4 +1,5 @@
 """Queue cog — queue, nowplaying, shuffle, loop, autoplay, volume."""
+
 import logging
 
 import discord
@@ -8,14 +9,14 @@ from bot.core.errors import DifferentVoiceChannel, NotInVoiceChannel, build_erro
 from bot.music.embed_manager import EmbedManager
 from bot.music.emoji import EMOJI
 from bot.music.queue_manager import LoopMode
-
-from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, voice_check
 from bot.music.views import QueuePaginatorView
+
+from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, voice_check, MusicCogMixin
 
 logger = logging.getLogger(__name__)
 
 
-class QueueCog(commands.Cog):
+class QueueCog(commands.Cog, MusicCogMixin):
     def __init__(self, bot):
         self.bot = bot
 
@@ -28,7 +29,11 @@ class QueueCog(commands.Cog):
     async def _run_controller(self, ctx, coro):
         result = await coro
         color = discord.Color.green() if result.ok else discord.Color.red()
-        await ctx.send(embed=discord.Embed(description=result.message, color=color), delete_after=8 if result.ok else 12)
+        await self._send_embed_to_response(
+            ctx,
+            embed=discord.Embed(description=result.message, color=color),
+            delete_after=8 if result.ok else 12,
+        )
         if result.refresh_player and hasattr(self.bot, "player_messages"):
             await self.bot.player_messages.update_now_playing(ctx.guild.id)
 
@@ -40,7 +45,11 @@ class QueueCog(commands.Cog):
             return
         player = get_player_from_ctx(ctx)
         current_track = None
-        if player and (getattr(player, "playing", False) or getattr(player, "paused", False)) and player.last_track:
+        if (
+            player
+            and (getattr(player, "playing", False) or getattr(player, "paused", False))
+            and player.last_track
+        ):
             current_track = {
                 "title": player.last_track.title,
                 "author": player.last_track.author,
@@ -48,12 +57,15 @@ class QueueCog(commands.Cog):
                 "length": player.last_track.length,
                 "requester_id": getattr(player.last_track, "requester_id", ctx.author.id),
             }
-        queue_list = self.bot.queue_manager.get_all(ctx.guild.id)
+        queue_list = self.bot.queue_manager.get_all_as_dicts(ctx.guild.id)
         if not queue_list and not current_track:
-            await ctx.send(embed=build_error_embed(description="The queue is empty."))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description="The queue is empty."))
             return
         embed = EmbedManager.queue_embed(
-            queue=queue_list, current_track=current_track, page=page, guild_name=ctx.guild.name if ctx.guild else "Server"
+            queue=queue_list,
+            current_track=current_track,
+            page=page,
+            guild_name=ctx.guild.name if ctx.guild else "Server",
         )
         view = QueuePaginatorView(
             bot=self.bot,
@@ -62,7 +74,7 @@ class QueueCog(commands.Cog):
             guild_name=ctx.guild.name if ctx.guild else "Server",
             page=page,
         )
-        await ctx.send(embed=embed, view=view)
+        await self._send_to_response(ctx, embed=embed, view=view)
 
     @commands.command(name="nowplaying", aliases=["np", "current"])
     async def nowplaying(self, ctx):
@@ -71,16 +83,22 @@ class QueueCog(commands.Cog):
         if not await self._require_authorized(ctx):
             return
         if hasattr(self.bot, "player_messages"):
-            msg = await self.bot.player_messages.ensure_message(ctx.guild.id, channel=ctx.channel)
+            # Use music channel for player message
+            music_channel = await self._get_response_channel(ctx)
+            msg = await self.bot.player_messages.ensure_message(ctx.guild.id, channel=music_channel)
             await self.bot.player_messages.update_now_playing(ctx.guild.id)
             if msg:
-                await ctx.send(f"{EMOJI['music']} Player updated — use buttons + filter dropdown.", delete_after=6)
+                await self._send_to_response(
+                    ctx,
+                    content=f"{EMOJI['music']} Player updated — use buttons + filter dropdown.",
+                    delete_after=6,
+                )
             else:
-                await ctx.send(embed=build_error_embed(description="Could not create player message."))
+                await self._send_embed_to_response(ctx, embed=build_error_embed(description="Could not create player message."))
             return
         player = get_player_from_ctx(ctx)
         if not player or not player.playing or not player.last_track:
-            await ctx.send(embed=build_error_embed(description="Nothing is currently playing."))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description="Nothing is currently playing."))
             return
         track = player.last_track
         embed = EmbedManager.now_playing(
@@ -93,7 +111,7 @@ class QueueCog(commands.Cog):
             volume=player.get_volume(),
             active_filter=getattr(player, "active_filter", "off"),
         )
-        await ctx.send(embed=embed)
+        await self._send_embed_to_response(ctx, embed=embed)
 
     @commands.command(name="shuffle")
     async def shuffle(self, ctx):
@@ -101,7 +119,9 @@ class QueueCog(commands.Cog):
             return
         if not await self._require_authorized(ctx):
             return
-        await self._run_controller(ctx, self.bot.player_controller.shuffle(ctx.guild.id, ctx.author))
+        await self._run_controller(
+            ctx, self.bot.player_controller.shuffle(ctx.guild.id, ctx.author)
+        )
 
     @commands.command(name="loop")
     async def loop(self, ctx, mode: str = "none"):
@@ -111,15 +131,18 @@ class QueueCog(commands.Cog):
             return
         mode_lower = mode.strip().lower()
         if mode_lower not in ("none", "track", "queue"):
-            await ctx.send(embed=build_error_embed(description="Invalid mode. Use: none, track, or queue."))
+            await self._send_embed_to_response(
+                ctx,
+                embed=build_error_embed(description="Invalid mode. Use: none, track, or queue.")
+            )
             return
         try:
             _, player = voice_check(ctx)
         except (NotInVoiceChannel, DifferentVoiceChannel) as e:
-            await ctx.send(embed=build_error_embed(description=e.user_message))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description=e.user_message))
             return
         if not player:
-            await ctx.send(embed=build_error_embed(description="No active music session."))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description="No active music session."))
             return
         loop_mode = self.bot.queue_manager.set_loop(ctx.guild.id, mode_lower)
         mode_emojis = {
@@ -129,9 +152,11 @@ class QueueCog(commands.Cog):
         }
         emoji = mode_emojis.get(loop_mode, EMOJI["loop_none"])
         embed = discord.Embed(
-            title=f"{emoji} Loop Mode", description=f"Loop mode set to **{loop_mode.value}**.", color=discord.Color.blue()
+            title=f"{emoji} Loop Mode",
+            description=f"Loop mode set to **{loop_mode.value}**.",
+            color=discord.Color.blue(),
         )
-        await ctx.send(embed=embed)
+        await self._send_embed_to_response(ctx, embed=embed)
         if hasattr(self.bot, "player_messages"):
             await self.bot.player_messages.update_now_playing(ctx.guild.id)
 
@@ -144,10 +169,10 @@ class QueueCog(commands.Cog):
         try:
             _, player = voice_check(ctx)
         except (NotInVoiceChannel, DifferentVoiceChannel) as e:
-            await ctx.send(embed=build_error_embed(description=e.user_message))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description=e.user_message))
             return
         if not player:
-            await ctx.send(embed=build_error_embed(description="No active music session."))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description="No active music session."))
             return
         state_lower = state.strip().lower()
         if state_lower == "on":
@@ -162,7 +187,7 @@ class QueueCog(commands.Cog):
             description=f"Autoplay has been **{'enabled' if new_state else 'disabled'}**.",
             color=discord.Color.green() if new_state else discord.Color.red(),
         )
-        await ctx.send(embed=embed)
+        await self._send_embed_to_response(ctx, embed=embed)
 
     @commands.command(name="volume", aliases=["vol", "v"])
     async def volume(self, ctx, volume: int = 50):
@@ -171,9 +196,11 @@ class QueueCog(commands.Cog):
         if not await self._require_authorized(ctx):
             return
         if volume < 0 or volume > 100:
-            await ctx.send(embed=build_error_embed(description="Volume must be between 0 and 100."))
+            await self._send_embed_to_response(ctx, embed=build_error_embed(description="Volume must be between 0 and 100."))
             return
-        await self._run_controller(ctx, self.bot.player_controller.set_volume(ctx.guild.id, ctx.author, volume))
+        await self._run_controller(
+            ctx, self.bot.player_controller.set_volume(ctx.guild.id, ctx.author, volume)
+        )
 
 
 async def setup(bot):

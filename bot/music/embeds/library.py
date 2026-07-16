@@ -1,4 +1,5 @@
 """Favorites & playlists embeds."""
+
 from __future__ import annotations
 
 import math
@@ -6,6 +7,7 @@ import math
 import discord
 
 from bot.music.emoji import COLOR_FAVORITE, COLOR_PLAYING
+
 from .common import format_duration
 
 
@@ -21,7 +23,8 @@ def playlist_embed(
 
     embed = discord.Embed(
         title=f"📀 {playlist['name']}",
-        description=(playlist.get("description", "") or "No description") + f"\n\n**{len(tracks)}** tracks • `{total_dur}` total",
+        description=(playlist.get("description", "") or "No description")
+        + f"\n\n**{len(tracks)}** tracks • `{total_dur}` total",
         color=COLOR_PLAYING,
     )
 
@@ -59,7 +62,9 @@ def favorites_embed(
 
     embed = discord.Embed(
         title="⭐ Your Favorites",
-        description=f"**{total}** favorite track(s)" + (f" • Page {page}/{total_pages}" if total else "") + "\nSelect a track from the menu below to play.",
+        description=f"**{total}** favorite track(s)"
+        + (f" • Page {page}/{total_pages}" if total else "")
+        + "\nSelect a track from the menu below to play.",
         color=COLOR_FAVORITE,
     )
 

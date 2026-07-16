@@ -4,7 +4,6 @@ Loads and validates environment variables using pydantic-settings.
 """
 
 from pathlib import Path
-from typing import Optional
 
 from pydantic import Field, model_validator
 from pydantic_settings import BaseSettings
@@ -27,6 +26,10 @@ class Config(BaseSettings):
     music_channel_id: int = Field(
         default=1097945134630445227,
         description="Channel ID where music commands are allowed",
+    )
+    music_voice_channel_id: int = Field(
+        default=1097945134630445227,
+        description="Voice channel ID to auto-join for 24/7 mode",
     )
     owner_id: int = Field(
         default=954887574248374322,
@@ -58,11 +61,11 @@ class Config(BaseSettings):
     )
 
     # Spotify (optional)
-    spotify_client_id: Optional[str] = Field(
+    spotify_client_id: str | None = Field(
         default=None,
         description="Spotify API client ID (optional, for Spotify URL support)",
     )
-    spotify_client_secret: Optional[str] = Field(
+    spotify_client_secret: str | None = Field(
         default=None,
         description="Spotify API client secret (optional)",
     )
@@ -72,10 +75,10 @@ class Config(BaseSettings):
         default="data/musicbot.db",
         description="Path to SQLite database file (used as fallback when DATABASE_URL is not set)",
     )
-    database_url: Optional[str] = Field(
+    database_url: str | None = Field(
         default=None,
         description="PostgreSQL connection string (e.g. postgresql://user:pass@host:5432/db). "
-                    "When set, PostgreSQL is used instead of SQLite.",
+        "When set, PostgreSQL is used instead of SQLite.",
     )
 
     # Logging
@@ -105,19 +108,19 @@ class Config(BaseSettings):
     )
 
     # Branding & Links — for help menu & website (Steel)
-    support_server_url: Optional[str] = Field(
+    support_server_url: str | None = Field(
         default=None,
         description="Discord support server invite URL",
     )
-    discord_invite_url: Optional[str] = Field(
+    discord_invite_url: str | None = Field(
         default=None,
         description="Alias for support server invite",
     )
-    bot_invite_url: Optional[str] = Field(
+    bot_invite_url: str | None = Field(
         default=None,
         description="Bot invite URL (OAuth2)",
     )
-    website_url: Optional[str] = Field(
+    website_url: str | None = Field(
         default="https://github.com/devilforcex/discbot",
         description="Website / Vote URL for help menu buttons",
     )
@@ -131,8 +134,7 @@ class Config(BaseSettings):
         """Ensure Discord bot token is provided."""
         if not self.discord_bot_token or self.discord_bot_token == "your_bot_token_here":
             raise ValueError(
-                "DISCORD_BOT_TOKEN is not set. "
-                "Copy .env.example to .env and set your bot token."
+                "DISCORD_BOT_TOKEN is not set. " "Copy .env.example to .env and set your bot token."
             )
         return self
 
@@ -144,7 +146,7 @@ class Config(BaseSettings):
     }
 
 
-_config_instance: Optional[Config] = None
+_config_instance: Config | None = None
 
 
 def load_config() -> Config:
@@ -162,6 +164,7 @@ def load_config() -> Config:
     env_path = Path(".env")
     if env_path.exists():
         from dotenv import load_dotenv
+
         load_dotenv(env_path)
 
     _config_instance = Config()
@@ -178,7 +181,5 @@ def get_config() -> Config:
         RuntimeError: If configuration has not been loaded yet.
     """
     if _config_instance is None:
-        raise RuntimeError(
-            "Configuration not loaded. Call load_config() first."
-        )
+        raise RuntimeError("Configuration not loaded. Call load_config() first.")
     return _config_instance

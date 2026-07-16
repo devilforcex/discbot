@@ -1,12 +1,13 @@
 """Utility cog — ping, help."""
+
 import discord
 import wavelink
 from discord.ext import commands
 
-from .base import check_guild_and_channel, is_authorized
+from .base import check_guild_and_channel, is_authorized, MusicCogMixin
 
 
-class UtilityCog(commands.Cog):
+class UtilityCog(commands.Cog, MusicCogMixin):
     def __init__(self, bot):
         self.bot = bot
 
@@ -42,14 +43,14 @@ class UtilityCog(commands.Cog):
         embed.add_field(name="Lavalink Status", value=lavalink_status, inline=True)
         embed.add_field(name="Lavalink Latency", value=lavalink_latency, inline=True)
         embed.add_field(name="Node", value=node_info, inline=True)
-        await ctx.send(embed=embed)
+        await self._send_embed_to_response(ctx, embed)
 
     @commands.command(name="help")
-    async def help_command(self, ctx, *, command: str = None):
+    async def help_command(self, ctx, *, command: str | None = None):
         if not await self._check_guild_and_channel(ctx):
             return
-        from bot.music.help_views import HelpView, build_category_embed, build_main_help_embed
         from bot.music.help.categories import CATEGORIES
+        from bot.music.help_views import HelpView, build_category_embed, build_main_help_embed
 
         support_url = getattr(self.bot.config, "support_server_url", None) or getattr(
             self.bot.config, "discord_invite_url", None
@@ -60,9 +61,15 @@ class UtilityCog(commands.Cog):
         key = (command or "").strip().lower()
         label_to_key = {cat["label"].lower(): name for name, cat in CATEGORIES.items()}
         category_key = key if key in CATEGORIES else label_to_key.get(key)
-        embed = build_category_embed(category_key, self.bot.user) if category_key else build_main_help_embed(bot_user=self.bot.user)
-        view = HelpView(bot=self.bot, support_url=support_url, invite_url=invite_url, vote_url=vote_url)
-        await ctx.send(embed=embed, view=view)
+        embed = (
+            build_category_embed(category_key, self.bot.user)
+            if category_key
+            else build_main_help_embed(bot_user=self.bot.user)
+        )
+        view = HelpView(
+            bot=self.bot, support_url=support_url, invite_url=invite_url, vote_url=vote_url
+        )
+        await self._send_to_response(ctx, embed=embed, view=view)
 
 
 async def setup(bot):

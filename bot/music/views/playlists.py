@@ -1,9 +1,10 @@
 """Playlist views."""
+
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
-from typing import List
 
 import discord
 import wavelink
@@ -11,13 +12,14 @@ import wavelink
 from bot.database import guild_settings, playlist_manager
 from bot.music.embed_manager import EmbedManager
 from bot.music.emoji import EMOJI
+
 from .base import auth_ok, ensure_voice_player_shared, play_wavelink_track_shared
 
 logger = logging.getLogger(__name__)
 
 
 class PlaylistSelect(discord.ui.Select):
-    def __init__(self, playlists: List[dict], user_id: int, bot, guild_id: int):
+    def __init__(self, playlists: list[dict], user_id: int, bot, guild_id: int):
         self.playlists = playlists
         self.bot = bot
         self.guild_id = guild_id
@@ -32,11 +34,20 @@ class PlaylistSelect(discord.ui.Select):
                 desc = (pl.get("description")[:60] + f" • {count} tracks")[:100]
             options.append(
                 discord.SelectOption(
-                    label=name[:100], description=desc[:100], value=str(pl.get("playlist_id")), emoji="📀"
+                    label=name[:100],
+                    description=desc[:100],
+                    value=str(pl.get("playlist_id")),
+                    emoji="📀",
                 )
             )
         if not options:
-            options.append(discord.SelectOption(label="No playlists", value="none", description="Create one with !playlist_create"))
+            options.append(
+                discord.SelectOption(
+                    label="No playlists",
+                    value="none",
+                    description="Create one with !playlist_create",
+                )
+            )
 
         super().__init__(
             placeholder="📀 Choose a playlist...",
@@ -59,7 +70,9 @@ class PlaylistSelect(discord.ui.Select):
         playlist_id = self.values[0]
         await interaction.response.defer()
 
-        playlist = playlist_manager.get_playlist(playlist_id=playlist_id, db_path=self.bot.config.database_path)
+        playlist = playlist_manager.get_playlist(
+            playlist_id=playlist_id, db_path=self.bot.config.database_path
+        )
         if not playlist:
             await interaction.followup.send(f"{EMOJI['error']} Playlist not found.", ephemeral=True)
             return
@@ -70,7 +83,7 @@ class PlaylistSelect(discord.ui.Select):
 
 
 class PlaylistListView(discord.ui.View):
-    def __init__(self, bot, guild_id: int, user_id: int, playlists: List[dict]):
+    def __init__(self, bot, guild_id: int, user_id: int, playlists: list[dict]):
         super().__init__(timeout=90)
         self.bot = bot
         self.guild_id = guild_id
@@ -89,14 +102,12 @@ class PlaylistListView(discord.ui.View):
         try:
             await interaction.message.delete()
         except Exception:
-            try:
+            with contextlib.suppress(Exception):
                 await interaction.response.edit_message(view=self)
-            except Exception:
-                pass
 
 
 class PlaylistTrackSelect(discord.ui.Select):
-    def __init__(self, tracks_page: List[dict], playlist_id: str, bot, guild_id: int, user_id: int):
+    def __init__(self, tracks_page: list[dict], playlist_id: str, bot, guild_id: int, user_id: int):
         self.tracks_page = tracks_page
         self.bot = bot
         self.guild_id = guild_id
@@ -111,7 +122,11 @@ class PlaylistTrackSelect(discord.ui.Select):
             pos = t.get("position", "?")
             label = f"{pos}. {title}"[:100]
             desc = f"{author} • {dur}"[:100]
-            options.append(discord.SelectOption(label=label, description=desc, value=str(t.get("position")), emoji="🎵"))
+            options.append(
+                discord.SelectOption(
+                    label=label, description=desc, value=str(t.get("position")), emoji="🎵"
+                )
+            )
         if not options:
             options.append(discord.SelectOption(label="No tracks on this page", value="none"))
 
@@ -136,7 +151,9 @@ class PlaylistTrackSelect(discord.ui.Select):
         pos = int(self.values[0])
         track_data = next((t for t in self.tracks_page if t.get("position") == pos), None)
         if not track_data:
-            await interaction.response.send_message(f"{EMOJI['error']} Track not found.", ephemeral=True)
+            await interaction.response.send_message(
+                f"{EMOJI['error']} Track not found.", ephemeral=True
+            )
             return
 
         await interaction.response.defer(ephemeral=True)
@@ -158,7 +175,9 @@ class PlaylistTrackSelect(discord.ui.Select):
 
         w_track = tracks[0]
         try:
-            playing, embed, _ = await play_wavelink_track_shared(self.bot, self.guild_id, member, w_track)
+            _, embed, _ = await play_wavelink_track_shared(
+                self.bot, self.guild_id, member, w_track
+            )
         except ValueError as ve:
             await interaction.followup.send(str(ve), ephemeral=True)
             return
@@ -167,11 +186,13 @@ class PlaylistTrackSelect(discord.ui.Select):
             await interaction.followup.send(f"{EMOJI['error']} Failed: {e}", ephemeral=True)
             return
 
-        await interaction.followup.send(embed=embed, ephemeral=True)
+        await interaction.followup.send(embed=embed, ephemeral=True)  # type: ignore[arg-type]
 
 
 class PlaylistDetailView(discord.ui.View):
-    def __init__(self, bot, guild_id: int, user_id: int, playlist: dict, page: int = 1, page_size: int = 10):
+    def __init__(
+        self, bot, guild_id: int, user_id: int, playlist: dict, page: int = 1, page_size: int = 10
+    ):
         super().__init__(timeout=180)
         self.bot = bot
         self.guild_id = guild_id
@@ -189,7 +210,7 @@ class PlaylistDetailView(discord.ui.View):
         return all_tracks[start:end], len(all_tracks)
 
     def _build_embed(self) -> discord.Embed:
-        tracks_page, total_tracks = self._get_page_tracks()
+        self._get_page_tracks()  # Ensure tracks are available
         embed = EmbedManager.playlist_embed(
             playlist=self.playlist, page=self.current_page, page_size=self.page_size
         )
@@ -200,8 +221,10 @@ class PlaylistDetailView(discord.ui.View):
             if isinstance(child, PlaylistTrackSelect):
                 self.remove_item(child)
 
-        tracks_page, total = self._get_page_tracks()
-        select = PlaylistTrackSelect(tracks_page, self.playlist_id, self.bot, self.guild_id, self.user_id)
+        tracks_page, _ = self._get_page_tracks()
+        select = PlaylistTrackSelect(
+            tracks_page, self.playlist_id or "", self.bot, self.guild_id, self.user_id
+        )
         self.add_item(select)
 
         total_overall = len(self.playlist.get("tracks", []))
@@ -268,39 +291,25 @@ class PlaylistDetailView(discord.ui.View):
                 if not w_tracks:
                     continue
                 w_track = w_tracks[0]
-                voice_channel, player = await ensure_voice_player_shared(self.bot, self.guild_id, member)
+                _, player = await ensure_voice_player_shared(
+                    self.bot, self.guild_id, member
+                )
                 settings = guild_settings.get(str(self.guild_id), self.bot.config.database_path)
                 vol = settings.get("volume", 50)
-                try:
+                with contextlib.suppress(Exception):
                     await player.set_volume(vol)
-                except Exception:
-                    pass
 
                 if player.playing:
                     self.bot.queue_manager.add(
                         self.guild_id,
-                        {
-                            "title": w_track.title,
-                            "author": w_track.author,
-                            "uri": w_track.uri,
-                            "identifier": w_track.identifier,
-                            "length": w_track.length,
-                            "artwork_url": getattr(w_track, "artwork_url", None),
-                        },
+                        w_track,
                         member.id,
                     )
                 else:
                     await player.play(w_track)
                     self.bot.queue_manager.add_history(
                         self.guild_id,
-                        {
-                            "title": w_track.title,
-                            "author": w_track.author,
-                            "uri": w_track.uri,
-                            "identifier": w_track.identifier,
-                            "length": w_track.length,
-                            "requester_id": member.id,
-                        },
+                        w_track,
                     )
                 queued += 1
             except Exception as e:
@@ -308,12 +317,13 @@ class PlaylistDetailView(discord.ui.View):
                 continue
 
         if hasattr(self.bot, "player_messages"):
-            try:
+            with contextlib.suppress(Exception):
                 await self.bot.player_messages.update_now_playing(self.guild_id)
-            except Exception:
-                pass
 
-        await interaction.followup.send(f"{EMOJI['ok']} Queued **{queued}** tracks from **{self.playlist.get('name')}**.", ephemeral=True)
+        await interaction.followup.send(
+            f"{EMOJI['ok']} Queued **{queued}** tracks from **{self.playlist.get('name')}**.",
+            ephemeral=True,
+        )
 
     @discord.ui.button(emoji="❌", label="Close", style=discord.ButtonStyle.danger, row=1)
     async def close_btn(self, interaction: discord.Interaction, button: discord.ui.Button):
@@ -327,10 +337,8 @@ class PlaylistDetailView(discord.ui.View):
         try:
             await interaction.message.delete()
         except Exception:
-            try:
+            with contextlib.suppress(Exception):
                 await interaction.response.edit_message(view=self)
-            except Exception:
-                pass
 
     async def on_timeout(self):
         for child in self.children:

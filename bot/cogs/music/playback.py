@@ -1,25 +1,33 @@
 """Playback cog — play, pause, resume, skip, stop, disconnect."""
+
 from __future__ import annotations
 
+import contextlib
 import logging
 
 import discord
 import wavelink
 from discord.ext import commands
 
-from bot.core.errors import DifferentVoiceChannel, NotInVoiceChannel, TrackNotFound, build_error_embed
+from bot.core.errors import (
+    DifferentVoiceChannel,
+    NotInVoiceChannel,
+    TrackNotFound,
+    build_error_embed,
+)
 from bot.database import guild_settings
 from bot.music.embed_manager import EmbedManager
 from bot.music.player import Player
-from bot.music.search import is_url as _is_url, search_tracks, _extract_lavalink_error
-
-from .base import check_guild_and_channel, get_player_from_ctx, is_authorized, voice_check
+from bot.music.search import _extract_lavalink_error, search_tracks
+from bot.music.search import is_url as _is_url
 from bot.music.views import SearchView  # now from package
+
+from .base import check_guild_and_channel, is_authorized, voice_check, MusicCogMixin
 
 logger = logging.getLogger(__name__)
 
 
-class PlaybackCog(commands.Cog):
+class PlaybackCog(commands.Cog, MusicCogMixin):
     def __init__(self, bot):
         self.bot = bot
 
@@ -39,18 +47,7 @@ class PlaybackCog(commands.Cog):
         settings = guild_settings.get(str(ctx.guild.id), self.bot.config.database_path)
         await player.set_volume(settings.get("volume", 50))
         if player.playing:
-            position = self.bot.queue_manager.add(
-                ctx.guild.id,
-                {
-                    "title": track.title,
-                    "author": track.author,
-                    "uri": track.uri,
-                    "identifier": track.identifier,
-                    "length": track.length,
-                    "artwork_url": getattr(track, "artwork_url", None),
-                },
-                ctx.author.id,
-            )
+            position = self.bot.queue_manager.add(ctx.guild.id, track, ctx.author.id)
             embed = EmbedManager.track_added(
                 title=track.title,
                 uri=track.uri,
@@ -59,27 +56,18 @@ class PlaybackCog(commands.Cog):
                 duration=track.length,
                 thumbnail_url=getattr(track, "artwork_url", None),
             )
-            await ctx.send(embed=embed, delete_after=10)
+            await self._send_embed_to_response(ctx, embed, delete_after=10)
             if hasattr(self.bot, "player_messages"):
                 await self.bot.player_messages.update_now_playing(ctx.guild.id)
         else:
             if hasattr(player, "store_track"):
                 player.store_track(track)
-            try:
-                setattr(track, "requester_id", ctx.author.id)
-            except Exception:
-                pass
+            with contextlib.suppress(Exception):
+                track.requester_id = ctx.author.id
             await player.play(track)
             self.bot.queue_manager.add_history(
                 ctx.guild.id,
-                {
-                    "title": track.title,
-                    "author": track.author,
-                    "uri": track.uri,
-                    "identifier": track.identifier,
-                    "length": track.length,
-                    "requester_id": ctx.author.id,
-                },
+                track,
             )
             if hasattr(self.bot, "player_messages"):
                 await self.bot.player_messages.update_now_playing(ctx.guild.id)
@@ -94,12 +82,16 @@ class PlaybackCog(commands.Cog):
                     volume=settings.get("volume", 50),
                     active_filter=getattr(player, "active_filter", "off"),
                 )
-                await ctx.send(embed=embed)
+                await self._send_embed_to_response(ctx, embed)
 
     async def _run_controller(self, ctx, coro):
         result = await coro
         color = discord.Color.green() if result.ok else discord.Color.red()
-        await ctx.send(embed=discord.Embed(description=result.message, color=color), delete_after=8 if result.ok else 12)
+        await self._send_to_response(
+            ctx,
+            embed=discord.Embed(description=result.message, color=color),
+            delete_after=8 if result.ok else 12,
+        )
         if result.refresh_player and hasattr(self.bot, "player_messages"):
             await self.bot.player_messages.update_now_playing(ctx.guild.id)
 
@@ -111,43 +103,64 @@ class PlaybackCog(commands.Cog):
             return
         async with ctx.typing():
             try:
-                voice_channel, player = await self._ensure_voice(ctx)
+                _voice_channel, player = await self._ensure_voice(ctx)
             except (NotInVoiceChannel, DifferentVoiceChannel) as e:
-                await ctx.send(embed=build_error_embed(description=e.user_message))
+                await self._send_embed_to_response(ctx, embed=build_error_embed(description=e.user_message))
                 return
             if not player:
-                await ctx.send(embed=build_error_embed(description="Failed to connect to voice channel."))
+                await self._send_embed_to_response(
+                    ctx,
+                    embed=build_error_embed(description="Failed to connect to voice channel."),
+                )
                 return
             # Check if Lavalink is ready before attempting search
             if not self.bot.lavalink.is_ready:
-                await ctx.send(embed=build_error_embed(description="❌ Lavalink is not connected. Make sure the Lavalink server is running."))
+                await self._send_embed_to_response(
+                    ctx,
+                    embed=build_error_embed(
+                        description="❌ Lavalink is not connected. Make sure the Lavalink server is running."
+                    ),
+                )
                 return
             try:
                 settings = guild_settings.get(str(ctx.guild.id), self.bot.config.database_path)
-                tracks = await search_tracks(query, source=settings.get("default_source", "ytmsearch"))
+                tracks = await search_tracks(
+                    query, source=settings.get("default_source", "ytmsearch")
+                )
             except Exception as e:
                 logger.error("Search failed for '%s': %s", query, e)
-                user_msg, cause = _extract_lavalink_error(e)
+                user_msg, _cause = _extract_lavalink_error(e)
                 error_str = str(e).lower()
                 # Check if it's a connection issue
                 if "not connected" in error_str or "failed to connect" in error_str:
-                    await ctx.send(embed=build_error_embed(description="❌ Lavalink is not connected. Is the Lavalink server running?"))
+                    await self._send_embed_to_response(
+                        ctx,
+                        embed=build_error_embed(
+                            description="❌ Lavalink is not connected. Is the Lavalink server running?"
+                        ),
+                    )
                 elif "age" in error_str or "restricted" in error_str or "copyright" in error_str:
-                    await ctx.send(embed=build_error_embed(description=f"❌ {user_msg} Try enabling YouTube cookies."))
+                    await self._send_embed_to_response(
+                        ctx,
+                        embed=build_error_embed(
+                            description=f"❌ {user_msg} Try enabling YouTube cookies."
+                        ),
+                    )
                 else:
-                    await ctx.send(embed=build_error_embed(description=f"❌ {user_msg}"))
+                    await self._send_embed_to_response(ctx, embed=build_error_embed(description=f"❌ {user_msg}"))
                 return
             if not tracks:
                 embed = TrackNotFound(query).user_message
-                await ctx.send(embed=build_error_embed(description=embed))
+                await self._send_embed_to_response(ctx, embed=build_error_embed(description=embed))
                 return
             if isinstance(tracks, wavelink.Playlist):
-                await ctx.send(
+                await self._send_embed_to_response(
+                    ctx,
                     embed=discord.Embed(
                         title="📀 Playlist Loaded",
                         description=f"Loaded **{len(tracks)}** tracks from playlist: **{tracks.name}**",
                         color=discord.Color.green(),
-                    )
+                    ),
                 )
                 for playlist_track in tracks:
                     await self._play_track(ctx, player, playlist_track)
@@ -157,8 +170,14 @@ class PlaybackCog(commands.Cog):
                 return
             top_tracks = list(tracks)[:5]
             embed = EmbedManager.search_results_embed(query, top_tracks)
-            view = SearchView(top_tracks, requester_id=ctx.author.id, bot=self.bot, guild_id=ctx.guild.id, query=query)
-            await ctx.send(embed=embed, view=view)
+            view = SearchView(
+                top_tracks,
+                requester_id=ctx.author.id,
+                bot=self.bot,
+                guild_id=ctx.guild.id,
+                query=query,
+            )
+            await self._send_to_response(ctx, embed=embed, view=view)
 
 
 async def setup(bot):

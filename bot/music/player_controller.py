@@ -1,6 +1,7 @@
 """
 Shared playback actions — refactored to use core services.
 """
+
 from __future__ import annotations
 
 import logging
@@ -42,7 +43,9 @@ class PlayerController:
     def get_player(self, guild_id: int):
         return get_player(self.bot, guild_id)
 
-    def _require_same_voice(self, member: discord.Member, player, *, soft: bool = False) -> str | None:
+    def _require_same_voice(
+        self, member: discord.Member, player, *, soft: bool = False
+    ) -> str | None:
         if soft:
             return None
         return voice_check(member, player)
@@ -83,7 +86,9 @@ class PlayerController:
         if res := self._voice_or_fail(user, player):
             return res
         if not player.paused:
-            return ActionResult(False, f"{EMOJI['error']} Playback is not paused.", refresh_player=False)
+            return ActionResult(
+                False, f"{EMOJI['error']} Playback is not paused.", refresh_player=False
+            )
         await player.pause(False)
         return ActionResult(True, f"{EMOJI['resume']} Resumed.")
 
@@ -139,7 +144,11 @@ class PlayerController:
         idx = order.index(current) if current in order else 0
         nxt = order[(idx + 1) % len(order)]
         self.bot.queue_manager.set_loop(guild_id, nxt.value)
-        icons = {LoopMode.NONE: EMOJI["loop_none"], LoopMode.TRACK: EMOJI["loop_track"], LoopMode.QUEUE: EMOJI["loop_queue"]}
+        icons = {
+            LoopMode.NONE: EMOJI["loop_none"],
+            LoopMode.TRACK: EMOJI["loop_track"],
+            LoopMode.QUEUE: EMOJI["loop_queue"],
+        }
         return ActionResult(True, f"{icons[nxt]} Loop mode: **{nxt.value}**.")
 
     async def volume_delta(self, guild_id: int, user: discord.Member, delta: int) -> ActionResult:
@@ -194,8 +203,16 @@ class PlayerController:
             db_path=self.bot.config.database_path,
         )
         if success:
-            return ActionResult(True, f"{EMOJI['favorite']} Added **{track.title}** to your favorites.", refresh_player=False)
-        return ActionResult(False, f"{EMOJI['error']} **{track.title}** is already in your favorites.", refresh_player=False)
+            return ActionResult(
+                True,
+                f"{EMOJI['favorite']} Added **{track.title}** to your favorites.",
+                refresh_player=False,
+            )
+        return ActionResult(
+            False,
+            f"{EMOJI['error']} **{track.title}** is already in your favorites.",
+            refresh_player=False,
+        )
 
     async def disconnect(self, guild_id: int, user: discord.Member) -> ActionResult:
         if res := self._auth_or_fail(user.id):
@@ -213,7 +230,9 @@ class PlayerController:
         return ActionResult(True, f"{EMOJI['disconnect']} Disconnected.", refresh_player=False)
 
     # Filters
-    async def set_filter(self, guild_id: int, user: discord.Member, filter_name: str) -> ActionResult:
+    async def set_filter(
+        self, guild_id: int, user: discord.Member, filter_name: str
+    ) -> ActionResult:
         if res := self._auth_or_fail(user.id):
             return res
         player = self.get_player(guild_id)
@@ -224,14 +243,18 @@ class PlayerController:
         normalized = filter_name.lower().strip()
         if normalized not in VALID_FILTERS:
             valid = ", ".join(sorted(VALID_FILTERS))
-            return ActionResult(False, f"{EMOJI['error']} Unknown filter. Valid: `{valid}`", refresh_player=False)
+            return ActionResult(
+                False, f"{EMOJI['error']} Unknown filter. Valid: `{valid}`", refresh_player=False
+            )
         try:
             await player.set_audio_filter(normalized)
         except ValueError as ve:
             return ActionResult(False, f"{EMOJI['error']} {ve}", refresh_player=False)
         except Exception as e:
             logger.exception("Failed to apply filter %s", normalized)
-            return ActionResult(False, f"{EMOJI['error']} Failed to apply filter: {e}", refresh_player=False)
+            return ActionResult(
+                False, f"{EMOJI['error']} Failed to apply filter: {e}", refresh_player=False
+            )
         info = FILTER_INFO.get(normalized, {})
         label = info.get("label", normalized)
         emoji = info.get("emoji", "🎛️")
@@ -246,7 +269,9 @@ class PlayerController:
         return getattr(player, "active_filter", "off")
 
     # Seeking
-    async def seek_forward(self, guild_id: int, user: discord.Member, seconds: int = 10) -> ActionResult:
+    async def seek_forward(
+        self, guild_id: int, user: discord.Member, seconds: int = 10
+    ) -> ActionResult:
         if res := self._auth_or_fail(user.id):
             return res
         player = self.get_player(guild_id)
@@ -263,7 +288,9 @@ class PlayerController:
         except Exception as e:
             return ActionResult(False, f"{EMOJI['error']} Seek failed: {e}")
 
-    async def seek_backward(self, guild_id: int, user: discord.Member, seconds: int = 10) -> ActionResult:
+    async def seek_backward(
+        self, guild_id: int, user: discord.Member, seconds: int = 10
+    ) -> ActionResult:
         if res := self._auth_or_fail(user.id):
             return res
         player = self.get_player(guild_id)

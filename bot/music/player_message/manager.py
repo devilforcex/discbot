@@ -1,18 +1,19 @@
 """Main manager — orchestrates persistence + state + discord messages."""
+
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import logging
-from typing import Optional
 
 import discord
+
+from .persistence import PlayerPersistence
+from .state import PlayerStateBuilder
 
 logger = logging.getLogger(__name__)
 
 PROGRESS_INTERVAL = 12
-
-from .persistence import PlayerPersistence
-from .state import PlayerStateBuilder
 
 
 class PlayerMessageManager:
@@ -48,7 +49,9 @@ class PlayerMessageManager:
     def build_embed(self, guild_id: int) -> discord.Embed:
         return self._state_builder.build_embed(guild_id)
 
-    async def ensure_message(self, guild_id: int, channel: Optional[discord.abc.Messageable] = None) -> Optional[discord.Message]:
+    async def ensure_message(
+        self, guild_id: int, channel: discord.abc.Messageable | None = None
+    ) -> discord.Message | None:
         if guild_id in self._messages:
             try:
                 await self._messages[guild_id].channel.fetch_message(self._messages[guild_id].id)
@@ -83,10 +86,8 @@ class PlayerMessageManager:
             msg = await target.send(embed=embed, view=view)
             self._messages[guild_id] = msg
             self._persistence.save_ids(guild_id, msg.channel.id, msg.id)
-            try:
+            with contextlib.suppress(Exception):
                 self.bot.add_view(view, message_id=msg.id)
-            except Exception:
-                pass
             logger.info("Created player message %s in guild %s", msg.id, guild_id)
             return msg
         except Exception as e:

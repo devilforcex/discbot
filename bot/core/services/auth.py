@@ -4,10 +4,10 @@ Centralized authentication service — single source of truth.
 Replaces duplicated auth logic from admin_commands, music_commands,
 player_controller and views._auth_ok.
 """
+
 from __future__ import annotations
 
 import logging
-from typing import Optional
 
 from bot.database.database import get_connection
 from bot.music.emoji import EMOJI
@@ -15,7 +15,7 @@ from bot.music.emoji import EMOJI
 logger = logging.getLogger(__name__)
 
 
-def resolve_user_id(user_input: str) -> Optional[str]:
+def resolve_user_id(user_input: str) -> str | None:
     """
     Resolve Discord user ID from raw ID or mention.
 
@@ -35,28 +35,6 @@ def resolve_user_id(user_input: str) -> Optional[str]:
 
 def is_owner(user_id: int, owner_id: int) -> bool:
     return user_id == owner_id
-
-
-def _is_blacklisted(user_id_str: str, db_path: str) -> bool:
-    try:
-        conn = get_connection(db_path)
-        cur = conn.cursor()
-        cur.execute("SELECT 1 FROM blacklisted_users WHERE user_id = ?", (user_id_str,))
-        return cur.fetchone() is not None
-    except Exception as e:
-        logger.debug("Blacklist check failed for %s: %s", user_id_str, e)
-        return False
-
-
-def _is_approved(user_id_str: str, db_path: str) -> bool:
-    try:
-        conn = get_connection(db_path)
-        cur = conn.cursor()
-        cur.execute("SELECT 1 FROM approved_users WHERE user_id = ?", (user_id_str,))
-        return cur.fetchone() is not None
-    except Exception as e:
-        logger.debug("Approved check failed for %s: %s", user_id_str, e)
-        return False
 
 
 def check_authorized(user_id: int, owner_id: int, db_path: str) -> tuple[bool, str]:

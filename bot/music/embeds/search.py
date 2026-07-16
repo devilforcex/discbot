@@ -1,11 +1,11 @@
 """Search & track added embeds."""
-from __future__ import annotations
 
-from typing import Optional
+from __future__ import annotations
 
 import discord
 
 from bot.music.emoji import COLOR_ERROR, COLOR_PLAYING, COLOR_SUCCESS, EMOJI
+
 from .common import format_duration
 
 
@@ -46,8 +46,8 @@ def track_added(
     uri: str,
     position: int,
     queue_length: int,
-    duration: Optional[int] = None,
-    thumbnail_url: Optional[str] = None,
+    duration: int | None = None,
+    thumbnail_url: str | None = None,
 ) -> discord.Embed:
     embed = discord.Embed(
         title=f"{EMOJI['ok']} Added to Queue",

@@ -1,4 +1,5 @@
 """Facade for old import path — actual code in playlists/ package."""
+
 from .playlists import (
     add_track,
     create_playlist,

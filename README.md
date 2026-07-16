@@ -1,263 +1,383 @@
-# 🎵 DiscBot — Windows Discord Music Bot
+# 🎵 DiscBot — Discord Music Bot
 
-Private Discord music bot за Windows с Lavalink v4, SQLite база, persistent embed player с бутони и optional FastAPI dashboard.
+**DiscBot** е мощен Discord музикален бот, изграден с **discord.py 2.4+**, **Wavelink 3.0+ (Lavalink v4)**, **FastAPI dashboard** и поддръжка за **SQLite / PostgreSQL**.
 
-> **Важно:** този build е заключен към **`E:\discbot`**. Всички файлове на бота стоят само там: код, `.venv`, `.env`, `application.yml`, `Lavalink.jar`, `data/`, `logs/` и локален `ytcookies.txt`.
+> ⚠️ **Важно**: Този проект е за **локално стартиране** — няма Docker, няма контейнери. Просто стартираш Python скриптовете директно на твоя компютър.
 
-## 🚀 Най-бърз старт
+---
 
-### 1) Първа инсталация
+## 📁 Структура на проекта
 
-Отвори PowerShell и пусни:
-
-```powershell
-irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/install.ps1 | iex
+```
+discbot/
+├── bot/                          # Основен код на бота
+│   ├── __init__.py
+│   ├── main.py                   # 🎯 ТОЧКА НА СТАРТ — тук започва всичко
+│   ├── config.py                 # ⚙️ Конфигурация (чреза .env)
+│   ├── database/                 # 🗄️ Работа с база данни
+│   │   ├── __init__.py
+│   │   ├── connection.py         # SQLite / PostgreSQL пул за връзки
+│   │   ├── models.py             # SQLAlchemy модели (Guild, User, Playlist, Settings)
+│   │   └── repository.py         # CRUD операции (Repository pattern)
+│   ├── music/                    # 🎵 Музикален плейър (ядрото)
+│   │   ├── __init__.py
+│   │   ├── player.py             # 🎮 Player — управление на плейъра, autoplay,(queue)
+│   │   ├── queue_manager.py      # 📋 QueueManager — опашка с Playable обекти, лимит 500
+│   │   ├── search.py             # 🔍 Търсене (YouTube, YouTube Music, SoundCloud)
+│   │   ├── lavalink/             # 🔗 Връзка с Lavalink сървъра
+│   │   │   ├── __init__.py
+│   │   │   ├── client.py         # 🔌 LavalinkClient — връзка, health check, reconnect с backoff
+│   │   │   ├── events.py         # 📡 Event handlers (track end, exception, node disconnect)
+│   │   │   └── node.py           # ⚙️ Node конфигурация
+│   │   └── commands/             # 🎮 Discord команди (slash commands)
+│   │       ├── __init__.py
+│   │       ├── playback.py       # /play, /pause, /resume, /stop, /skip, /seek
+│   │       ├── queue_cmds.py     # /queue, /clear, /shuffle, /loop, /remove, /move
+│   │       ├── playlist.py       # /playlist save/load/list/delete
+│   │       ├── settings.py       # /settings (volume, source, autoplay, dj role)
+│   │       └── admin.py          # /restart, /reload, /sync, /debug
+│   ├── dashboard/                # 🌐 FastAPI Dashboard (Web UI)
+│   │   ├── __init__.py
+│   │   ├── dashboard.py          # 🚀 FastAPI app, CORS, auth middleware
+│   │   ├── routes.py             # 🛣️ API рутове (/api/guilds, /api/settings, /api/health/lavalink)
+│   │   ├── auth.py               # 🔐 JWT auth (HS256), login/logout, dependency injection
+│   │   └── templates/            # 🎨 HTML шаблони (Jinja2)
+│   │       ├── base.html
+│   │       ├── login.html
+│   │       ├── dashboard.html
+│   │       └── guild_detail.html
+│   └── utils/                    # 🛠️ Утилити
+│       ├── __init__.py
+│       ├── embeds.py             # 📦 Embed builders (unified style)
+│       ├── formatters.py         # ⏱️ Форматиране на време, размер, прогрес бар
+│       ├── permissions.py        # 🔐 Permission проверки (DJ role, admin, voice)
+│       └── validators.py         # ✅ URL validation, volume clamp, source validation
+├── tests/                        # 🧪 Тестове (pytest)
+│   ├── __init__.py
+│   ├── test_database.py
+│   ├── test_queue_manager.py
+│   ├── test_search_helpers.py
+│   └── test_dashboard_routes.py
+├── setup.py                      # 🛠️ Модерен инсталатор (интерактивно/auto, Lavalink download, start scripts)
+├── start_bot.bat / start_bot.sh  # ▶️ Старт скриптове за бота
+├── start_lavalink.bat / start_lavalink.sh  # ▶️ Старт скриптове за Lavalink
+├── start_dashboard.bat / start_dashboard.sh  # ▶️ Старт скриптове за dashboard
+├── .env.example                  # 📋 Примерен .env файл
+├── requirements.txt              # 📦 Python зависимости
+├── pytest.ini                   # ⚙️ pytest конфигурация
+├── pyproject.toml               # ⚙️ Tooling config (ruff, black, pyright, mypy, pytest)
+├── AGENTS.md                    # 🤖 Инструкции за AI агенти
+└── README.md                    # 📖 Този файл
 ```
 
-Или ако вече имаш repo-то разархивирано/клонирано, double-click:
+---
 
-```text
-install.bat
-```
+## 🚀 Бърз старт (Local Development) — Модерен инсталатор (препоръчително)
 
-Инсталаторът:
-
-- създава/използва `E:\discbot`
-- клонира repo-то там
-- проверява Python 3.12+ и Java 17+
-- създава `.venv`
-- инсталира `requirements.txt`
-- копира `.env.example` → `.env`
-- копира `application.yml.example` → `application.yml` с включен YouTube source plugin
-- сваля `Lavalink.jar`
-- отваря `.env` за попълване
-
-### 2) Попълни `.env`
-
-Минимум:
-
-```env
-DISCORD_BOT_TOKEN=your_token
-GUILD_ID=your_server_id
-MUSIC_CHANNEL_ID=your_music_text_channel_id
-OWNER_ID=your_discord_user_id
-LAVALINK_HOST=127.0.0.1
-LAVALINK_PORT=12333
-LAVALINK_PASSWORD=youshallnotpass
-```
-
-В Discord Developer Portal включи **Message Content Intent**.
-
-### 3) Стартиране
-
-Double-click:
-
-```text
-start.bat
-```
-
-или:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File E:\discbot\scripts\windows\start.ps1
-```
-
-Ще се отворят два прозореца:
-
-1. Lavalink
-2. Discord bot
-
-### 4) Спиране
-
-```powershell
-powershell -ExecutionPolicy Bypass -File E:\discbot\scripts\windows\stop.ps1
-```
-
-### 5) Update
-
-```powershell
-irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
-```
-
-## 📁 Важни файлове
-
-| Path | За какво е |
-|---|---|
-| `E:\discbot\.env` | Discord token, IDs, dashboard settings |
-| `E:\discbot\application.yml` | Lavalink config |
-| `E:\discbot\Lavalink.jar` | Lavalink server |
-| `E:\discbot\data\musicbot.db` | SQLite база |
-| `E:\discbot\logs\` | Bot logs |
-| `E:\discbot\scripts\windows\` | Windows install/start/stop/update scripts |
-| `docs\PROJECT_PLAN.md` | Единен план + архив на старите планове |
-
-## 🎮 Основни команди
-
-Всички команди са с prefix `!`.
-
-### Playback
-
-| Command | Описание |
-|---|---|
-| `!play <song/url>` / `!p` | Търси и пуска песен |
-| `!pause` | Pause |
-| `!resume` | Resume |
-| `!skip` / `!s` | Skip |
-| `!stop` | Stop + clear queue |
-| `!disconnect` / `!dc` | Изкарва бота от voice |
-| `!nowplaying` / `!np` | Показва/обновява embed player-а |
-
-### Queue / player
-
-| Command | Описание |
-|---|---|
-| `!queue` / `!q` | Показва queue |
-| `!shuffle` | Shuffle |
-| `!loop none/track/queue` | Loop mode |
-| `!autoplay on/off/toggle` | Autoplay |
-| `!volume 0-100` / `!vol` | Volume |
-
-### Library
-
-| Command | Описание |
-|---|---|
-| `!favorite` / `!fav` | Запазва текущата песен |
-| `!favorites` | Показва favorites |
-| `!playlist_create <name>` | Създава playlist |
-| `!playlists` | Показва playlists |
-| `!playlist_add <id>` | Добавя текущата песен |
-| `!playlist_play <id>` | Пуска playlist |
-
-### Access / admin
-
-| Command | Описание |
-|---|---|
-| `!requestaccess` | Заявка за достъп |
-| `!whoami` | Показва ID/access status |
-| `!status` | Bot/Lavalink status |
-| `!adduser <id/@user>` | Owner: whitelist |
-| `!removeuser <id/@user>` | Owner: remove whitelist |
-| `!approve <id/@user>` | Owner: approve request |
-| `!deny <id/@user>` | Owner: deny request |
-| `!blacklist <id/@user>` | Owner: blacklist |
-| `!247 on/off` | Owner: 24/7 mode |
-
-## 🕹️ Embed player
-
-`!nowplaying` / `!np` създава persistent player message в music channel-а.
-
-Бутони:
-
-- ⏯ pause/resume
-- ⏭ skip
-- ⏹ stop
-- 🔀 shuffle
-- 🔁 loop
-- 🔉 / 🔊 volume
-- ⭐ favorite
-- 📋 queue
-- 🔌 disconnect
-- 🎛️ filter dropdown
-
-Ако player embed-ът не се появи:
-
-1. Провери bot permissions: `Send Messages`, `Embed Links`, `Use External Emojis`, `Read Message History`.
-2. Пусни `!np` в правилния `MUSIC_CHANNEL_ID` канал.
-3. Провери дали ботът има достъп до този text channel.
-4. Виж `logs\discbot.log`.
-
-## 🌐 Dashboard optional
-
-В `.env`:
-
-```env
-DASHBOARD_ENABLED=true
-DASHBOARD_HOST=127.0.0.1
-DASHBOARD_PORT=18080
-DASHBOARD_SECRET_KEY=long_random_secret
-```
-
-Отвори:
-
-```text
-http://127.0.0.1:18080
-```
-
-Write actions искат Bearer token = `DASHBOARD_SECRET_KEY`.
-
-## 🍪 YouTube cookies optional
-
-Ако YouTube блокира заявки или има age/region restriction:
-
-1. Export cookies в Netscape format като `ytcookies.txt`.
-2. Сложи файла в `E:\discbot\ytcookies.txt`.
-3. В `application.yml` uncomment-ни:
-
-```yaml
-plugins:
-  youtube:
-    cookieFile: "ytcookies.txt"
-```
-
-4. Restart Lavalink + bot.
-
-## 🧪 Debug checks
-
-```powershell
-cd E:\discbot
-.\.venv\Scripts\python.exe -m compileall -q bot tests
-.\.venv\Scripts\python.exe -m unittest discover -v
-.\.venv\Scripts\python.exe -m pip check
-java -version
-```
-
-Lavalink отделно:
-
-```powershell
-cd E:\discbot
-java -jar Lavalink.jar
-```
-
-Bot отделно:
-
-```powershell
-cd E:\discbot
-.\.venv\Scripts\python.exe -m bot.main
-```
-
-## 🔧 Чести проблеми
-
-### Ботът влиза във voice, но не пуска музика
-
-Провери в този ред:
-
-1. Lavalink прозорецът има ли грешка при loading track?
-2. `.env` `LAVALINK_PASSWORD` съвпада ли с `application.yml` password?
-3. В `application.yml` Spotify plugin да не е включен с fake credentials.
-4. Пробвай директен YouTube URL, не само search query.
-5. Ако YouTube блокира — добави fresh `ytcookies.txt`.
-6. Пусни `!ping` — трябва да показва Lavalink Connected.
-
-### `!play` не реагира
-
-- Message Content Intent трябва да е ON.
-- Командата трябва да е в `MUSIC_CHANNEL_ID`.
-- Потребителят трябва да е whitelist-нат или owner.
-- Провери `!whoami`.
-
-### Help менюто няма dropdown/buttons
-
-- Ботът трябва да има permission `Use External Emojis` и `Embed Links`.
-- Discord client понякога cache-ва — пробвай reload.
-- Провери дали bot process няма exception в logs.
-
-## 🛠️ Developer checks
+Най-лесния начин е чрез **`setup.py`** — той проверява пререквизити, създава виртуална среда, инсталира зависимости, изтегля Lavalink.jar, създава `.env` чрез интерактивен wizard и генерира старт скриптове.
 
 ```bash
-python -m compileall -q bot tests
-python -m unittest discover -v
+# Клонирай репото
+cd E:\discbot
+
+# Интерактивен режим (препоръчително за първо стартиране)
+python setup.py
 ```
 
-## Бележка
+Инсталаторът ще:
+1. ✅ Провери **Python 3.11+**, **FFmpeg**, **Java 17+**, **Git**
+2. 📦 Създаде `.venv` и инсталира зависимости от `requirements.txt`
+3. 📥 Изтегли **Lavalink.jar** (последна стабилна версия)
+4. ⚙️ Стартира **интерактивен wizard** за `.env` (токен, пароли, DB, dashboard)
+5. 📝 Генерира старт скриптове: `start_bot.bat/.sh`, `start_lavalink.bat/.sh`, `start_dashboard.bat/.sh`
 
-Нямам директен достъп до архивирани разговори извън текущия repo/context. Затова старите планове са консолидирани в `docs\PROJECT_PLAN.md`, а README вече е operational guide вместо исторически документ.
+```bash
+# Неинтерактивен режим (за CI/автоматизация)
+python setup.py --non-interactive
+```
+
+Стартиране след инсталация (3 терминала):
+```bash
+# Терминал 1 — Lavalink
+start_lavalink.bat
+
+# Терминал 2 — Bot
+start_bot.bat
+
+# Терминал 3 — Dashboard (опционално)
+start_dashboard.bat
+```
+
+Отвори dashboard: http://localhost:8080
+
+---
+
+## 🛠️ Ръчен старт (класическият начин)
+
+### 1. Предварителни изисквания
+- **Python 3.11+**
+- **Lavalink v4 сървър** (трябва да работи отделно — виж долу)
+- **FFmpeg** (за аудио декодиране)
+
+### 2. Инсталация
+
+```bash
+# Клонирай репото
+cd E:\discbot
+
+# Създай виртуална среда
+python -m venv .venv
+.venv\Scripts\activate
+
+# Инсталирай зависимости
+pip install -r requirements.txt
+```
+
+### 3. Конфигурация (`.env`)
+
+Копирай `.env.example` → `.env` и попълни:
+
+```bash
+copy .env.example .env
+```
+
+**Минимално задължително:**
+```env
+DISCORD_TOKEN=твоят_бот_токен_от_Developer_Portal
+LAVALINK_URI=localhost:2333
+LAVALINK_PASSWORD=youshallnotpass
+DASHBOARD_SECRET_KEY=твоя_силна_тайна_ключ_мин_32_символа
+DASHBOARD_USERNAME=admin
+DASHBOARD_PASSWORD=твоя_парола
+```
+
+**Опционално (за PostgreSQL):**
+```env
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/discbot
+```
+> Ако липсва → използва се `sqlite+aiosqlite:///discbot.db` (локален файл).
+
+### 4. Стартиране на Lavalink (отделно)
+
+Трябва да имаш работещ Lavalink v4 сървър. Най-лесно чрез Java JAR:
+
+```bash
+# Изтегли Lavalink.jar от https://github.com/lavalink-devs/Lavalink/releases
+java -jar Lavalink.jar
+```
+По подразбиране слуша на `localhost:2333` с парола `youshallnotpass` (съвпада с `.env`).
+
+### 5. Стартиране на бота
+
+```bash
+.venv\Scripts\activate
+python -m bot.main
+```
+
+### 6. Dashboard (опционално)
+
+```bash
+# В нов терминал
+.venv\Scripts\activate
+python -m bot.dashboard.dashboard
+```
+Отвори: http://localhost:8080
+
+---
+
+## 📦 Основни зависимости (`requirements.txt`)
+
+| Пакет | Назначение |
+|--------|------------|
+| `discord.py>=2.4.0` | Discord API wrapper |
+| `wavelink>=3.0.0` | Lavalink клиент (v4 protocol) |
+| `sqlalchemy>=2.0` | ORM за SQLite/PostgreSQL |
+| `aiosqlite` | Async SQLite драйвер |
+| `asyncpg` | Async PostgreSQL драйвер |
+| `fastapi` | Web dashboard API |
+| `uvicorn` | ASGI сървър за dashboard |
+| `pydantic` | Валидация на настройки |
+| `python-jose[cryptography]` | JWT auth за dashboard |
+| `passlib[bcrypt]` | Password hashing |
+| `python-dotenv` | .env конфигурация |
+| `yarl`, `aiohttp` | HTTP клиент за Lavalink/YouTube |
+
+---
+
+## 🎮 Discord команди (Slash Commands)
+
+| Категория | Команди |
+|-----------|---------|
+| **Playback** | `/play`, `/pause`, `/resume`, `/stop`, `/skip`, `/seek` |
+| **Queue** | `/queue`, `/clear`, `/shuffle`, `/loop` (off/track/queue), `/remove`, `/move` |
+| **Playlist** | `/playlist save`, `/playlist load`, `/playlist list`, `/playlist delete` |
+| **Settings** | `/settings volume`, `/settings source`, `/settings autoplay`, `/settings djrole` |
+| **Admin** | `/restart`, `/reload`, `/sync`, `/debug` |
+
+> Всички команди са **slash commands** — синхронизират се автоматично при старт (`/sync` за принудително).
+
+---
+
+## 🌐 Dashboard API (FastAPI)
+
+| Endpoint | Метод | Описание | Auth |
+|----------|-------|----------|------|
+| `/api/guilds` | GET | Списък с гилдии на бота | ✅ JWT |
+| `/api/guilds/{id}` | GET | Детайли за гилдя | ✅ JWT |
+| `/api/settings` | GET/PATCH | Гледане/промяна на настройки | ✅ JWT |
+| `/api/health/lavalink` | GET | Health check на Lavalink нод | ✅ JWT |
+| `/auth/login` | POST | JWT login (username/password) | ❌ |
+| `/auth/logout` | POST | Изход | ✅ JWT |
+
+**CORS**: Конфигурира се чрез `DASHBOARD_CORS_ORIGINS` (по подразбиране `http://localhost:8080`).
+
+---
+
+## 🗄️ База данни (SQLAlchemy 2.0)
+
+### Модели (`bot/database/models.py`)
+
+| Модел | Описание |
+|-------|----------|
+| `Guild` | Гилдия — настройки, DJ role, prefix |
+| `User` | Потребител — плейлисти, история |
+| `Playlist` | Запазени плейлисти (name, tracks JSON) |
+| `GuildSettings` | Гласност, източник, autoplay, DJ role |
+
+### Репозитори (`bot/database/repository.py`)
+- `GuildRepository` — CRUD за гилдии
+- `UserRepository` — потребители и плейлисти
+- `SettingsRepository` — настройки на гилдия
+
+---
+
+## 🎵 Музикален плейър — ключови компоненти
+
+### `QueueManager` (`bot/music/queue_manager.py`)
+- **Пази `wavelink.Playable` обекти** — не dictionary-та → **няма лишни HTTP заявки към Lavalink при смяна на песен**
+- **Лимит 500 песни** — `add()`, `add_front()`, `add_many()` хвърлят `QueueFull` ако е пълен
+- **Loop modes**: `OFF`, `TRACK`, `QUEUE`
+- **History** — за `/back` функционалност
+
+### `Player` (`bot/music/player.py`)
+- Управлява `wavelink.Player` инстанс за всяка гилдя
+- **Autoplay** с multi-tier fallback:
+  1. YouTube Music playlist (related)
+  2. YouTube Music search (same artist)
+  3. Artist search
+  4. YouTube search
+- **Random pick от топ 10** за разнообразие
+- **Circuit breaker** — след 3 неуспеха спре autoplay за 5 мин
+
+### `LavalinkClient` (`bot/music/lavalink/client.py`)
+- **Health check** — `GET /v4/info` на Lavalink
+- **Exponential backoff reconnect** — 2s base, max 5min, jitter, макс 10 опита
+- **Graceful shutdown** — спира reconnect task при `close()`
+
+---
+
+## 🔐 Dashboard Auth & Security
+
+- **JWT (HS256)** — access token 15мин, refresh 7 дни
+- **Забранен default secret** — ако `DASHBOARD_SECRET_KEY=changeme` → 500 Internal Server Error
+- **Pydantic валидация** на `/api/settings`:
+  - `volume`: 0–100
+  - `source`: regex `^(youtube|youtube_music|soundcloud|bandcamp)$`
+  - `autoplay`, `dj_role_id`: boolean coercion
+
+---
+
+## 🧪 Тестване
+
+```bash
+.venv\Scripts\activate
+pytest -v
+```
+
+**Тестове (12 общи):**
+- `test_database.py` — connection pool, таблици
+- `test_queue_manager.py` — queue ops, loop modes, history limit
+- `test_search_helpers.py` — URL detection, source normalization, fallback uniqueness
+- `test_dashboard_routes.py` — auth, validation (422 на грешни данни)
+
+---
+
+## 🛠️ Полезни команди
+
+```bash
+# Линтинг (ако имаш ruff/flake8)
+ruff check bot/
+
+# Типове (ако имаш pyright/mypy)
+pyright bot/
+
+# Форматиране
+black bot/
+
+# Изпълнение на един тест
+pytest tests/test_queue_manager.py::QueueManagerTests::test_loop_queue_rotates_tracks -v
+```
+
+---
+
+## 📝 .env.example (пълен)
+
+```env
+# === DISCORD ===
+DISCORD_TOKEN=your_bot_token_here
+DISCORD_CLIENT_ID=123456789012345678
+DISCORD_CLIENT_SECRET=your_client_secret
+
+# === LAVALINK ===
+LAVALINK_URI=localhost:2333
+LAVALINK_PASSWORD=youshallnotpass
+LAVALINK_SECURE=false
+
+# === DATABASE ===
+# SQLite (default, local file)
+DATABASE_URL=sqlite+aiosqlite:///discbot.db
+# PostgreSQL (production)
+# DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/discbot
+
+# === DASHBOARD ===
+DASHBOARD_HOST=0.0.0.0
+DASHBOARD_PORT=8080
+DASHBOARD_SECRET_KEY=your_super_secret_key_min_32_chars
+DASHBOARD_USERNAME=admin
+DASHBOARD_PASSWORD=your_secure_password
+DASHBOARD_CORS_ORIGINS=http://localhost:8080,http://127.0.0.1:8080
+
+# === OPTIONAL ===
+LOG_LEVEL=INFO
+YTMUSIC_COOKIES_FILE=ytmusic_cookies.json  # за YouTube Music качество
+```
+
+---
+
+## 🎯 Добра практика за разработка
+
+1. **Никога не commit-ваш `.env`** — е в `.gitignore`
+2. **Тествай преди push** — `pytest -v` трябва да минава
+3. **Type hints** — ползвай type hints везде (pyright strict)
+4. **Embeds** — използвай `bot.utils.embeds` за консистентен стил
+5. **Permissions** — проверявай чрез `bot.utils.permissions` (DJ role, voice channel, admin)
+
+---
+
+## 📄 Лиценз
+
+MIT License — свободно за използване, модификация и дистрибуция.
+
+---
+
+## 🤝 Принос
+
+1. Forkни репото
+2. Създай feature branch (`git checkout -b feature/amazing-feature`)
+3. Commitни промените (`git commit -m 'Add amazing feature'`)
+4. Pushни (`git push origin feature/amazing-feature`)
+5. Отвори Pull Request
+
+---
+
+**Направил с ❤️ за Discord общността** — приятно слушане! 🎧

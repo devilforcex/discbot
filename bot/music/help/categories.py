@@ -1,9 +1,8 @@
 """Help categories definition."""
+
 from __future__ import annotations
 
-from typing import Dict
-
-CATEGORIES: Dict[str, Dict] = {
+CATEGORIES: dict[str, dict] = {
     "main": {
         "label": "Main",
         "emoji": "🏠",

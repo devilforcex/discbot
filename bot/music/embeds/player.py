@@ -1,13 +1,12 @@
 """Player embeds: now playing & idle."""
-from __future__ import annotations
 
-import math
-from typing import Optional, Union
+from __future__ import annotations
 
 import discord
 
 from bot.music.emoji import COLOR_IDLE, COLOR_PAUSED, COLOR_PLAYING, EMOJI
 from bot.music.queue_manager import LoopMode
+
 from .common import build_progress_bar, format_duration
 
 
@@ -17,11 +16,11 @@ def player_now_playing_embed(
     uri: str,
     length: int,
     position: int = 0,
-    thumbnail_url: Optional[str] = None,
-    requester: Optional[str] = None,
+    thumbnail_url: str | None = None,
+    requester: str | None = None,
     volume: int = 50,
     paused: bool = False,
-    loop: Optional[Union[LoopMode, str]] = None,
+    loop: LoopMode | str | None = None,
     autoplay: bool = False,
     queue_len: int = 0,
     active_filter: str = "off",
@@ -31,14 +30,14 @@ def player_now_playing_embed(
     state_icon = EMOJI["pause"] if paused else EMOJI["play"]
     state_label = "Paused" if paused else "Now Playing"
 
-    loop_mode = loop
+    loop_mode: LoopMode = LoopMode.NONE
     if isinstance(loop, str):
         try:
             loop_mode = LoopMode(loop.lower())
         except ValueError:
             loop_mode = LoopMode.NONE
-    if loop_mode is None:
-        loop_mode = LoopMode.NONE
+    elif isinstance(loop, LoopMode):
+        loop_mode = loop
 
     loop_icons = {
         LoopMode.NONE: EMOJI["loop_none"],
@@ -46,7 +45,7 @@ def player_now_playing_embed(
         LoopMode.QUEUE: EMOJI["loop_queue"],
     }
     loop_icon = loop_icons.get(loop_mode, EMOJI["loop_none"])
-    loop_label = loop_mode.value if isinstance(loop_mode, LoopMode) else str(loop_mode)
+    loop_label = loop_mode.value
 
     status_parts = [
         f"{state_icon} **{state_label}**",
@@ -95,7 +94,7 @@ def player_now_playing_embed(
 
 def player_idle_embed(
     queue_len: int = 0,
-    loop: Optional[Union[LoopMode, str]] = None,
+    loop: LoopMode | str | None = None,
 ) -> discord.Embed:
     loop_label = "none"
     if isinstance(loop, LoopMode):

@@ -1,4 +1,5 @@
 """Facade for backward compatibility — actual code in bot/music/help/ package."""
+
 from .help import (
     CATEGORIES,
     HelpCategorySelect,
@@ -7,4 +8,10 @@ from .help import (
     build_main_help_embed,
 )
 
-__all__ = ["CATEGORIES", "HelpView", "HelpCategorySelect", "build_main_help_embed", "build_category_embed"]
+__all__ = [
+    "CATEGORIES",
+    "HelpView",
+    "HelpCategorySelect",
+    "build_main_help_embed",
+    "build_category_embed",
+]

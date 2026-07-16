@@ -1,6 +1,8 @@
 """Queue paginator view."""
+
 from __future__ import annotations
 
+import contextlib
 import logging
 import math
 
@@ -8,13 +10,16 @@ import discord
 
 from bot.music.embed_manager import EmbedManager
 from bot.music.emoji import EMOJI
+
 from .base import auth_ok
 
 logger = logging.getLogger(__name__)
 
 
 class QueuePaginatorView(discord.ui.View):
-    def __init__(self, bot, guild_id: int, requester_id: int, guild_name: str = "Server", page: int = 1):
+    def __init__(
+        self, bot, guild_id: int, requester_id: int, guild_name: str = "Server", page: int = 1
+    ):
         super().__init__(timeout=90)
         self.bot = bot
         self.guild_id = guild_id
@@ -28,7 +33,7 @@ class QueuePaginatorView(discord.ui.View):
         return max(1, math.ceil(queue_len / 10)) if queue_len else 1
 
     def _build_embed(self) -> discord.Embed:
-        queue_list = self.bot.queue_manager.get_all(self.guild_id)
+        queue_list = self.bot.queue_manager.get_all_as_dicts(self.guild_id)
         player = discord.utils.get(self.bot.voice_clients, guild__id=self.guild_id)
         current_track = None
         if player and getattr(player, "playing", False) and getattr(player, "last_track", None):
@@ -90,7 +95,9 @@ class QueuePaginatorView(discord.ui.View):
             await interaction.response.send_message(err, ephemeral=True)
             return
         if self.bot.queue_manager.is_empty(self.guild_id):
-            await interaction.response.send_message(f"{EMOJI['error']} Queue is empty.", ephemeral=True)
+            await interaction.response.send_message(
+                f"{EMOJI['error']} Queue is empty.", ephemeral=True
+            )
             return
         self.bot.queue_manager.shuffle(self.guild_id)
         embed = self._build_embed()
@@ -119,10 +126,8 @@ class QueuePaginatorView(discord.ui.View):
         try:
             await interaction.message.delete()
         except Exception:
-            try:
+            with contextlib.suppress(Exception):
                 await interaction.response.edit_message(view=self)
-            except Exception:
-                pass
 
     async def on_timeout(self):
         for child in self.children:

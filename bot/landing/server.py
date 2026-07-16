@@ -7,6 +7,7 @@ Usage:
     python bot/landing/server.py
     # Then open http://localhost:3000
 """
+
 import http.server
 import logging
 import os

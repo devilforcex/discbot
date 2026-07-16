@@ -1,4 +1,5 @@
 """Persistent filter select — extracted from player_view.py"""
+
 from __future__ import annotations
 
 import logging
@@ -53,7 +54,9 @@ class FilterSelect(discord.ui.Select):
             guild_id = interaction.guild.id
 
         if not guild_id:
-            await interaction.response.send_message(f"{EMOJI['error']} Could not resolve guild.", ephemeral=True)
+            await interaction.response.send_message(
+                f"{EMOJI['error']} Could not resolve guild.", ephemeral=True
+            )
             return
 
         from bot.music.player_controller import PlayerController
@@ -65,7 +68,9 @@ class FilterSelect(discord.ui.Select):
 
         user = interaction.user
         if not isinstance(user, discord.Member):
-            await interaction.response.send_message(f"{EMOJI['error']} Guild members only.", ephemeral=True)
+            await interaction.response.send_message(
+                f"{EMOJI['error']} Guild members only.", ephemeral=True
+            )
             return
 
         ok, err = controller.check_authorized(user.id)

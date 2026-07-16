@@ -4,7 +4,6 @@ Provides functions to add, remove, list, and check favorite tracks.
 """
 
 import logging
-from typing import Optional
 
 from bot.database.database import get_connection
 
@@ -20,7 +19,7 @@ def add_favorite(
     uri: str,
     identifier: str,
     length: int,
-    artwork_url: Optional[str] = None,
+    artwork_url: str | None = None,
     db_path: str = "data/musicbot.db",
 ) -> bool:
     """Add a track to a user's favorites.

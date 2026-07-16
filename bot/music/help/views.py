@@ -1,4 +1,5 @@
 """Help interactive views."""
+
 from __future__ import annotations
 
 import discord
@@ -20,16 +21,27 @@ class HelpCategorySelect(discord.ui.Select):
     def __init__(self, bot=None):
         self.bot = bot
         options = [
-            discord.SelectOption(label="Home", value="__home__", emoji="🏠", description="Back to main help overview")
+            discord.SelectOption(
+                label="Home", value="__home__", emoji="🏠", description="Back to main help overview"
+            )
         ]
         for key, cat in CATEGORIES.items():
             options.append(
                 discord.SelectOption(
-                    label=cat["label"], value=key, emoji=cat["emoji"], description=cat["description"][:100]
+                    label=cat["label"],
+                    value=key,
+                    emoji=cat["emoji"],
+                    description=cat["description"][:100],
                 )
             )
 
-        super().__init__(placeholder="Select a command category", min_values=1, max_values=1, options=options[:25], row=0)
+        super().__init__(
+            placeholder="Select a command category",
+            min_values=1,
+            max_values=1,
+            options=options[:25],
+            row=0,
+        )
 
     async def callback(self, interaction: discord.Interaction):
         value = self.values[0]
@@ -42,7 +54,13 @@ class HelpCategorySelect(discord.ui.Select):
 
 
 class HelpView(discord.ui.View):
-    def __init__(self, bot=None, support_url: str | None = None, invite_url: str | None = None, vote_url: str | None = None):
+    def __init__(
+        self,
+        bot=None,
+        support_url: str | None = None,
+        invite_url: str | None = None,
+        vote_url: str | None = None,
+    ):
         super().__init__(timeout=180)
         self.bot = bot
         self.add_item(HelpCategorySelect(bot=bot))

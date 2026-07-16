@@ -4,6 +4,7 @@ Provides functions to get and update per-guild configuration.
 """
 
 import logging
+
 from bot.database.database import get_connection
 
 logger = logging.getLogger(__name__)
@@ -90,7 +91,7 @@ def set(guild_id: str, db_path: str, **kwargs) -> dict:
                 updates[key] = value
 
     if updates:
-        set_clause = ", ".join(f"{k} = ?" for k in updates.keys())
+        set_clause = ", ".join(f"{k} = ?" for k in updates)
         values = list(updates.values())
         values.append(guild_id)
 

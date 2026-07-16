@@ -4,7 +4,6 @@ Extends the default Wavelink Player with volume, autoplay, and state tracking.
 """
 
 import logging
-from typing import Optional
 
 import wavelink
 
@@ -25,8 +24,8 @@ class Player(wavelink.Player):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.autoplay_enabled: bool = False
-        self.last_track: Optional[wavelink.Playable] = None
-        self.previous_track: Optional[wavelink.Playable] = None
+        self.last_track: wavelink.Playable | None = None
+        self.previous_track: wavelink.Playable | None = None
         self._volume: int = 50
         self.active_filter: str = "off"  # reset / off = no filter
         self._last_position: int = 0
@@ -52,7 +51,7 @@ class Player(wavelink.Player):
         """
         return self._volume
 
-    async def toggle_autoplay(self, enabled: Optional[bool] = None) -> bool:
+    async def toggle_autoplay(self, enabled: bool | None = None) -> bool:
         """Toggle autoplay mode.
 
         Args:
@@ -66,31 +65,98 @@ class Player(wavelink.Player):
         else:
             self.autoplay_enabled = not self.autoplay_enabled
 
-        logger.info("Autoplay %s for guild %s", "enabled" if self.autoplay_enabled else "disabled", self.guild.id)
+        logger.info(
+            "Autoplay %s for guild %s",
+            "enabled" if self.autoplay_enabled else "disabled",
+            self.guild.id,
+        )
         return self.autoplay_enabled
 
-    async def get_autoplay_track(self) -> Optional[wavelink.Playable]:
+    async def get_autoplay_track(self) -> wavelink.Playable | None:
         """Get an autoplay recommendation based on the last track.
 
         Uses Wavelink's autoplay feature if available, otherwise attempts
         to find a related track by searching with the last track's artist.
+        Picks randomly from top results for variety.
 
         Returns:
             A recommended Playable track, or None.
         """
+        import random
+
         if not self.last_track:
             return None
 
+        # 1. Try Wavelink's built-in autoplay (YouTube Music playlist)
         try:
-            # Attempt to use Wavelink's built-in autoplay
             tracks = await self.node.get_playlist(
                 wavelink.YouTubeMusicPlaylist,
                 f"{self.last_track.title} {self.last_track.author}",
             )
             if tracks:
-                return tracks[0]
+                candidates = [
+                    t
+                    for t in tracks[:10]
+                    if getattr(t, "uri", None) != getattr(self.last_track, "uri", None)
+                ]
+                if candidates:
+                    logger.debug("Autoplay YTM playlist found %d candidates", len(candidates))
+                    return random.choice(candidates)
         except Exception as e:
-            logger.debug("Autoplay recommendation failed: %s", e)
+            logger.debug("Autoplay YTM playlist failed: %s", e)
+
+        # 2. Fallback: YouTubeMusic search (lighter than playlist)
+        try:
+            search_query = f"{self.last_track.author} {self.last_track.title}"
+            tracks = await wavelink.Playable.search(
+                search_query,
+                source=wavelink.TrackSource.YouTubeMusic,
+            )
+            candidates = [
+                t
+                for t in tracks[:10]
+                if getattr(t, "uri", None) != getattr(self.last_track, "uri", None)
+            ]
+            if candidates:
+                logger.debug("Autoplay YTM search found %d candidates", len(candidates))
+                return random.choice(candidates)
+        except Exception as e:
+            logger.debug("Autoplay YTM search failed: %s", e)
+
+        # 3. Fallback: search by artist only
+        try:
+            tracks = await wavelink.Playable.search(
+                self.last_track.author,
+                source=wavelink.TrackSource.YouTubeMusic,
+            )
+            candidates = [
+                t
+                for t in tracks[:10]
+                if getattr(t, "uri", None) != getattr(self.last_track, "uri", None)
+            ]
+            if candidates:
+                logger.debug("Autoplay artist search found %d candidates", len(candidates))
+                return random.choice(candidates)
+        except Exception as e:
+            logger.debug("Autoplay artist search failed: %s", e)
+
+        # 4. Final fallback: search by title + artist on YouTube
+        try:
+            search_query = f"{self.last_track.author} {self.last_track.title}"
+            tracks = await wavelink.Playable.search(
+                search_query,
+                source=wavelink.TrackSource.YouTube,
+            )
+            candidates = [
+                t
+                for t in tracks[:10]
+                if getattr(t, "uri", None) != getattr(self.last_track, "uri", None)
+            ]
+            if candidates:
+                logger.debug("Autoplay YT search found %d candidates", len(candidates))
+                return random.choice(candidates)
+        except Exception as e:
+            logger.debug("Autoplay YT search failed: %s", e)
 
         return None
 
@@ -120,7 +186,10 @@ class Player(wavelink.Player):
             current = self.position
         except Exception:
             current = self._last_position
-        new_pos = min(current + milliseconds, self.last_track.length - 500 if self.last_track.length else current + milliseconds)
+        new_pos = min(
+            current + milliseconds,
+            self.last_track.length - 500 if self.last_track.length else current + milliseconds,
+        )
         await self.seek(new_pos)
         return new_pos
 

@@ -1,10 +1,13 @@
 """Access requests: requestaccess, pendingrequests, approve, deny."""
+
 import logging
+
 import discord
 from discord.ext import commands
 
 from bot.database.database import get_connection
-from .base import resolve_user_id, log_audit
+
+from .base import log_audit, resolve_user_id
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +38,9 @@ class RequestsCog(commands.Cog):
             if cur.fetchone():
                 await ctx.send("✅ You are already approved.")
                 return
-            cur.execute("SELECT 1 FROM access_requests WHERE user_id = ? AND status = 'pending'", (user_id,))
+            cur.execute(
+                "SELECT 1 FROM access_requests WHERE user_id = ? AND status = 'pending'", (user_id,)
+            )
             if cur.fetchone():
                 await ctx.send("⏳ You already have a pending access request.")
                 return
@@ -70,20 +75,31 @@ class RequestsCog(commands.Cog):
         try:
             conn = get_connection(self.bot.config.database_path)
             cur = conn.cursor()
-            cur.execute(
-                """SELECT id, user_id, username, display_name, guild, requested_at
-                   FROM access_requests WHERE status = 'pending' ORDER BY requested_at"""
-            )
+            cur.execute("""SELECT id, user_id, username, display_name, guild, requested_at
+                   FROM access_requests WHERE status = 'pending' ORDER BY requested_at""")
             rows = cur.fetchall()
         except Exception as e:
             logger.error("Failed to list pending requests: %s", e)
             await ctx.send("❌ Failed to retrieve pending requests.")
             return
         if not rows:
-            await ctx.send(embed=discord.Embed(title="📋 Pending Access Requests", description="No pending requests.", color=discord.Color.blue()))
+            await ctx.send(
+                embed=discord.Embed(
+                    title="📋 Pending Access Requests",
+                    description="No pending requests.",
+                    color=discord.Color.blue(),
+                )
+            )
             return
-        lines = [f"`#{r['id']}` **{r['display_name'] or 'Unknown'}** (@{r['username'] or 'Unknown'}) — `{r['user_id']}` — {r['guild'] or 'Unknown'}" for r in rows]
-        embed = discord.Embed(title="📋 Pending Access Requests", description="\n".join(lines), color=discord.Color.blue())
+        lines = [
+            f"`#{r['id']}` **{r['display_name'] or 'Unknown'}** (@{r['username'] or 'Unknown'}) — `{r['user_id']}` — {r['guild'] or 'Unknown'}"
+            for r in rows
+        ]
+        embed = discord.Embed(
+            title="📋 Pending Access Requests",
+            description="\n".join(lines),
+            color=discord.Color.blue(),
+        )
         embed.set_footer(text=f"Total: {len(rows)} pending request(s)")
         await ctx.send(embed=embed)
 
@@ -98,11 +114,17 @@ class RequestsCog(commands.Cog):
         try:
             conn = get_connection(self.bot.config.database_path)
             cur = conn.cursor()
-            cur.execute("SELECT username, display_name FROM access_requests WHERE user_id = ? AND status = 'pending'", (user_id,))
+            cur.execute(
+                "SELECT username, display_name FROM access_requests WHERE user_id = ? AND status = 'pending'",
+                (user_id,),
+            )
             row = cur.fetchone()
             username = row["username"] if row else "Unknown"
             display_name = row["display_name"] if row else "Unknown"
-            cur.execute("UPDATE access_requests SET status = 'approved' WHERE user_id = ? AND status = 'pending'", (user_id,))
+            cur.execute(
+                "UPDATE access_requests SET status = 'approved' WHERE user_id = ? AND status = 'pending'",
+                (user_id,),
+            )
             cur.execute(
                 """INSERT OR IGNORE INTO approved_users (user_id, username, display_name, added_by)
                    VALUES (?, ?, ?, ?)""",
@@ -113,7 +135,9 @@ class RequestsCog(commands.Cog):
             logger.error("Failed to approve user %s: %s", user_id, e)
             await ctx.send("❌ Failed to approve user.")
             return
-        await log_audit("approve", user_id, username, str(ctx.author.id), self.bot.config.database_path)
+        await log_audit(
+            "approve", user_id, username, str(ctx.author.id), self.bot.config.database_path
+        )
         await ctx.send("✅ User approved successfully.")
 
     @commands.command(name="deny")
@@ -127,16 +151,24 @@ class RequestsCog(commands.Cog):
         try:
             conn = get_connection(self.bot.config.database_path)
             cur = conn.cursor()
-            cur.execute("SELECT username, display_name FROM access_requests WHERE user_id = ? AND status = 'pending'", (user_id,))
+            cur.execute(
+                "SELECT username, display_name FROM access_requests WHERE user_id = ? AND status = 'pending'",
+                (user_id,),
+            )
             row = cur.fetchone()
             username = row["username"] if row else "Unknown"
-            cur.execute("UPDATE access_requests SET status = 'denied' WHERE user_id = ? AND status = 'pending'", (user_id,))
+            cur.execute(
+                "UPDATE access_requests SET status = 'denied' WHERE user_id = ? AND status = 'pending'",
+                (user_id,),
+            )
             conn.commit()
         except Exception as e:
             logger.error("Failed to deny request for %s: %s", user_id, e)
             await ctx.send("❌ Failed to deny request.")
             return
-        await log_audit("deny", user_id, username, str(ctx.author.id), self.bot.config.database_path)
+        await log_audit(
+            "deny", user_id, username, str(ctx.author.id), self.bot.config.database_path
+        )
         await ctx.send("✅ Request denied.")
 
 

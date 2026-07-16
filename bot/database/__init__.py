@@ -2,6 +2,7 @@
 Database package for the Discord Music Bot.
 Provides SQLite (local) and PostgreSQL (cloud) support.
 """
+
 from bot.database.database import (
     close_connection,
     get_connection,

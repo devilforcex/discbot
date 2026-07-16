@@ -38,8 +38,9 @@ def setup_logging(log_level: str = "INFO") -> None:
     console_handler.setLevel(level)
     try:
         import io
+
         if isinstance(sys.stdout, io.TextIOWrapper):
-            sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
     except Exception:
         pass
     console_handler.setFormatter(formatter)

@@ -31,8 +31,8 @@ EMOJI = {
 
 # Discord embed accent colors (Nightmare design system)
 COLOR_PLAYING = 0x8B5CF6  # violet-500
-COLOR_PAUSED = 0xF59E0B   # amber
-COLOR_IDLE = 0x27272A     # zinc-800
+COLOR_PAUSED = 0xF59E0B  # amber
+COLOR_IDLE = 0x27272A  # zinc-800
 COLOR_ERROR = 0xEF4444
 COLOR_SUCCESS = 0x22C55E
 COLOR_FAVORITE = 0xEAB308

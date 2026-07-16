@@ -24,7 +24,7 @@ class SettingsUpdate(BaseModel):
     default_source: str | None = Field(None, pattern=r"^(ytsearch|ytmsearch|scsearch)$")
 
 
-def register_routes(app, bot, templates, security, check_write_auth):
+def register_routes(app, bot, security, check_write_auth):
     """Register all dashboard routes on FastAPI app."""
 
     @app.get("/api/health")
@@ -347,29 +347,3 @@ def register_routes(app, bot, templates, security, check_write_auth):
         except Exception as e:
             logger.exception("Control action %s failed", action)
             raise HTTPException(status_code=500, detail=str(e)) from None
-
-    @app.get("/")
-    async def landing(request: Request):
-        logger.info("Landing page requested: method=%s path=%s", request.method, request.url.path)
-        try:
-            return templates.TemplateResponse(
-                request,
-                "landing.html",
-                {
-                    "discord_invite_url": getattr(bot.config, "discord_invite_url", "https://discord.gg/"),
-                    "support_server_url": getattr(bot.config, "support_server_url", "https://discord.gg/"),
-                    "bot_invite_url": getattr(bot.config, "bot_invite_url", "https://discord.com/oauth2/authorize"),
-                },
-            )
-        except Exception:
-            logger.exception("Error rendering landing page")
-            raise
-
-    @app.get("/dashboard")
-    async def dashboard(request: Request):
-        guild_id = str(getattr(bot.config, "guild_id", "") or "")
-        return templates.TemplateResponse(
-            request,
-            "index.html",
-            {"guild_id": guild_id},
-        )

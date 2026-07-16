@@ -1,11 +1,12 @@
 """Filter embed."""
+
 import discord
 
 from bot.music.emoji import COLOR_PLAYING
 
 
 def filter_embed(active_filter: str = "off") -> discord.Embed:
-    from bot.music.audio_filters import FILTER_INFO, get_filter_choices
+    from bot.music.audio_filters import get_filter_choices
 
     embed = discord.Embed(
         title="🎛️ Audio Filters",
