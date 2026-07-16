@@ -17,10 +17,41 @@ def check_ai_enabled(ctx: commands.Context) -> bool:
     return True
 
 
-async def check_ai_enabled_interaction(ctx: discord.ApplicationContext) -> bool:
-    """Check if AI is enabled for slash commands."""
+async def check_ai_enabled_interaction(ctx) -> bool:
+    """Check if AI is enabled for hybrid/slash commands."""
     config = get_config()
     if not config.ai_enabled:
-        await ctx.respond("❌ AI chat is disabled. Set `AI_ENABLED=true` in `.env` to enable.", ephemeral=True)
+        await ctx.send(
+            "❌ AI chat is disabled. Set `AI_ENABLED=true` in `.env` to enable.",
+            ephemeral=True,
+        )
         return False
     return True
+
+
+def split_message(text: str, max_length: int = 2000) -> list[str]:
+    """Split a long message into chunks that fit within Discord's message limit.
+
+    Tries to break at newlines first, then at word boundaries, then hard-wraps.
+    """
+    if len(text) <= max_length:
+        return [text]
+
+    chunks: list[str] = []
+    remaining = text
+
+    while remaining:
+        if len(remaining) <= max_length:
+            chunks.append(remaining)
+            break
+
+        slice_end = remaining.rfind("\n", 0, max_length)
+        if slice_end == -1 or slice_end < max_length // 2:
+            slice_end = remaining.rfind(" ", 0, max_length)
+        if slice_end == -1 or slice_end < max_length // 2:
+            slice_end = max_length
+
+        chunks.append(remaining[:slice_end].rstrip())
+        remaining = remaining[slice_end:].lstrip()
+
+    return chunks
