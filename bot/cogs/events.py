@@ -34,6 +34,99 @@ class EventCog(commands.Cog):
             return False
 
     @commands.Cog.listener()
+    async def on_member_join(self, member: discord.Member) -> None:
+        """Welcome new members with a DM containing available bot commands.
+
+        Args:
+            member: The member who joined the guild.
+        """
+        # Ignore bots
+        if member.bot:
+            return
+
+        try:
+            embed = discord.Embed(
+                title="🎵 Welcome to DiscBot!",
+                description=(
+                    f"Hey {member.mention}, I'm **DiscBot** — your music and AI assistant!\n\n"
+                    "Here are the things I can do:"
+                ),
+                color=0x4a9fff,
+            )
+
+            embed.add_field(
+                name="🎶 Music Commands",
+                value=(
+                    "`!play <song/url>` — Play music\n"
+                    "`!pause` / `!resume` — Pause/Resume\n"
+                    "`!skip` — Skip track\n"
+                    "`!stop` — Stop & clear queue\n"
+                    "`!queue` — View queue\n"
+                    "`!nowplaying` — Current track\n"
+                    "`!volume <0-100>` — Set volume\n"
+                    "`!shuffle` — Shuffle queue\n"
+                    "`!loop <none/track/queue>` — Loop mode\n"
+                    "`!autoplay` — Toggle autoplay\n"
+                    "`!seek <sec>` / `!forward` / `!rewind` — Seek controls\n"
+                    "`!filter <name>` — Audio effects\n"
+                    "`!filters` — List filters\n"
+                    "`!favorite` — Save current track\n"
+                    "`!favorites` — Your favorites\n"
+                ),
+                inline=False,
+            )
+
+            embed.add_field(
+                name="📚 Library",
+                value=(
+                    "`!playlist_create <name>` — New playlist\n"
+                    "`!playlists` — Your playlists\n"
+                    "`!playlist_show <id>` — View playlist\n"
+                    "`!playlist_add <id>` — Add track\n"
+                    "`!playlist_remove <id> <pos>` — Remove track\n"
+                    "`!playlist_play <id>` — Play playlist\n"
+                ),
+                inline=False,
+            )
+
+            embed.add_field(
+                name="🤖 AI Chat",
+                value=(
+                    "`@DiscBot <question>` — Ask in any channel\n"
+                    "`!chat <question>` or `/ask` — Chat with AI\n"
+                    "`!clear-chat` — Clear history\n"
+                ),
+                inline=False,
+            )
+
+            embed.add_field(
+                name="🛠️ Utility & Admin",
+                value=(
+                    "`!help` — Show this message\n"
+                    "`!status` — Bot status\n"
+                    "`!whoami` — Your access info\n"
+                    "`!ping` — Latency check\n"
+                    "`!requestaccess` — Request whitelist\n"
+                    "`!247 <on/off>` — 24/7 mode (owner)\n"
+                ),
+                inline=False,
+            )
+
+            embed.add_field(
+                name="💡 Tip",
+                value="You can also **@mention** me in any channel and I'll reply with AI!",
+                inline=False,
+            )
+
+            embed.set_footer(text="Made with ❤️")
+            await member.send(embed=embed)
+            logger.info("Sent welcome DM to %s in guild %s", member.name, member.guild.name)
+        except discord.Forbidden:
+            logger.warning("Cannot send DM to %s (DMs closed)", member.name)
+        except Exception as e:
+            logger.error("Failed to send welcome DM to %s: %s", member.name, e)
+
+    @commands.Cog.listener()
     async def on_guild_join(self, guild: discord.Guild) -> None:
         """Initialize guild settings when the bot joins a new guild.
 
