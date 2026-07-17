@@ -8,10 +8,17 @@ from bot.core.services.ai_service import AIService
 @pytest.mark.asyncio
 async def test_e2e_chat_flow():
     """Test full e2e chat flow."""
-    mock_config = MagicMock()
+    mock_config = MagicMock(spec=["ai_enabled", "ai_system_prompt", "ai_max_history", "ai_default_model", "ai_temperature"])
     mock_config.ai_enabled = True
+    mock_config.ai_system_prompt = "Test"
+    mock_config.ai_max_history = 10
+    mock_config.ai_default_model = "gpt-4o-mini"
+    mock_config.ai_temperature = 0.7
     
-    with patch("bot.cogs.chat.commands.get_config", return_value=mock_config):
+    with (
+        patch("bot.cogs.chat.commands.get_config", return_value=mock_config),
+        patch("bot.cogs.chat.base.get_config", return_value=mock_config),
+    ):
         ai_service = AIService(mock_config)
         ai_service._build_config = MagicMock()
         
@@ -30,7 +37,7 @@ async def test_e2e_chat_flow():
         ctx.guild.id = 123
         ctx.author.id = 456
         
-        await cog.chat_command(ctx, question="hi")
+        await cog.chat_command.callback(cog, ctx, question="hi")
         
         assert ai_service.get_history(123, 456)
         ctx.send.assert_called_with("Hello!")

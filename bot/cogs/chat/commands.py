@@ -18,6 +18,37 @@ class ChatCog(commands.Cog):
         self.config = get_config()
         self.ai_service = get_ai_service()
 
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message) -> None:
+        """Respond to bot mentions in any channel without needing a command."""
+        # Ignore messages from bots (including self)
+        if message.author.bot:
+            return
+
+        # Only respond if the bot is directly mentioned
+        if self.bot.user not in message.mentions:
+            return
+
+        # Ignore if AI is disabled
+        config = get_config()
+        if not config.ai_enabled:
+            return
+
+        # Extract the question (remove the mention)
+        question = message.content.replace(f"<@{self.bot.user.id}>", "").replace(f"<@!{self.bot.user.id}>", "").strip()
+        if not question:
+            return  # Just a mention with no question
+
+        async with message.channel.typing():
+            response = await self.ai_service.chat(
+                guild_id=message.guild.id,
+                user_id=message.author.id,
+                user_message=question,
+            )
+
+            for chunk in split_message(response):
+                await message.reply(chunk, mention_author=False)
+
     @commands.hybrid_command(name="chat", description="Ask the AI assistant", aliases=["ask", "ai"])
     @discord.app_commands.describe(question="Your question for the AI", private="Reply privately (ephemeral)")
     async def chat_command(
