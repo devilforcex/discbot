@@ -503,3 +503,69 @@ def register_routes(app, bot, security, check_write_auth):
         except Exception as e:
             logger.exception("Control action %s failed", action)
             raise HTTPException(status_code=500, detail=str(e)) from None
+
+    # ───────────────────────────────────────────────────────────────
+    # AI CHAT
+    # ───────────────────────────────────────────────────────────────
+
+    class ChatRequest(BaseModel):
+        message: str = Field(..., min_length=1, max_length=4000)
+        guild_id: int = Field(..., description="Discord guild ID")
+        user_id: int = Field(..., description="Discord user ID")
+
+    @app.get("/api/chat/config")
+    async def api_chat_config():
+        """Get current AI chat configuration (no secrets exposed)."""
+        config = bot.config
+        return {
+            "enabled": config.ai_enabled,
+            "provider": config.ai_provider,
+            "model": config.ai_default_model,
+            "max_history": config.ai_max_history,
+            "temperature": config.ai_temperature,
+        }
+
+    @app.post("/api/chat")
+    async def api_chat(req: ChatRequest, _: HTTPAuthorizationCredentials = Depends(check_write_auth)):
+        """Send a message to the AI assistant and get a response."""
+        from bot.core.services.ai_service import get_ai_service
+
+        ai = get_ai_service()
+        if ai is None:
+            raise HTTPException(status_code=503, detail="AI service not initialized")
+        if not bot.config.ai_enabled:
+            raise HTTPException(status_code=503, detail="AI chat is disabled")
+
+        try:
+            response = await ai.chat(
+                guild_id=req.guild_id,
+                user_id=req.user_id,
+                user_message=req.message,
+            )
+            return {"response": response}
+        except Exception as e:
+            logger.exception("AI chat API error")
+            raise HTTPException(status_code=500, detail=str(e)) from None
+
+    @app.get("/api/chat/history/{guild_id}/{user_id}")
+    async def api_chat_history(guild_id: int, user_id: int):
+        """Get conversation history for a user in a guild."""
+        from bot.core.services.ai_service import get_ai_service
+
+        ai = get_ai_service()
+        if ai is None:
+            return {"history": []}
+        return {"history": ai.get_history(guild_id, user_id)}
+
+    @app.delete("/api/chat/history/{guild_id}/{user_id}")
+    async def api_chat_clear(
+        guild_id: int, user_id: int, _: HTTPAuthorizationCredentials = Depends(check_write_auth)
+    ):
+        """Clear conversation history for a user in a guild."""
+        from bot.core.services.ai_service import get_ai_service
+
+        ai = get_ai_service()
+        if ai is None:
+            raise HTTPException(status_code=503, detail="AI service not initialized")
+        ai.clear_history(guild_id, user_id)
+        return {"success": True, "message": "Conversation history cleared"}

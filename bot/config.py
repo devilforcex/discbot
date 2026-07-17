@@ -146,6 +146,10 @@ class Config(BaseSettings):
         default="",
         description="Omniroute API key (Bearer token)",
     )
+    omniroute_api_keys_fallback: str = Field(
+        default="",
+        description="Comma-separated fallback API keys (used when primary is rate-limited/insufficient credits)",
+    )
     openai_api_key: str | None = Field(
         default=None,
         description="Direct OpenAI API key (fallback)",

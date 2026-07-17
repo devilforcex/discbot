@@ -200,6 +200,7 @@ python -m bot.dashboard.dashboard
 | `python-jose[cryptography]` | JWT auth за dashboard |
 | `passlib[bcrypt]` | Password hashing |
 | `python-dotenv` | .env конфигурация |
+| `openai>=1.30.0` | AI chat клиент (OpenAI-compatible / OpenRouter) |
 | `yarl`, `aiohttp` | HTTP клиент за Lavalink/YouTube |
 
 ---
@@ -213,6 +214,7 @@ python -m bot.dashboard.dashboard
 | **Playlist** | `/playlist save`, `/playlist load`, `/playlist list`, `/playlist delete` |
 | **Settings** | `/settings volume`, `/settings source`, `/settings autoplay`, `/settings djrole` |
 | **Admin** | `/restart`, `/reload`, `/sync`, `/debug` |
+| **AI Chat** | `!chat`, `!clear-chat`, `!chat-config` (hybrid: prefix + slash) |
 
 > Всички команди са **slash commands** — синхронизират се автоматично при старт (`/sync` за принудително).
 
@@ -226,6 +228,10 @@ python -m bot.dashboard.dashboard
 | `/api/guilds/{id}` | GET | Детайли за гилдя | ✅ JWT |
 | `/api/settings` | GET/PATCH | Гледане/промяна на настройки | ✅ JWT |
 | `/api/health/lavalink` | GET | Health check на Lavalink нод | ✅ JWT |
+| `/api/chat` | POST | AI chat completion | ✅ Bearer |
+| `/api/chat/config` | GET | AI конфигурация | ❌ |
+| `/api/chat/history/{guild_id}/{user_id}` | GET | История на разговори | ❌ |
+| `/api/chat/history/{guild_id}/{user_id}` | DELETE | Изчистване на история | ✅ Bearer |
 | `/auth/login` | POST | JWT login (username/password) | ❌ |
 | `/auth/logout` | POST | Изход | ✅ JWT |
 
@@ -273,6 +279,65 @@ python -m bot.dashboard.dashboard
 - **Health check** — `GET /v4/info` на Lavalink
 - **Exponential backoff reconnect** — 2s base, max 5min, jitter, макс 10 опита
 - **Graceful shutdown** — спира reconnect task при `close()`
+
+---
+
+## 🤖 AI Chat асистент (OpenRouter / OpenAI-compatible)
+
+DiscBot има вграден AI асистент, който работи с всеки OpenAI-compatible API — **OpenRouter** (безплатни модели), **OpenAI**, или локален сървър.
+
+### Конфигурация (`.env`)
+
+```env
+# Включи AI
+AI_ENABLED=true
+
+# Provider (omniroute = OpenAI-compatible endpoint)
+AI_PROVIDER=omniroute
+
+# OpenRouter (безплатни модели)
+OMNIROUTE_BASE_URL=https://openrouter.ai/api/v1
+OMNIROUTE_API_KEY=sk-or-v1-твоят_ключ
+# Fallback ключове (при rate limit / insufficient credits)
+OMNIROUTE_API_KEYS_FALLBACK=sk-or-v1-втори_ключ,sk-or-v1-трети_ключ
+
+# Модел (безплатни OpenRouter модели)
+AI_DEFAULT_MODEL=openai/gpt-oss-20b:free
+# Други free опции:
+#   meta-llama/llama-3.3-70b-instruct:free
+#   qwen/qwen3-next-80b-a3b-instruct:free
+
+AI_SYSTEM_PROMPT=You are a helpful Discord music bot assistant...
+AI_MAX_HISTORY=10
+AI_TEMPERATURE=0.7
+```
+
+### Discord команди
+
+| Команда | Описание |
+|---------|----------|
+| `!chat <въпрос>` или `/chat` | Задай въпрос на AI асистента |
+| `!clear-chat` или `/clear-chat` | Изчисти историята на разговора |
+| `!chat-config` или `/chat-config` | Покажи текущата AI конфигурация |
+
+> Командите са **hybrid** — работят както с prefix (`!`), така и като slash commands (`/`).
+
+### Dashboard API
+
+| Endpoint | Метод | Описание | Auth |
+|----------|-------|----------|------|
+| `/api/chat` | POST | Изпрати съобщение към AI | ✅ Bearer |
+| `/api/chat/config` | GET | AI конфигурация | ❌ |
+| `/api/chat/history/{guild_id}/{user_id}` | GET | История на разговори | ❌ |
+| `/api/chat/history/{guild_id}/{user_id}` | DELETE | Изчисти история | ✅ Bearer |
+
+### Автоматичен fallback
+
+AI сервисът автоматично превключва на резервен ключ при:
+- **429** (rate limit)
+- **402** (insufficient credits)
+
+Логва: `Rotated to fallback API key #2`
 
 ---
 

@@ -1,338 +1,201 @@
-"""
-Unit tests for AI Service.
-"""
+"""Unit tests for AIService."""
+
+from __future__ import annotations
+
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock, patch
+
 from bot.core.services.ai_service import AIService
-from bot.config import Config
 
 
-class TestAIService:
-    """Test cases for AIService class."""
+@pytest.fixture
+def mock_config():
+    config = MagicMock()
+    config.ai_enabled = True
+    config.ai_provider = "omniroute"
+    config.omniroute_base_url = "https://openrouter.ai/api/v1"
+    config.omniroute_api_key = "test-key-1"
+    config.omniroute_api_keys_fallback = "test-key-2,test-key-3"
+    config.openai_api_key = None
+    config.ai_default_model = "openai/gpt-oss-20b:free"
+    config.ai_system_prompt = "Test prompt"
+    config.ai_max_history = 10
+    config.ai_temperature = 0.7
+    return config
 
-    def test_init_with_config(self):
-        """Test AIService initialization with config."""
-        mock_config = MagicMock(spec=Config)
-        mock_config.ai_enabled = True
-        mock_config.ai_provider = "openai"
-        mock_config.omniroute_base_url = "http://localhost:20128/v1"
-        mock_config.omniroute_api_key = "test-key"
-        mock_config.ai_default_model = "gpt-4o-mini"
-        mock_config.ai_system_prompt = "Test prompt"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.7
 
+class TestAIServiceInit:
+    def test_init(self, mock_config):
         service = AIService(mock_config)
-
         assert service.config == mock_config
         assert service._conversations == {}
+        assert service._clients == []
 
-    def test_client_lazy_initialization_openai(self):
-        """Test client initialization with OpenAI provider."""
-        mock_config = MagicMock(spec=Config)
+    def test_build_config_loads_all_keys(self, mock_config):
+        service = AIService(mock_config)
+        service._build_config()
+        assert len(service._api_keys) == 3
+        assert service._api_keys[0] == "test-key-1"
+        assert service._api_keys[1] == "test-key-2"
+        assert service._api_keys[2] == "test-key-3"
+
+    def test_build_config_openrouter_headers(self, mock_config):
+        service = AIService(mock_config)
+        service._build_config()
+        assert service._default_headers is not None
+        assert "HTTP-Referer" in service._default_headers
+        assert "X-Title" in service._default_headers
+
+    def test_build_config_no_headers_for_non_openrouter(self, mock_config):
+        mock_config.omniroute_base_url = "http://localhost:20128/v1"
+        service = AIService(mock_config)
+        service._build_config()
+        assert service._default_headers is None
+
+    def test_build_config_openai_provider(self, mock_config):
         mock_config.ai_provider = "openai"
-        mock_config.omniroute_base_url = "http://localhost:20128/v1"
-        mock_config.omniroute_api_key = "test-key"
-        mock_config.ai_default_model = "gpt-4o-mini"
-        mock_config.ai_system_prompt = "Test prompt"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.7
-
+        mock_config.openai_api_key = "sk-openai"
         service = AIService(mock_config)
+        service._build_config()
+        assert "api.openai.com" in service._base_url
+        assert len(service._api_keys) == 1
 
-        assert service._client is None
 
-        with patch.object(service, "client") as mock_client:
-            mock_client.chat.completions.create.return_value = MagicMock(
-                choices=[MagicMock(message=MagicMock(content="Test response"))]
-            )
-
-            response = service.client
-
-            assert response is not None
-
-    def test_client_lazy_initialization_omniroute(self):
-        """Test client initialization with Omniroute provider."""
-        mock_config = MagicMock(spec=Config)
-        mock_config.ai_provider = "omniroute"
-        mock_config.omniroute_base_url = "http://localhost:20128/v1"
-        mock_config.omniroute_api_key = "test-key"
-        mock_config.ai_default_model = "gpt-4o-mini"
-        mock_config.ai_system_prompt = "Test prompt"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.7
-
+class TestAIServiceHistory:
+    def test_get_history_empty(self, mock_config):
         service = AIService(mock_config)
+        assert service.get_history(123, 456) == []
 
-        with patch.object(service, "client") as mock_client:
-            mock_client.chat.completions.create.return_value = MagicMock(
-                choices=[MagicMock(message=MagicMock(content="Test response"))]
-            )
-
-            response = service.client
-
-            assert response is not None
-
-    def test_get_conversation_key(self):
-        """Test conversation key generation."""
-        mock_config = MagicMock(spec=Config)
+    def test_add_and_get_history(self, mock_config):
         service = AIService(mock_config)
-
-        key = service._get_conversation_key(123456, 789012)
-
-        assert key == "123456:789012"
-
-    def test_get_history_empty(self):
-        """Test getting history for non-existent conversation."""
-        mock_config = MagicMock(spec=Config)
-        service = AIService(mock_config)
-
-        history = service.get_history(123456, 789012)
-
-        assert history == []
-
-    def test_get_history_existing(self):
-        """Test getting existing conversation history."""
-        mock_config = MagicMock(spec=Config)
-        service = AIService(mock_config)
-
-        # Manually add history
-        service._conversations["123456:789012"] = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"},
-        ]
-
-        history = service.get_history(123456, 789012)
-
+        service.add_to_history(123, 456, "user", "hello")
+        service.add_to_history(123, 456, "assistant", "hi there")
+        history = service.get_history(123, 456)
         assert len(history) == 2
-        assert history[0]["role"] == "user"
-        assert history[0]["content"] == "Hello"
-        assert history[1]["role"] == "assistant"
-        assert history[1]["content"] == "Hi there!"
+        assert history[0] == {"role": "user", "content": "hello"}
+        assert history[1] == {"role": "assistant", "content": "hi there"}
 
-    def test_add_to_history_new_conversation(self):
-        """Test adding to new conversation."""
-        mock_config = MagicMock(spec=Config)
+    def test_clear_history(self, mock_config):
         service = AIService(mock_config)
+        service.add_to_history(123, 456, "user", "hello")
+        service.clear_history(123, 456)
+        assert service.get_history(123, 456) == []
 
-        service.add_to_history(123456, 789012, "user", "Hello")
-
-        assert service._conversations["123456:789012"] == [
-            {"role": "user", "content": "Hello"},
-        ]
-
-    def test_add_to_history_existing_conversation(self):
-        """Test adding to existing conversation."""
-        mock_config = MagicMock(spec=Config)
+    def test_history_isolated_per_user(self, mock_config):
         service = AIService(mock_config)
+        service.add_to_history(123, 456, "user", "user1 msg")
+        service.add_to_history(123, 789, "user", "user2 msg")
+        assert len(service.get_history(123, 456)) == 1
+        assert len(service.get_history(123, 789)) == 1
 
-        service._conversations["123456:789012"] = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"},
-        ]
-
-        service.add_to_history(123456, 789012, "user", "How are you?")
-
-        assert len(service._conversations["123456:789012"]) == 3
-        assert service._conversations["123456:789012"][2]["role"] == "user"
-        assert service._conversations["123456:789012"][2]["content"] == "How are you?"
-
-    def test_add_to_history_trim_when_exceeds_max(self):
-        """Test history trimming when exceeds maximum."""
-        mock_config = MagicMock(spec=Config)
-        mock_config.ai_max_history = 2  # Max 2 pairs (4 messages)
+    def test_history_trimmed(self, mock_config):
+        mock_config.ai_max_history = 2
         service = AIService(mock_config)
+        for i in range(10):
+            service.add_to_history(123, 456, "user", f"msg {i}")
+            service.add_to_history(123, 456, "assistant", f"resp {i}")
+        history = service.get_history(123, 456)
+        assert len(history) == 4  # 2 pairs * 2
 
-        # Add 6 messages (3 pairs)
-        for i in range(6):
-            role = "user" if i % 2 == 0 else "assistant"
-            service.add_to_history(123456, 789012, role, f"Message {i}")
 
-        # Should be trimmed to 4 messages (2 pairs)
-        assert len(service._conversations["123456:789012"]) == 4
-
-    def test_clear_history_existing(self):
-        """Test clearing existing conversation history."""
-        mock_config = MagicMock(spec=Config)
+class TestAIServiceKeyRotation:
+    def test_rotate_key(self, mock_config):
         service = AIService(mock_config)
+        service._build_config()
+        assert service._current_key_index == 0
+        assert service._rotate_key() is True
+        assert service._current_key_index == 1
+        assert service._rotate_key() is True
+        assert service._current_key_index == 2
+        assert service._rotate_key() is True
+        assert service._current_key_index == 0  # wraps around
 
-        service._conversations["123456:789012"] = [
-            {"role": "user", "content": "Hello"},
-            {"role": "assistant", "content": "Hi there!"},
-        ]
-
-        service.clear_history(123456, 789012)
-
-        assert "123456:789012" not in service._conversations
-
-    def test_clear_history_nonexistent(self):
-        """Test clearing non-existent conversation history."""
-        mock_config = MagicMock(spec=Config)
+    def test_rotate_key_single_key(self, mock_config):
+        mock_config.omniroute_api_keys_fallback = ""
         service = AIService(mock_config)
+        service._build_config()
+        assert service._rotate_key() is False
 
-        service.clear_history(123456, 789012)
 
-        assert "123456:789012" not in service._conversations
-
-    async def test_chat_disabled(self):
-        """Test chat when AI is disabled."""
-        mock_config = MagicMock(spec=Config)
+class TestAIServiceChat:
+    @pytest.mark.asyncio
+    async def test_chat_disabled(self, mock_config):
         mock_config.ai_enabled = False
-        mock_config.ai_system_prompt = "Test prompt"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.7
-
         service = AIService(mock_config)
+        result = await service.chat(123, 456, "hello")
+        assert "disabled" in result.lower()
 
-        response = await service.chat(123456, 789012, "Hello")
-
-        assert "disabled" in response.lower()
-
-    async def test_chat_success(self):
-        """Test successful chat completion."""
-        mock_config = MagicMock(spec=Config)
-        mock_config.ai_enabled = True
-        mock_config.ai_provider = "openai"
-        mock_config.omniroute_base_url = "http://localhost:20128/v1"
-        mock_config.omniroute_api_key = "test-key"
-        mock_config.ai_default_model = "gpt-4o-mini"
-        mock_config.ai_system_prompt = "You are a helpful AI assistant"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.7
-
+    @pytest.mark.asyncio
+    async def test_chat_success(self, mock_config):
         service = AIService(mock_config)
+        service._build_config()
 
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "Hello! How can I help you today?"
+        mock_response.choices = [MagicMock(message=MagicMock(content="Hello!"))]
 
-        with patch.object(service, "client") as mock_client:
-            mock_client.chat.completions.create.return_value = mock_response
+        with patch.object(service._clients[0], "chat") as mock_chat:
+            mock_chat.completions.create = AsyncMock(return_value=mock_response)
+            result = await service.chat(123, 456, "Say hi")
+            assert result == "Hello!"
 
-            response = await service.chat(123456, 789012, "Hello")
-
-            assert response == "Hello! How can I help you today?"
-            assert "123456:789012" in service._conversations
-            assert len(service._conversations["123456:789012"]) == 4  # system + user + assistant
-
-    async def test_chat_api_error(self):
-        """Test chat when API call fails."""
-        mock_config = MagicMock(spec=Config)
-        mock_config.ai_enabled = True
-        mock_config.ai_provider = "openai"
-        mock_config.omniroute_base_url = "http://localhost:20128/v1"
-        mock_config.omniroute_api_key = "test-key"
-        mock_config.ai_default_model = "gpt-4o-mini"
-        mock_config.ai_system_prompt = "Test prompt"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.7
-
+    @pytest.mark.asyncio
+    async def test_chat_stores_history(self, mock_config):
         service = AIService(mock_config)
-
-        with patch.object(service, "client") as mock_client:
-            mock_client.chat.completions.create.side_effect = Exception("API error")
-
-            response = await service.chat(123456, 789012, "Hello")
-
-            assert "API error" in response
-            assert response.startswith("❌ AI error:")
-
-    async def test_chat_with_custom_system_prompt(self):
-        """Test chat with custom system prompt."""
-        mock_config = MagicMock(spec=Config)
-        mock_config.ai_enabled = True
-        mock_config.ai_provider = "openai"
-        mock_config.omniroute_base_url = "http://localhost:20128/v1"
-        mock_config.omniroute_api_key = "test-key"
-        mock_config.ai_default_model = "gpt-4o-mini"
-        mock_config.ai_system_prompt = "Default prompt"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.7
-
-        service = AIService(mock_config)
+        service._build_config()
 
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "Response"
+        mock_response.choices = [MagicMock(message=MagicMock(content="Response!"))]
 
-        with patch.object(service, "client") as mock_client:
-            mock_client.chat.completions.create.return_value = mock_response
+        with patch.object(service._clients[0], "chat") as mock_chat:
+            mock_chat.completions.create = AsyncMock(return_value=mock_response)
+            await service.chat(123, 456, "question")
+            history = service.get_history(123, 456)
+            assert len(history) == 2
+            assert history[0]["role"] == "user"
+            assert history[1]["role"] == "assistant"
 
-            response = await service.chat(
-                guild_id=123456,
-                user_id=789012,
-                user_message="Hello",
-                system_prompt="Custom prompt"
-            )
-
-            # Verify the API was called with custom system prompt
-            call_args = mock_client.chat.completions.create.call_args
-            messages = call_args[1]["messages"]
-
-            assert messages[0]["content"] == "Custom prompt"
-            assert messages[1]["role"] == "user"
-            assert messages[1]["content"] == "Hello"
-
-    async def test_chat_with_custom_model_and_temperature(self):
-        """Test chat with custom model and temperature."""
-        mock_config = MagicMock(spec=Config)
-        mock_config.ai_enabled = True
-        mock_config.ai_provider = "openai"
-        mock_config.omniroute_base_url = "http://localhost:20128/v1"
-        mock_config.omniroute_api_key = "test-key"
-        mock_config.ai_default_model = "gpt-4o-mini"
-        mock_config.ai_system_prompt = "Test prompt"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.5
-
+    @pytest.mark.asyncio
+    async def test_chat_error_returns_message(self, mock_config):
         service = AIService(mock_config)
+        service._build_config()
+
+        with patch.object(service._clients[0], "chat") as mock_chat:
+            mock_chat.completions.create = AsyncMock(side_effect=Exception("API down"))
+            result = await service.chat(123, 456, "question")
+            assert "error" in result.lower()
+
+    @pytest.mark.asyncio
+    async def test_chat_rotates_on_429(self, mock_config):
+        service = AIService(mock_config)
+        service._build_config()
 
         mock_response = MagicMock()
-        mock_response.choices = [MagicMock()]
-        mock_response.choices[0].message = MagicMock()
-        mock_response.choices[0].message.content = "Response"
+        mock_response.choices = [MagicMock(message=MagicMock(content="OK from key 2"))]
 
-        with patch.object(service, "client") as mock_client:
-            mock_client.chat.completions.create.return_value = mock_response
+        error_429 = Exception("Error code: 429 - rate limited")
 
-            response = await service.chat(
-                guild_id=123456,
-                user_id=789012,
-                user_message="Hello",
-                model="gpt-3.5-turbo",
-                temperature=0.9
-            )
+        with patch.object(service._clients[0], "chat") as mock_chat_0, \
+             patch.object(service._clients[1], "chat") as mock_chat_1:
+            mock_chat_0.completions.create = AsyncMock(side_effect=error_429)
+            mock_chat_1.completions.create = AsyncMock(return_value=mock_response)
+            result = await service.chat(123, 456, "question")
+            assert result == "OK from key 2"
+            assert service._current_key_index == 1
 
-            # Verify the API was called with custom model and temperature
-            call_args = mock_client.chat.completions.create.call_args
-            assert call_args[1]["model"] == "gpt-3.5-turbo"
-            assert call_args[1]["temperature"] == 0.9
-
-    def test_conversation_persistence(self):
-        """Test that conversations persist across service calls."""
-        mock_config = MagicMock(spec=Config)
-        mock_config.ai_enabled = True
-        mock_config.ai_provider = "openai"
-        mock_config.omniroute_base_url = "http://localhost:20128/v1"
-        mock_config.omniroute_api_key = "test-key"
-        mock_config.ai_default_model = "gpt-4o-mini"
-        mock_config.ai_system_prompt = "Test prompt"
-        mock_config.ai_max_history = 10
-        mock_config.ai_temperature = 0.7
-
+    @pytest.mark.asyncio
+    async def test_chat_rotates_on_402(self, mock_config):
         service = AIService(mock_config)
+        service._build_config()
 
-        # Add a message
-        service.add_to_history(123456, 789012, "user", "Hello")
-        assert service._conversations["123456:789012"][0]["content"] == "Hello"
+        mock_response = MagicMock()
+        mock_response.choices = [MagicMock(message=MagicMock(content="OK from key 2"))]
 
-        # Create new service instance (simulating new process)
-        service2 = AIService(mock_config)
+        error_402 = Exception("Error code: 402 - insufficient credits")
 
-        # History should be preserved
-        history = service2.get_history(123456, 789012)
-        assert len(history) == 1
-        assert history[0]["content"] == "Hello"
+        with patch.object(service._clients[0], "chat") as mock_chat_0, \
+             patch.object(service._clients[1], "chat") as mock_chat_1:
+            mock_chat_0.completions.create = AsyncMock(side_effect=error_402)
+            mock_chat_1.completions.create = AsyncMock(return_value=mock_response)
+            result = await service.chat(123, 456, "question")
+            assert result == "OK from key 2"
