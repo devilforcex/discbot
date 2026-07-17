@@ -46,9 +46,9 @@ class EventCog(commands.Cog):
 
         try:
             embed = discord.Embed(
-                title="🎵 Welcome to DiscBot!",
+                title="🎵 БаДМеси — Music & AI Bot",
                 description=(
-                    f"Hey {member.mention}, I'm **DiscBot** — your music and AI assistant!\n\n"
+                    f"Hey {member.mention}, I'm **БаДМеси** — your music and AI assistant!\n\n"
                     "Here are the things I can do:"
                 ),
                 color=0x4a9fff,
@@ -92,7 +92,7 @@ class EventCog(commands.Cog):
             embed.add_field(
                 name="🤖 AI Chat",
                 value=(
-                    "`@DiscBot <question>` — Ask in any channel\n"
+                    "`@БаДМеси <question>` — Ask in any channel\n"
                     "`!chat <question>` or `/ask` — Chat with AI\n"
                     "`!clear-chat` — Clear history\n"
                 ),
@@ -114,7 +114,7 @@ class EventCog(commands.Cog):
 
             embed.add_field(
                 name="💡 Tip",
-                value="You can also **@mention** me in any channel and I'll reply with AI!",
+                value="You can also **@БаДМеси** me in any channel and I'll reply with AI!",
                 inline=False,
             )
 
