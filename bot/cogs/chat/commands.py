@@ -39,8 +39,13 @@ class ChatCog(commands.Cog):
         if not question:
             return  # Just a mention with no question
 
+        # Lazily resolve ai_service (may be None if called before setup is complete)
+        ai_service = self.ai_service or get_ai_service()
+        if not ai_service:
+            return
+
         async with message.channel.typing():
-            response = await self.ai_service.chat(
+            response = await ai_service.chat(
                 guild_id=message.guild.id,
                 user_id=message.author.id,
                 user_message=question,
