@@ -159,7 +159,7 @@ class Config(BaseSettings):
         description="Default model for chat",
     )
     ai_system_prompt: str = Field(
-        default="You are a helpful Discord music bot assistant. You help with music recommendations, bot commands, server admin tasks, and general conversation. Keep responses concise and friendly.",
+        default="Ти си полезен асистент за Discord музикален бот. Отговаряш на български език. Помагаш с музикални препоръки, команди за бота, админ задачи и общи разговори. Бъди кратък и приятелски настроен.",
         description="System prompt for AI assistant",
     )
     ai_max_history: int = Field(
