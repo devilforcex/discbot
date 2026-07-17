@@ -1,4 +1,4 @@
-"""Pytest configuration and fixtures for DiscBot tests."""
+"""Pytest configuration and fixtures for DrusaBoT tests."""
 
 from __future__ import annotations
 

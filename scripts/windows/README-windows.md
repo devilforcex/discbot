@@ -1,6 +1,6 @@
-# 🪟 DiscBot — Windows Guide
+# 🪟 DrusaBoT — Windows Guide
 
-Боте, инсталацията е фиксирана за **`E:\discbot`** — всичко се инсталира
+Боте, инсталацията е фиксирана за **`E:\DrusaBoT`** — всичко се инсталира
 и работи само там (код, `.venv`, `Lavalink.jar`, `.env`, `data/`, `logs/`).
 Скриптовете умишлено отказват друга директория, за да няма разхвърляни файлове.
 
@@ -9,11 +9,11 @@
 Отвори **PowerShell** (Win+R → `powershell`) и постави един ред:
 
 ```powershell
-# Първа инсталация — сваля бота в E:\discbot и те превежда през setup-а
-irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/install.ps1 | iex
+# Първа инсталация — сваля бота в E:\DrusaBoT и те превежда през setup-а
+irm https://raw.githubusercontent.com/devilforcex/DrusaBoT/master/scripts/windows/install.ps1 | iex
 
-# По-нататъшни ъпдейти (също в E:\discbot)
-irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
+# По-нататъшни ъпдейти (също в E:\DrusaBoT)
+irm https://raw.githubusercontent.com/devilforcex/DrusaBoT/master/scripts/windows/update.ps1 | iex
 ```
 
 > Ако ти гръмне с *"execution of scripts is disabled on this system"*,
@@ -24,7 +24,7 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 > и отговори `Y`. Това е еднократно.
 
 ### Какво прави `install.ps1`?
-1. Използва само фиксираната директория `E:\discbot`
+1. Използва само фиксираната директория `E:\DrusaBoT`
 2. Тества за `git` и клонира repo-то
 3. Проверява за **Python 3.12+** и **Java 17+**; ако липсват, ти отваря download страниците
 4. Създава `.venv` и `pip install -r requirements.txt`
@@ -43,7 +43,7 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 - Блокира **само tracked** локални промени. Untracked файлове
   (`generated-page.html`, локални бележки и т.н.) **не** спират ъпдейта.
 - При tracked промени: interactive избор **S**tash / **D**iscard, или force:
-  `$env:DISCBOT_FORCE='1'; irm .../update.ps1 | iex`
+  `$env:DrusaBoT_FORCE='1'; irm .../update.ps1 | iex`
 - Никога не пипа `.env`, `data/`, `logs/` (gitignored)
 - Освежава pip зависимостите в `.venv`
 - По желание спира стария процес и стартира новия
@@ -56,7 +56,7 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
    - **Java 17+** (JRE) — [adoptium.net](https://adoptium.net/)
      - ⚠️ Чекни `Set JAVA_HOME` / `Add to PATH`
 
-2. **Свали/клонирай** repo-то в папка по избор, напр. `C:\DiscBot`
+2. **Свали/клонирай** repo-то в папка по избор, напр. `C:\DrusaBoT`
 
 3. **Първоначална настройка** — двойно кликни:
     ```
@@ -91,8 +91,8 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 Ако искаш истински инсталатор с Start Menu / Desktop shortcuts:
 
 1. Свали [Inno Setup 6](https://jrsoftware.org/isinfo.php)
-2. Отвори `scripts\windows\DiscBot.iss` в Inno Setup
-3. **Compile** → ще получиш `scripts\windows\Output\DiscBotSetup.exe`
+2. Отвори `scripts\windows\DrusaBoT.iss` в Inno Setup
+3. **Compile** → ще получиш `scripts\windows\Output\DrusaBoTSetup.exe`
 
 > Забележка: setup.exe **не** включва Python, Java и Lavalink.jar — те се
 > теглят от потребителя / автоматично от `install.ps1`/`setup.bat`. Това прави
@@ -110,7 +110,7 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 | `start.bat` | Batch стартиране |
 | `stop.bat` | Batch спиране |
 | `update.bat` | Batch ъпдейт (git pull + pip install) |
-| `DiscBot.iss` | Inno Setup скрипт |
+| `DrusaBoT.iss` | Inno Setup скрипт |
 | `README-windows.md` | Този файл |
 
 ## ❓ Често срещани проблеми
@@ -124,15 +124,15 @@ irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows
 | Lavalink тръгва и веднага спира | Провери `application.yml` и че порт 12333 не е зает. |
 | Ботът казва `Lavalink not connected` | Изчакай 10-15 сек Lavalink да вдигне. Виж дали паролата в `.env` и `application.yml` съвпада. |
 | Ботът не отговаря на команди | Провери `message content intent` в Discord Developer Portal и върния `GUILD_ID`/`MUSIC_CHANNEL_ID`. |
-| `update.ps1` отказва да ъпдейтне | Имаш **tracked** локални промени (не untracked файлове). При interactive run избери **S** (stash) или **D** (discard). За one-liner force: `$env:DISCBOT_FORCE='1'; irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 \| iex`. `.env` / `data/` / untracked файлове не се пипат. |
+| `update.ps1` отказва да ъпдейтне | Имаш **tracked** локални промени (не untracked файлове). При interactive run избери **S** (stash) или **D** (discard). За one-liner force: `$env:DrusaBoT_FORCE='1'; irm https://raw.githubusercontent.com/devilforcex/DrusaBoT/master/scripts/windows/update.ps1 \| iex`. `.env` / `data/` / untracked файлове не се пипат. |
 
 ## 🔄 Автоматично стартиране с Windows
 
 Най-лесно:
 1. `Win+R` → `shell:startup` (отваря Startup папката)
 2. Създай shortcut там, десен клик → Properties:
-   - **Target**: `powershell -ExecutionPolicy Bypass -File "C:\Users\<ти>\AppData\Local\DiscBot\scripts\windows\start.ps1"`
-   - **Start in**: `C:\Users\<ти>\AppData\Local\DiscBot`
+   - **Target**: `powershell -ExecutionPolicy Bypass -File "C:\Users\<ти>\AppData\Local\DrusaBoT\scripts\windows\start.ps1"`
+   - **Start in**: `C:\Users\<ти>\AppData\Local\DrusaBoT`
    - **Run**: Minimized (за да не ти изскача прозорец)
 
 За по-сериозно ползване — [NSSM](https://nssm.cc/) за инсталиране на

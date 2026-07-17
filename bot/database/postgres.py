@@ -1,5 +1,5 @@
 """
-PostgreSQL connection manager for DiscBot.
+PostgreSQL connection manager for DrusaBoT.
 Used when DATABASE_URL is set (cloud deployment / PostgreSQL).
 Falls back to SQLite when DATABASE_URL is not set.
 """

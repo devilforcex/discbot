@@ -7,7 +7,7 @@ export default function Footer() {
             <div className="w-10 h-10 rounded-[11px] bg-gradient-to-br from-accent-blue-600 to-accent-blue-300 flex items-center justify-center">
               <span className="text-white font-black text-sm">DB</span>
             </div>
-            <h4 className="text-2xl font-bold text-white">DiscBot</h4>
+            <h4 className="text-2xl font-bold text-white">DrusaBoT</h4>
           </div>
           <p className="w-full text-dark-400 mt-2 text-sm">
             High-fidelity Discord music bot powered by Lavalink v4. Open source, self-hosted,
@@ -18,7 +18,7 @@ export default function Footer() {
           <div>
             <ul className="flex w-full flex-col">
               <p className="mb-3 text-lg text-white font-medium">Links</p>
-              <a href="https://github.com/devilforcex/discbot" className="text-dark-400 mt-2 text-sm hover:text-accent-blue transition-colors">GitHub</a>
+              <a href="https://github.com/devilforcex/DrusaBoT" className="text-dark-400 mt-2 text-sm hover:text-accent-blue transition-colors">GitHub</a>
               <a href="https://discord.gg/" className="text-dark-400 mt-2 text-sm hover:text-accent-blue transition-colors">Discord</a>
               <li className="text-dark-400 mt-2 text-sm">Dashboard</li>
             </ul>
@@ -28,7 +28,7 @@ export default function Footer() {
               <p className="mb-3 text-lg text-white font-medium">Docs</p>
               <a href="/docs/PROJECT_PLAN.md" className="text-dark-400 mt-2 text-sm hover:text-accent-blue transition-colors">Project Plan</a>
               <a href="/docs/DESIGN_SYSTEM.md" className="text-dark-400 mt-2 text-sm hover:text-accent-blue transition-colors">Design System</a>
-              <a href="https://github.com/devilforcex/discbot/blob/main/README.md" className="text-dark-400 mt-2 text-sm hover:text-accent-blue transition-colors">README</a>
+              <a href="https://github.com/devilforcex/DrusaBoT/blob/main/README.md" className="text-dark-400 mt-2 text-sm hover:text-accent-blue transition-colors">README</a>
             </ul>
           </div>
           <div>
@@ -44,7 +44,7 @@ export default function Footer() {
       </div>
       <div className="mt-10 border-t border-dark-500 w-full max-w-6xl m-auto px-5 md:px-0">
         <div className="flex flex-col md:flex-row justify-between mt-4 text-center md:text-left">
-          <p className="text-dark-400 text-sm">© 2026 DiscBot. Open source.</p>
+          <p className="text-dark-400 text-sm">© 2026 DrusaBoT. Open source.</p>
           <p className="text-dark-400 text-sm">Made with ❤️</p>
         </div>
       </div>

@@ -1,4 +1,4 @@
-# AGENTS.md — DiscBot
+# AGENTS.md — DrusaBoT
 
 ## Entrypoints
 

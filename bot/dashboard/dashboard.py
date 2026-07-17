@@ -42,7 +42,7 @@ class DashboardServer:
 
         from fastapi.middleware.cors import CORSMiddleware
 
-        self._app = FastAPI(title="DiscBot · Nightmare Music Dashboard")  # type: ignore[misc]
+        self._app = FastAPI(title="DrusaBoT · Nightmare Music Dashboard")  # type: ignore[misc]
 
         # CORS middleware - restrict to same origin by default, allow override via env
         import os

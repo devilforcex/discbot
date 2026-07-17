@@ -1,6 +1,6 @@
 @echo off
 REM Convenience launcher for Windows users.
-REM DiscBot is locked to E:\discbot.
-REM Lavalink runs from E:\discbot\lavalink\ with its own config & plugins.
-cd /d "E:\discbot"
+REM DrusaBoT is locked to E:\DrusaBoT.
+REM Lavalink runs from E:\DrusaBoT\lavalink\ with its own config & plugins.
+cd /d "E:\DrusaBoT"
 call "scripts\windows\start.bat"

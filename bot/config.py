@@ -121,7 +121,7 @@ class Config(BaseSettings):
         description="Bot invite URL (OAuth2)",
     )
     website_url: str | None = Field(
-        default="https://github.com/devilforcex/discbot",
+        default="https://github.com/devilforcex/DrusaBoT",
         description="Website / Vote URL for help menu buttons",
     )
     made_by_text: str = Field(

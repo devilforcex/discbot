@@ -1,10 +1,10 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    One-line DiscBot installer for Windows (PowerShell).
+    One-line DrusaBoT installer for Windows (PowerShell).
 
 .DESCRIPTION
-    Installs DiscBot only to the fixed directory E:\discbot. Safe to re-run:
+    Installs DrusaBoT only to the fixed directory E:\DrusaBoT. Safe to re-run:
     if the target folder already has a Git clone it updates instead of
     overwriting. Custom install directories are intentionally rejected so all
     bot files, config, venv, logs, data, and Lavalink live in one place.
@@ -19,7 +19,7 @@
       - Optionally starts the bot when done.
 
 .PARAMETER InstallDir
-    Backward-compatible parameter. Only E:\discbot is accepted.
+    Backward-compatible parameter. Only E:\DrusaBoT is accepted.
 
 .PARAMETER Branch
     Git branch to clone/update. Default: master
@@ -31,10 +31,10 @@
     Run non-interactively (won't stop to ask, just prints steps).
 
 .EXAMPLE
-    # Default one-liner (installs to E:\discbot):
-    irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/install.ps1 | iex
+    # Default one-liner (installs to E:\DrusaBoT):
+    irm https://raw.githubusercontent.com/devilforcex/DrusaBoT/master/scripts/windows/install.ps1 | iex
 
-    # Locally (from inside the repo; still installs/updates E:\discbot):
+    # Locally (from inside the repo; still installs/updates E:\DrusaBoT):
     powershell -ExecutionPolicy Bypass -File .\scripts\windows\install.ps1
 #>
 [CmdletBinding()]
@@ -46,7 +46,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Host.UI.RawUI.WindowTitle = "DiscBot — Installer"
+$Host.UI.RawUI.WindowTitle = "DrusaBoT — Installer"
 
 function Write-Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
 function Write-Ok($msg)   { Write-Host "    OK  $msg" -ForegroundColor Green }
@@ -66,19 +66,19 @@ function Request-Confirm($question, $defaultY = $true) {
 }
 
 # ---------- Resolve install dir ----------
-# Hard requirement: every bot-related file must live under E:\discbot.
-$fixedDir = [IO.Path]::GetFullPath("E:\discbot")
+# Hard requirement: every bot-related file must live under E:\DrusaBoT.
+$fixedDir = [IO.Path]::GetFullPath("E:\DrusaBoT")
 if ($InstallDir -and ([IO.Path]::GetFullPath($InstallDir).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
-    Write-Fail "DiscBot is locked to E:\discbot. Refusing custom InstallDir: $InstallDir"
+    Write-Fail "DrusaBoT is locked to E:\DrusaBoT. Refusing custom InstallDir: $InstallDir"
 }
-if ($env:DISCBOT_DIR -and ([IO.Path]::GetFullPath($env:DISCBOT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
-    Write-Fail "DiscBot is locked to E:\discbot. Remove DISCBOT_DIR or set it to E:\discbot. Current: $env:DISCBOT_DIR"
+if ($env:DrusaBoT_DIR -and ([IO.Path]::GetFullPath($env:DrusaBoT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Fail "DrusaBoT is locked to E:\DrusaBoT. Remove DrusaBoT_DIR or set it to E:\DrusaBoT. Current: $env:DrusaBoT_DIR"
 }
 $InstallDir = $fixedDir
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Magenta
-Write-Host "  DiscBot — Windows installer" -ForegroundColor Magenta
+Write-Host "  DrusaBoT — Windows installer" -ForegroundColor Magenta
 Write-Host "==========================================" -ForegroundColor Magenta
 Write-Host ""
 Write-Host "  Install dir : $InstallDir"
@@ -93,14 +93,14 @@ if (Test-Path $InstallDir) {
         $update = Join-Path $InstallDir "scripts\windows\update.ps1"
         if (Test-Path $update) {
             # Delegate to the local update.ps1 so any local fixes are honored.
-            # -NoStart maps to "don't restart"; -Force is honored via env DISCBOT_FORCE too.
+            # -NoStart maps to "don't restart"; -Force is honored via env DrusaBoT_FORCE too.
             & $update -InstallDir $InstallDir -Branch $Branch -NoStart:$NoStart -NoPrompt:$NoPrompt
             return
         }
         # Otherwise fall through — continue install (idempotent).
     } else {
         if ((Get-ChildItem $InstallDir -Force -ErrorAction SilentlyContinue | Measure-Object).Count -gt 0) {
-            Write-Fail "E:\discbot exists but is not a Git clone. Move/backup its contents, empty the folder, or run setup.bat if this is a manually copied repo."
+            Write-Fail "E:\DrusaBoT exists but is not a Git clone. Move/backup its contents, empty the folder, or run setup.bat if this is a manually copied repo."
         }
     }
 } else {
@@ -116,7 +116,7 @@ if (-not (Test-Command "git")) {
 Write-Ok ("git " + (git --version))
 
 # ---------- 3. Clone ----------
-$repoUrl = "https://github.com/devilforcex/discbot.git"
+$repoUrl = "https://github.com/devilforcex/DrusaBoT.git"
 if (-not (Test-Path (Join-Path $InstallDir ".git"))) {
     Write-Step "Cloning $repoUrl (branch '$Branch') -> $InstallDir"
     Push-Location (Split-Path $InstallDir -Parent)
@@ -266,7 +266,7 @@ Write-Host ""
 Write-Host "  Next:"
 Write-Host "   1. Edit    : notepad `"$envPath`""
 Write-Host "   2. Start   : powershell -ExecutionPolicy Bypass -File `"$InstallDir\scripts\windows\start.ps1`""
-Write-Host "   3. Update  : irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex"
+Write-Host "   3. Update  : irm https://raw.githubusercontent.com/devilforcex/DrusaBoT/master/scripts/windows/update.ps1 | iex"
 Write-Host ""
 
 if (Test-Path $envPath) {

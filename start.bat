@@ -1,4 +1,4 @@
 @echo off  
-REM DiscBot convenience launcher.  
-cd /d "E:\discbot"  
+REM DrusaBoT convenience launcher.  
+cd /d "E:\DrusaBoT"  
 call "scripts\windows\start.bat"  

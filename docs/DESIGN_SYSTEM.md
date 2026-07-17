@@ -11,7 +11,7 @@
 |-------|-------|-----|
 | Brand mark | `NB` / gradient square | Logo badge |
 | Product name (landing) | Nightmare Bots / Steel | Marketing site |
-| Product name (bot) | Nightmare Music / DiscBot | In-app dashboard |
+| Product name (bot) | Nightmare Music / DrusaBoT | In-app dashboard |
 | Accent A | Violet `#8B5CF6` (violet-500) | Primary accent, links, badges |
 | Accent B | Fuchsia `#E879F9` (fuchsia-400) | Gradients, secondary |
 | Gradient CTA | `from-violet-600 to-fuchsia-600` | Primary filled buttons |

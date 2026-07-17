@@ -5,4 +5,4 @@ SQLite persistence, and an optional FastAPI web dashboard.
 """
 
 __version__ = "1.0.0"
-__author__ = "DiscBot"
+__author__ = "DrusaBoT"

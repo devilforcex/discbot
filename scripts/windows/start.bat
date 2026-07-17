@@ -1,23 +1,23 @@
 @echo off
 REM ============================================================
-REM  DiscBot — Start Lavalink + Discord Bot
+REM  DrusaBoT — Start Lavalink + Discord Bot
 REM  ------------------------------------------------------------
-REM  Runs only from E:\discbot. All bot files/config/data/logs live there.
+REM  Runs only from E:\DrusaBoT. All bot files/config/data/logs live there.
 REM  Lavalink runs from lavalink/ subdirectory with application.yml and plugins.
 REM  Opens two console windows: one for Lavalink, one for the bot.
 REM ============================================================
 setlocal
 chcp 65001 >nul
-title DiscBot Launcher
+title DrusaBoT Launcher
 
-cd /d "E:\discbot" 2>nul
+cd /d "E:\DrusaBoT" 2>nul
 if errorlevel 1 (
-    echo  ❌ E:\discbot does not exist or is not accessible. Run install.ps1 first.
+    echo  ❌ E:\DrusaBoT does not exist or is not accessible. Run install.ps1 first.
     pause
     exit /b 1
 )
 
-echo  🎵 DiscBot @ %CD%
+echo  🎵 DrusaBoT @ %CD%
 echo.
 
 if not exist ".env" (
@@ -37,13 +37,13 @@ if not exist "lavalink\Lavalink.jar" (
 )
 
 echo  Starting Lavalink (new window)...
-start "DiscBot — Lavalink" cmd /k "cd /d ""%CD%\lavalink"" && java -jar Lavalink.jar"
+start "DrusaBoT — Lavalink" cmd /k "cd /d ""%CD%\lavalink"" && java -jar Lavalink.jar"
 
 echo  Waiting for Lavalink to boot...
 timeout /t 8 /nobreak >nul
 
 echo  Starting bot (new window)...
-start "DiscBot — Bot" cmd /k "cd /d ""%CD%"" && .venv\Scripts\python.exe -m bot.main"
+start "DrusaBoT — Bot" cmd /k "cd /d ""%CD%"" && .venv\Scripts\python.exe -m bot.main"
 
 echo.
 echo  ✅ Both processes launched in separate windows.

@@ -49,8 +49,8 @@ class AIService:
         default_headers: dict[str, str] = {}
         if "openrouter.ai" in self._base_url:
             default_headers = {
-                "HTTP-Referer": "https://github.com/devilforcex/discbot",
-                "X-Title": "DiscBot",
+                "HTTP-Referer": "https://github.com/devilforcex/DrusaBoT",
+                "X-Title": "DrusaBoT",
             }
         self._default_headers = default_headers or None
 

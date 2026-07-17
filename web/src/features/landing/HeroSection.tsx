@@ -30,13 +30,13 @@ export default function HeroSection() {
               <div className="w-10 h-10 rounded-[11px] bg-gradient-to-br from-accent-blue-600 to-accent-blue-300 flex items-center justify-center">
                 <span className="text-white font-black text-sm">DB</span>
               </div>
-              <span className="text-3xl font-bold tracking-tight text-white">DiscBot</span>
+              <span className="text-3xl font-bold tracking-tight text-white">DrusaBoT</span>
             </div>
             <p className="text-[11px] sm:text-xs font-bold tracking-[0.25em] uppercase bg-gradient-to-r from-accent-blue-600 via-accent-blue to-accent-blue-300 bg-clip-text text-transparent mb-10">
               Next-Level Music Experience
             </p>
             <h2 className="text-3xl sm:text-4xl font-bold tracking-[-0.02em] text-white mb-5">
-              What is DiscBot?
+              What is DrusaBoT?
             </h2>
             <p className="text-dark-300 text-base leading-relaxed max-w-[520px] mb-7">
               High-quality Discord music bot powered by Lavalink v4. Stream from YouTube,
@@ -51,7 +51,7 @@ export default function HeroSection() {
                 {token ? "Open Dashboard" : "Connect to Dashboard"}
               </button>
               <a
-                href="https://github.com/devilforcex/discbot"
+                href="https://github.com/devilforcex/DrusaBoT"
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-[11px] font-semibold border border-dark-500 text-dark-200 hover:text-white hover:border-accent-blue/40 transition-colors whitespace-nowrap"
@@ -116,7 +116,7 @@ export default function HeroSection() {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5">
-                          <p className="text-[11px] font-semibold leading-tight text-white">DiscBot</p>
+                          <p className="text-[11px] font-semibold leading-tight text-white">DrusaBoT</p>
                           <div className="flex items-end gap-[2px] h-2.5 ml-auto">
                             <span className="w-[2px] rounded-full bg-accent-emerald animate-bar1" />
                             <span className="w-[2px] rounded-full bg-accent-emerald animate-bar2" />
@@ -143,7 +143,7 @@ export default function HeroSection() {
                         <span className="absolute -bottom-0.5 -right-0.5 w-2 h-2 rounded-full bg-dark-400 border border-dark-700" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[11px] font-semibold leading-tight text-dark-100">DiscBot</p>
+                        <p className="text-[11px] font-semibold leading-tight text-dark-100">DrusaBoT</p>
                         <p className="text-[9px] text-dark-400 truncate">Ready to play</p>
                       </div>
                     </div>
@@ -161,7 +161,7 @@ export default function HeroSection() {
                     <div className="w-[22px] h-[22px] rounded bg-gradient-to-br from-accent-blue-600 to-accent-blue-300 flex items-center justify-center">
                       <span className="text-white font-black text-[9px]">DB</span>
                     </div>
-                    <span className="text-sm font-bold text-white">DiscBot</span>
+                    <span className="text-sm font-bold text-white">DrusaBoT</span>
                     <span className="flex items-center gap-1 text-[9px] px-1.5 py-0.5 rounded bg-accent-emerald/15 text-accent-emerald font-bold">
                       <span className="w-1 h-1 rounded-full bg-accent-emerald animate-pulse" />
                       LIVE

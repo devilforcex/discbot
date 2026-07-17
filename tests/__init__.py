@@ -1,1 +1,1 @@
-"""Test suite for DiscBot core helpers."""
+"""Test suite for DrusaBoT core helpers."""

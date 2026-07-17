@@ -1,23 +1,23 @@
 @echo off
 REM ============================================================
-REM  DiscBot — Start Lavalink + Discord Bot
+REM  DrusaBoT — Start Lavalink + Discord Bot
 REM  ------------------------------------------------------------
-REM  Lavalink lives in E:\discbot\lavalink\ with its own config & plugins.
-REM  The Discord bot lives in E:\discbot\ (root).
+REM  Lavalink lives in E:\DrusaBoT\lavalink\ with its own config & plugins.
+REM  The Discord bot lives in E:\DrusaBoT\ (root).
 REM  Opens two console windows: one for Lavalink, one for the bot.
 REM ============================================================
 setlocal
 chcp 65001 >nul
-title DiscBot Launcher
+title DrusaBoT Launcher
 
-cd /d "E:\discbot" 2>nul
+cd /d "E:\DrusaBoT" 2>nul
 if errorlevel 1 (
-    echo  ❌ E:\discbot does not exist or is not accessible. Run install.ps1 first.
+    echo  ❌ E:\DrusaBoT does not exist or is not accessible. Run install.ps1 first.
     pause
     exit /b 1
 )
 
-echo  🎵 DiscBot @ %CD%
+echo  🎵 DrusaBoT @ %CD%
 echo.
 
 if not exist ".env" (
@@ -32,7 +32,7 @@ if not exist ".venv\Scripts\python.exe" (
 )
 if not exist "lavalink\Lavalink.jar" (
     echo  ❌ lavalink\Lavalink.jar not found. Run setup.bat to download it,
-    echo     or place Lavalink.jar in E:\discbot\lavalink\.
+    echo     or place Lavalink.jar in E:\DrusaBoT\lavalink\.
     pause
     exit /b 1
 )
@@ -48,13 +48,13 @@ if not exist "lavalink\plugins\youtube-plugin-1.18.0.jar" (
 )
 
 echo  Starting Lavalink from lavalink/ (new window)...
-start "DiscBot — Lavalink" cmd /k "cd /d ""%CD%\lavalink"" && run_lavalink.bat"
+start "DrusaBoT — Lavalink" cmd /k "cd /d ""%CD%\lavalink"" && run_lavalink.bat"
 
 echo  Waiting for Lavalink to boot (10s)...
 timeout /t 10 /nobreak >nul
 
 echo  Starting bot (new window)...
-start "DiscBot — Bot" cmd /k "cd /d ""%CD%"" && .venv\Scripts\python.exe -m bot.main"
+start "DrusaBoT — Bot" cmd /k "cd /d ""%CD%"" && .venv\Scripts\python.exe -m bot.main"
 
 echo.
 echo  ✅ Both processes launched in separate windows.

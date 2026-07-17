@@ -1,7 +1,7 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    Starts DiscBot (Lavalink + Discord bot) from PowerShell.
+    Starts DrusaBoT (Lavalink + Discord bot) from PowerShell.
 
 .DESCRIPTION
     Launches Lavalink (java) in one new console window and the bot
@@ -9,7 +9,7 @@
     so Lavalink has time to bind before the bot connects.
 
 .PARAMETER InstallDir
-    Backward-compatible parameter. Only E:\discbot is accepted.
+    Backward-compatible parameter. Only E:\DrusaBoT is accepted.
 
 .EXAMPLE
     powershell -ExecutionPolicy Bypass -File scripts\windows\start.ps1
@@ -21,14 +21,14 @@ param(
 
 $ErrorActionPreference = "Stop"
 
-# Fixed install dir: all DiscBot files live under E:\discbot.
-$fixedDir = [IO.Path]::GetFullPath("E:\discbot")
+# Fixed install dir: all DrusaBoT files live under E:\DrusaBoT.
+$fixedDir = [IO.Path]::GetFullPath("E:\DrusaBoT")
 if ($InstallDir -and ([IO.Path]::GetFullPath($InstallDir).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
-    Write-Host "X  DiscBot is locked to E:\discbot. Refusing custom InstallDir: $InstallDir" -ForegroundColor Red
+    Write-Host "X  DrusaBoT is locked to E:\DrusaBoT. Refusing custom InstallDir: $InstallDir" -ForegroundColor Red
     exit 1
 }
-if ($env:DISCBOT_DIR -and ([IO.Path]::GetFullPath($env:DISCBOT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
-    Write-Host "X  DiscBot is locked to E:\discbot. Remove DISCBOT_DIR or set it to E:\discbot." -ForegroundColor Red
+if ($env:DrusaBoT_DIR -and ([IO.Path]::GetFullPath($env:DrusaBoT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Host "X  DrusaBoT is locked to E:\DrusaBoT. Remove DrusaBoT_DIR or set it to E:\DrusaBoT." -ForegroundColor Red
     exit 1
 }
 $InstallDir = $fixedDir
@@ -45,7 +45,7 @@ if (-not (Test-Path (Join-Path $lavalinkDir "Lavalink.jar"))) {
     exit 1
 }
 
-Write-Host "🎵 DiscBot @ $InstallDir" -ForegroundColor Magenta
+Write-Host "🎵 DrusaBoT @ $InstallDir" -ForegroundColor Magenta
 Write-Host "🎵 Starting Lavalink..." -ForegroundColor Cyan
 Start-Process powershell -ArgumentList "-NoExit", "-Command", "cd '$lavalinkDir'; java -jar Lavalink.jar" -WorkingDirectory $lavalinkDir
 

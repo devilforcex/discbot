@@ -1,5 +1,5 @@
 [project]
-name = "discbot"
+name = "DrusaBoT"
 version = "2.0.0"
 description = "Discord Music Bot with Lavalink, FastAPI Dashboard, and SQLite/PostgreSQL"
 readme = "README.md"

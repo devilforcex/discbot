@@ -1,8 +1,8 @@
 ; ============================================================
-;  DiscBot — Inno Setup installer script
+;  DrusaBoT — Inno Setup installer script
 ;  ------------------------------------------------------------
 ;  Builds a Windows setup.exe that:
-;    - Installs the bot to E:\discbot (fixed native Windows path)
+;    - Installs the bot to E:\DrusaBoT (fixed native Windows path)
 ;    - Creates Start Menu + Desktop shortcuts to start.bat / stop.bat
 ;    - Optionally runs first-time setup after install
 ;
@@ -14,13 +14,13 @@
 ;  Build:
 ;    1. Zip the repo contents (bot/, requirements.txt, .env.example, etc.)
 ;       alongside this .iss or just run ISCC from the repo root.
-;    2. Open DiscBot.iss in Inno Setup → Compile → produces Output\DiscBotSetup.exe
+;    2. Open DrusaBoT.iss in Inno Setup → Compile → produces Output\DrusaBoTSetup.exe
 ; ============================================================
 
-#define MyAppName "DiscBot"
+#define MyAppName "DrusaBoT"
 #define MyAppVersion "1.0.0"
 #define MyAppPublisher "Steel / devilforcex"
-#define MyAppURL "https://github.com/devilforcex/discbot"
+#define MyAppURL "https://github.com/devilforcex/DrusaBoT"
 #define MyAppExeName "start.bat"
 
 [Setup]
@@ -31,13 +31,13 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#MyAppURL}
 AppUpdatesURL={#MyAppURL}
-DefaultDirName=E:\discbot
-DefaultGroupName=DiscBot
+DefaultDirName=E:\DrusaBoT
+DefaultGroupName=DrusaBoT
 AllowNoIcons=yes
 DisableDirPage=yes
 DisableProgramGroupPage=yes
 OutputDir=Output
-OutputBaseFilename=DiscBotSetup
+OutputBaseFilename=DrusaBoTSetup
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern
@@ -81,12 +81,12 @@ Source: "README-windows.md"; DestDir: "{app}\scripts\windows"
 ; and updated frequently; setup.bat downloads the latest release on first run.
 
 [Icons]
-Name: "{group}\Start DiscBot"; Filename: "{app}\scripts\windows\start.bat"; WorkingDir: "{app}"
-Name: "{group}\Stop DiscBot"; Filename: "{app}\scripts\windows\stop.bat"; WorkingDir: "{app}"
+Name: "{group}\Start DrusaBoT"; Filename: "{app}\scripts\windows\start.bat"; WorkingDir: "{app}"
+Name: "{group}\Stop DrusaBoT"; Filename: "{app}\scripts\windows\stop.bat"; WorkingDir: "{app}"
 Name: "{group}\First-time Setup"; Filename: "{app}\scripts\windows\setup.bat"; WorkingDir: "{app}"
-Name: "{group}\DiscBot folder"; Filename: "{app}"
-Name: "{group}\Uninstall DiscBot"; Filename: "{uninstallexe}"
-Name: "{autodesktop}\DiscBot"; Filename: "{app}\scripts\windows\start.bat"; WorkingDir: "{app}"; Tasks: desktopicon
+Name: "{group}\DrusaBoT folder"; Filename: "{app}"
+Name: "{group}\Uninstall DrusaBoT"; Filename: "{uninstallexe}"
+Name: "{autodesktop}\DrusaBoT"; Filename: "{app}\scripts\windows\start.bat"; WorkingDir: "{app}"; Tasks: desktopicon
 
 [Run]
 ; First-time setup after install (creates venv, downloads Lavalink, opens .env)

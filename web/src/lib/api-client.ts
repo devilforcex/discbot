@@ -1,7 +1,7 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 function getToken(): string | null {
-  return localStorage.getItem("discbot_token");
+  return localStorage.getItem("DrusaBoT_token");
 }
 
 export class ApiError extends Error {

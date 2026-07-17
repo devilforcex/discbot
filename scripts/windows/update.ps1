@@ -1,10 +1,10 @@
 #Requires -Version 5.1
 <#
 .SYNOPSIS
-    One-line DiscBot updater for Windows (PowerShell).
+    One-line DrusaBoT updater for Windows (PowerShell).
 
 .DESCRIPTION
-    Pulls the latest code into the DiscBot install folder (default E:\discbot),
+    Pulls the latest code into the DrusaBoT install folder (default E:\DrusaBoT),
     refreshes pip dependencies in .venv, and (optionally) restarts the running
     bot.
 
@@ -14,7 +14,7 @@
       - Never overwrites .env, data/, logs/, or other gitignored runtime files.
 
 .PARAMETER InstallDir
-    Backward-compatible parameter. Only E:\discbot is accepted. If E:\discbot
+    Backward-compatible parameter. Only E:\DrusaBoT is accepted. If E:\DrusaBoT
     does not exist, the updater delegates to install.ps1.
 
 .PARAMETER Branch
@@ -39,13 +39,13 @@
     Non-interactive mode. With local tracked changes and without -Force, exits 1.
 
 .EXAMPLE
-    # One-liner (updates E:\discbot by default):
-    irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
+    # One-liner (updates E:\DrusaBoT by default):
+    irm https://raw.githubusercontent.com/devilforcex/DrusaBoT/master/scripts/windows/update.ps1 | iex
 
     # Force-clean tracked edits then update:
-    $env:DISCBOT_FORCE='1'; irm https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/update.ps1 | iex
+    $env:DrusaBoT_FORCE='1'; irm https://raw.githubusercontent.com/devilforcex/DrusaBoT/master/scripts/windows/update.ps1 | iex
 
-    # Fixed install dir: E:\discbot
+    # Fixed install dir: E:\DrusaBoT
 #>
 [CmdletBinding()]
 param(
@@ -59,7 +59,7 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-try { $Host.UI.RawUI.WindowTitle = "DiscBot — Updater" } catch {}
+try { $Host.UI.RawUI.WindowTitle = "DrusaBoT — Updater" } catch {}
 
 function Write-Step($msg) { Write-Host "`n==> $msg" -ForegroundColor Cyan }
 function Write-Ok($msg)   { Write-Host "    OK  $msg" -ForegroundColor Green }
@@ -86,31 +86,31 @@ function Get-ScriptsDir($root) {
     return $null
 }
 
-# Honor DISCBOT_FORCE=1 from the environment for one-liner force updates
-if (-not $Force -and $env:DISCBOT_FORCE -match '^(?i:1|true|yes)$') {
+# Honor DrusaBoT_FORCE=1 from the environment for one-liner force updates
+if (-not $Force -and $env:DrusaBoT_FORCE -match '^(?i:1|true|yes)$') {
     $Force = $true
 }
 
-# Hard requirement: every bot-related file must live under E:\discbot.
-$fixedDir = [IO.Path]::GetFullPath("E:\discbot")
+# Hard requirement: every bot-related file must live under E:\DrusaBoT.
+$fixedDir = [IO.Path]::GetFullPath("E:\DrusaBoT")
 if ($InstallDir -and ([IO.Path]::GetFullPath($InstallDir).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
-    Write-Fail "DiscBot is locked to E:\discbot. Refusing custom InstallDir: $InstallDir"
+    Write-Fail "DrusaBoT is locked to E:\DrusaBoT. Refusing custom InstallDir: $InstallDir"
 }
-if ($env:DISCBOT_DIR -and ([IO.Path]::GetFullPath($env:DISCBOT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
-    Write-Fail "DiscBot is locked to E:\discbot. Remove DISCBOT_DIR or set it to E:\discbot. Current: $env:DISCBOT_DIR"
+if ($env:DrusaBoT_DIR -and ([IO.Path]::GetFullPath($env:DrusaBoT_DIR).TrimEnd('\') -ne $fixedDir.TrimEnd('\'))) {
+    Write-Fail "DrusaBoT is locked to E:\DrusaBoT. Remove DrusaBoT_DIR or set it to E:\DrusaBoT. Current: $env:DrusaBoT_DIR"
 }
 $InstallDir = $fixedDir
 
 Write-Host ""
 Write-Host "==========================================" -ForegroundColor Magenta
-Write-Host "  DiscBot — Windows updater" -ForegroundColor Magenta
+Write-Host "  DrusaBoT — Windows updater" -ForegroundColor Magenta
 Write-Host "==========================================" -ForegroundColor Magenta
 Write-Host "  Folder: $InstallDir"
 Write-Host ""
 
 # If the folder doesn't exist (or has no .git), hand off to install.ps1
 if (-not (Test-Path $InstallDir) -or -not (Test-Path (Join-Path $InstallDir ".git"))) {
-    Write-Warn "No DiscBot installation found at '$InstallDir'."
+    Write-Warn "No DrusaBoT installation found at '$InstallDir'."
     if (Request-Confirm "Run the installer for '$InstallDir' now?" $true) {
         $scriptsDir = Get-ScriptsDir $InstallDir
         $localInstall = if ($scriptsDir) { Join-Path $scriptsDir "install.ps1" } else { $null }
@@ -120,9 +120,9 @@ if (-not (Test-Path $InstallDir) -or -not (Test-Path (Join-Path $InstallDir ".gi
         }
         # Download and run install.ps1 (same source as this one-liner)
         $installSrc = (New-Object Net.WebClient).DownloadString(
-            'https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/windows/install.ps1')
+            'https://raw.githubusercontent.com/devilforcex/DrusaBoT/master/scripts/windows/install.ps1')
         # Invoke with the same install dir via env so the downloaded script picks it up
-        $env:DISCBOT_DIR = $InstallDir
+        $env:DrusaBoT_DIR = $InstallDir
         Invoke-Expression $installSrc
         return
     } else {
@@ -158,7 +158,7 @@ if ($trackedDirty) {
     if ($Force) {
         $action = "discard"
     } elseif ($NoPrompt) {
-        Write-Fail "Tracked local changes found. Commit/stash them, re-run with -Force, or set `$env:DISCBOT_FORCE='1' for the one-liner."
+        Write-Fail "Tracked local changes found. Commit/stash them, re-run with -Force, or set `$env:DrusaBoT_FORCE='1' for the one-liner."
     } else {
         Write-Host "  How should the updater handle them?" -ForegroundColor Yellow
         Write-Host "    [S] Stash them, update, then leave the stash for you (safe)" -ForegroundColor Gray
@@ -172,7 +172,7 @@ if ($trackedDirty) {
 
     if ($action -eq "stash") {
         Write-Step "Stashing tracked local changes"
-        git stash push -m "discbot-update auto-stash $(Get-Date -Format o)" --
+        git stash push -m "DrusaBoT-update auto-stash $(Get-Date -Format o)" --
         if ($LASTEXITCODE -ne 0) {
             Write-Fail "git stash failed. Resolve manually in '$InstallDir'."
         }

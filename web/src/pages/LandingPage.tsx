@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useAuthStore } from "../hooks/use-auth-store";
 import HeroSection from "../features/landing/HeroSection";
 import SupportedSources from "../features/landing/SupportedSources";
-import WhyDiscBot from "../features/landing/WhyDiscBot";
+import WhyDrusaBoT from "../features/landing/WhyDrusaBoT";
 import StatsSection from "../features/landing/StatsSection";
 import Footer from "../features/landing/Footer";
 
@@ -22,7 +22,7 @@ export default function LandingPage() {
               <span className="text-white font-black text-xs">DB</span>
             </div>
             <span className="text-lg font-medium tracking-tight text-white">
-              DiscBot
+              DrusaBoT
             </span>
           </Link>
           <div className="hidden items-center gap-8 text-sm font-medium text-dark-300 md:flex">
@@ -46,7 +46,7 @@ export default function LandingPage() {
           <SupportedSources />
         </div>
         <div id="features">
-          <WhyDiscBot />
+          <WhyDrusaBoT />
         </div>
         <StatsSection />
       </main>

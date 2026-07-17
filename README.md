@@ -1,6 +1,6 @@
-# 🎵 DiscBot — Discord Music Bot
+# 🎵 DrusaBoT — Discord Music Bot
 
-**DiscBot** е мощен Discord музикален бот, изграден с **discord.py 2.4+**, **Wavelink 3.0+ (Lavalink v4)**, **FastAPI dashboard** и поддръжка за **SQLite / PostgreSQL**.
+**DrusaBoT** е мощен Discord музикален бот, изграден с **discord.py 2.4+**, **Wavelink 3.0+ (Lavalink v4)**, **FastAPI dashboard** и поддръжка за **SQLite / PostgreSQL**.
 
 > ⚠️ **Важно**: Този проект е за **локално стартиране** — няма Docker, няма контейнери. Просто стартираш Python скриптовете директно на твоя компютър.
 
@@ -9,7 +9,7 @@
 ## 📁 Структура на проекта
 
 ```
-discbot/
+DrusaBoT/
 ├── bot/                          # Основен код на бота
 │   ├── __init__.py
 │   ├── main.py                   # 🎯 ТОЧКА НА СТАРТ — тук започва всичко
@@ -78,7 +78,7 @@ discbot/
 
 ```bash
 # Клонирай репото
-cd E:\discbot
+cd E:\DrusaBoT
 
 # Интерактивен режим (препоръчително за първо стартиране)
 python setup.py
@@ -123,7 +123,7 @@ start_dashboard.bat
 
 ```bash
 # Клонирай репото
-cd E:\discbot
+cd E:\DrusaBoT
 
 # Създай виртуална среда
 python -m venv .venv
@@ -153,9 +153,9 @@ DASHBOARD_PASSWORD=твоя_парола
 
 **Опционално (за PostgreSQL):**
 ```env
-DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/discbot
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/DrusaBoT
 ```
-> Ако липсва → използва се `sqlite+aiosqlite:///discbot.db` (локален файл).
+> Ако липсва → използва се `sqlite+aiosqlite:///DrusaBoT.db` (локален файл).
 
 ### 4. Стартиране на Lavalink (отделно)
 
@@ -284,7 +284,7 @@ python -m bot.dashboard.dashboard
 
 ## 🤖 AI Chat асистент (OpenRouter / OpenAI-compatible)
 
-DiscBot има вграден AI асистент, който работи с всеки OpenAI-compatible API — **OpenRouter** (безплатни модели), **OpenAI**, или локален сървър.
+DrusaBoT има вграден AI асистент, който работи с всеки OpenAI-compatible API — **OpenRouter** (безплатни модели), **OpenAI**, или локален сървър.
 
 ### Конфигурация (`.env`)
 
@@ -400,9 +400,9 @@ LAVALINK_SECURE=false
 
 # === DATABASE ===
 # SQLite (default, local file)
-DATABASE_URL=sqlite+aiosqlite:///discbot.db
+DATABASE_URL=sqlite+aiosqlite:///DrusaBoT.db
 # PostgreSQL (production)
-# DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/discbot
+# DATABASE_URL=postgresql+asyncpg://user:pass@localhost:5432/DrusaBoT
 
 # === DASHBOARD ===
 DASHBOARD_HOST=0.0.0.0

@@ -1,24 +1,24 @@
 @echo off
 REM ============================================================
-REM  DiscBot — Update (Windows)
+REM  DrusaBoT — Update (Windows)
 REM  ------------------------------------------------------------
 REM  Pulls latest code from git, refreshes pip dependencies in
 REM  .venv, and reminds you to restart the bot. Everything stays
-REM  inside the repo folder (default E:\discbot if installed there).
+REM  inside the repo folder (default E:\DrusaBoT if installed there).
 REM  Ensure lavalink/application.yml exists after update.
 REM ============================================================
 setlocal
 chcp 65001 >nul
-title DiscBot — Update
+title DrusaBoT — Update
 
-cd /d "E:\discbot" 2>nul
+cd /d "E:\DrusaBoT" 2>nul
 if errorlevel 1 (
-    echo  ❌ E:\discbot does not exist or is not accessible. Run install.ps1 first.
+    echo  ❌ E:\DrusaBoT does not exist or is not accessible. Run install.ps1 first.
     pause
     exit /b 1
 )
 
-echo  ⬆️  Updating DiscBot in %CD%
+echo  ⬆️  Updating DrusaBoT in %CD%
 echo.
 
 where git >nul 2>&1
@@ -40,8 +40,8 @@ if "%TRACKED_DIRTY%"=="1" (
     echo  ⚠️  Tracked local changes found:
     git status --short --untracked-files=no
     echo.
-    if /I "%DISCBOT_FORCE%"=="1" (
-        echo  DISCBOT_FORCE=1 — discarding tracked changes (keeps .env / data / untracked)...
+    if /I "%DrusaBoT_FORCE%"=="1" (
+        echo  DrusaBoT_FORCE=1 — discarding tracked changes (keeps .env / data / untracked)...
         git reset --hard HEAD
         if errorlevel 1 (
             echo  ❌ git reset failed.
@@ -49,8 +49,8 @@ if "%TRACKED_DIRTY%"=="1" (
             exit /b 1
         )
     ) else (
-        echo  Commit/stash them, set DISCBOT_FORCE=1, or delete the repo and re-run install.ps1.
-        echo  PowerShell one-liner force:  set DISCBOT_FORCE=1 ^& irm ...update.ps1 ^| iex
+        echo  Commit/stash them, set DrusaBoT_FORCE=1, or delete the repo and re-run install.ps1.
+        echo  PowerShell one-liner force:  set DrusaBoT_FORCE=1 ^& irm ...update.ps1 ^| iex
         pause
         exit /b 1
     )

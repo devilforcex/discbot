@@ -1,6 +1,6 @@
 # Lavalink v4 Configuration Example — native Windows
-# Copy this file to E:\discbot\lavalink\application.yml
-# Keep it next to E:\discbot\lavalink\Lavalink.jar
+# Copy this file to E:\DrusaBoT\lavalink\application.yml
+# Keep it next to E:\DrusaBoT\lavalink\Lavalink.jar
 
 server:
   port: 12333

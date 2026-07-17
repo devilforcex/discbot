@@ -1,4 +1,4 @@
-# DiscBot - Port Configuration & Access URLs
+# DrusaBoT - Port Configuration & Access URLs
 
 ## Service Ports
 

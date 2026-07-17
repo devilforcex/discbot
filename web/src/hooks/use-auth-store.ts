@@ -17,20 +17,20 @@ export const useAuthStore = create<AuthState>()(
       guildId: "",
       userId: "",
       setToken: (token) => {
-        localStorage.setItem("discbot_token", token);
+        localStorage.setItem("DrusaBoT_token", token);
         set({ token });
       },
       setGuildId: (guildId) => {
-        localStorage.setItem("discbot_guild", guildId);
+        localStorage.setItem("DrusaBoT_guild", guildId);
         set({ guildId });
       },
       setUserId: (userId) => {
-        localStorage.setItem("discbot_user", userId);
+        localStorage.setItem("DrusaBoT_user", userId);
         set({ userId });
       },
     }),
     {
-      name: "discbot-auth",
+      name: "DrusaBoT-auth",
       partialize: (state) => ({
         token: state.token,
         guildId: state.guildId,

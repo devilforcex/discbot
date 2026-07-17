@@ -1,8 +1,8 @@
 @echo off
 REM ============================================================
-REM  DiscBot — First-time Windows setup
+REM  DrusaBoT — First-time Windows setup
 REM  ------------------------------------------------------------
-REM  Installs everything in E:\discbot — everything
+REM  Installs everything in E:\DrusaBoT — everything
 REM  (.venv, lavalink\Lavalink.jar, .env, data/, logs/) stays there.
 REM  Lavalink runs from lavalink/ subdirectory with application.yml and plugins.
 REM
@@ -17,22 +17,22 @@ REM    7. Open .env in Notepad for editing
 REM ============================================================
 setlocal enabledelayedexpansion
 chcp 65001 >nul
-title DiscBot — First-time Setup
+title DrusaBoT — First-time Setup
 
 echo.
 echo  ==========================================
-echo   🎵 DiscBot — Windows Setup
+echo   🎵 DrusaBoT — Windows Setup
 echo  ==========================================
 echo.
 
 REM ---------- Resolve repo root ----------
-REM Hard requirement: everything runs only from E:\discbot.
-if /I not "%CD%"=="E:\discbot" (
-    cd /d "E:\discbot" 2>nul
+REM Hard requirement: everything runs only from E:\DrusaBoT.
+if /I not "%CD%"=="E:\DrusaBoT" (
+    cd /d "E:\DrusaBoT" 2>nul
 )
 if errorlevel 1 (
-    echo  ❌ E:\discbot does not exist or is not accessible.
-    echo     Run install.ps1 first, or create E:\discbot and clone the repo there.
+    echo  ❌ E:\DrusaBoT does not exist or is not accessible.
+    echo     Run install.ps1 first, or create E:\DrusaBoT and clone the repo there.
     pause
     exit /b 1
 )

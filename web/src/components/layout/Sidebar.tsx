@@ -23,10 +23,10 @@ export default function Sidebar() {
       <div className="mb-6 flex items-center gap-3 px-2">
         <img
           src="/assets/steel-avatar.png"
-          alt="DiscBot"
+          alt="DrusaBoT"
           className="h-9 w-9 rounded-full"
         />
-        <span className="text-lg font-semibold text-dark-100 font-[family-name:var(--font-heading)]">DiscBot</span>
+        <span className="text-lg font-semibold text-dark-100 font-[family-name:var(--font-heading)]">DrusaBoT</span>
       </div>
 
       <div className="mb-4 px-2">

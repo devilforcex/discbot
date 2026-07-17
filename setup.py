@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-DiscBot Modern Installer
+DrusaBoT Modern Installer
 Installs and configures everything except tokens/credentials (interactive step included).
 Run: python setup.py
 """
@@ -279,7 +279,7 @@ def create_start_scripts() -> bool:
 
     # Windows batch
     bat_content = """@echo off
-REM DiscBot Windows Start Script
+REM DrusaBoT Windows Start Script
 cd /d "%~dp0"
 call .venv\\Scripts\\activate.bat
 python -m bot.main
@@ -289,7 +289,7 @@ pause
 
     # Linux/Mac shell
     sh_content = """#!/bin/bash
-# DiscBot Linux/macOS Start Script
+# DrusaBoT Linux/macOS Start Script
 cd "$(dirname "$0")"
 source .venv/bin/activate
 python -m bot.main
@@ -383,7 +383,7 @@ def print_summary() -> None:
 
 
 async def main() -> int:
-    parser = ArgumentParser(description="DiscBot Installer")
+    parser = ArgumentParser(description="DrusaBoT Installer")
     parser.add_argument("--non-interactive", "--auto", action="store_true",
                         help="Run in non-interactive mode (use defaults, skip prompts)")
     parser.add_argument("--skip-tests", action="store_true", help="Skip running tests")
@@ -395,7 +395,7 @@ async def main() -> int:
 
     if RICH_AVAILABLE:
         CONSOLE.print(Panel.fit(
-            "[bold magenta]DiscBot Installer[/bold magenta]\n"
+            "[bold magenta]DrusaBoT Installer[/bold magenta]\n"
             "[dim]Modern setup with interactive configuration[/dim]",
             border_style="magenta"
         ))

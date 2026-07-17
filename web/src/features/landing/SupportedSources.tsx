@@ -18,7 +18,7 @@ export default function SupportedSources() {
           World-class players, one bot
         </h2>
         <p className="text-dark-300 text-base leading-relaxed max-w-[520px]">
-          Stream from the services you already love — DiscBot plays them all through
+          Stream from the services you already love — DrusaBoT plays them all through
           Lavalink v4 audio node.
         </p>
       </div>
