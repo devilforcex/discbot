@@ -11,10 +11,13 @@
   --color-dark-200: #b0b8c8;
   --color-dark-100: #e0e4ec;
 
+  /* Boogie-style blue accent colors */
   --color-accent-violet: #681FD1;
   --color-accent-fuchsia: #9b59b6;
-  --color-accent-blue: #3b82f6;
-  --color-accent-emerald: #10b981;
+  --color-accent-blue: #4a9fff;
+  --color-accent-blue-600: #1c7eef;
+  --color-accent-blue-300: #7fbaff;
+  --color-accent-emerald: #5ffeb1;
   --color-accent-amber: #f59e0b;
   --color-accent-red: #ef4444;
   --color-accent-gold: #FFD93D;
@@ -49,6 +52,11 @@
     display: flex;
     flex-direction: column;
   }
+
+  ::selection {
+    background: rgba(74, 159, 255, 0.3);
+    color: #fff;
+  }
 }
 
 @layer utilities {
@@ -77,6 +85,21 @@
     background-clip: text;
   }
 
+  .text-gradient-blue {
+    background: linear-gradient(135deg, #1c7eef, #7fbaff);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .glow-blue {
+    box-shadow: 0 0 20px rgba(74, 159, 255, 0.15), 0 0 60px rgba(74, 159, 255, 0.05);
+  }
+
+  .glow-blue-strong {
+    box-shadow: 0 8px 30px rgba(28, 126, 239, 0.45);
+  }
+
   .glow-violet {
     box-shadow: 0 0 20px rgba(104, 31, 209, 0.15), 0 0 60px rgba(104, 31, 209, 0.05);
   }
@@ -89,10 +112,6 @@
     box-shadow: 0 0 20px rgba(255, 217, 61, 0.15), 0 0 60px rgba(255, 217, 61, 0.05);
   }
 
-  .text-shadow-heading {
-    text-shadow: 0 0 40px rgba(104, 31, 209, 0.2);
-  }
-
   .bg-grid {
     background-image:
       linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
@@ -100,8 +119,8 @@
     background-size: 48px 48px;
   }
 
-  .bg-radial {
-    background-image: radial-gradient(ellipse at center, rgba(104, 31, 209, 0.08) 0%, transparent 70%);
+  .bg-radial-blue {
+    background-image: radial-gradient(ellipse at center, rgba(74, 159, 255, 0.08) 0%, transparent 70%);
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -127,6 +146,21 @@
   50% { opacity: 0.8; }
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 3s ease-in-out infinite;
+@keyframes bar1 {
+  0%, 100% { height: 60%; }
+  50% { height: 100%; }
 }
+
+@keyframes bar2 {
+  0%, 100% { height: 80%; }
+  50% { height: 40%; }
+}
+
+@keyframes bar3 {
+  0%, 100% { height: 40%; }
+  50% { height: 90%; }
+}
+
+.animate-bar1 { animation: bar1 0.8s ease-in-out infinite; }
+.animate-bar2 { animation: bar2 0.8s ease-in-out infinite 0.15s; }
+.animate-bar3 { animation: bar3 0.8s ease-in-out infinite 0.3s; }
