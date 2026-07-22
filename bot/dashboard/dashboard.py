@@ -52,7 +52,7 @@ class DashboardServer:
         self._app.add_middleware(
             CORSMiddleware,
             allow_origins=cors_origins,
-            allow_methods=["GET", "POST"],
+            allow_methods=["GET", "POST", "DELETE"],
             allow_headers=["*"],
         )
 

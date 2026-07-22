@@ -100,16 +100,17 @@ def register_routes(app, bot, security, check_write_auth):
 
     @app.get("/api/lavalink")
     async def api_lavalink_status():
+        if not hasattr(bot, "lavalink") or not bot.lavalink:
+            return {"connected": False, "reason": "Lavalink client not initialized"}
         try:
-            # Use the bot's Lavalink client health check for consistency
             health = await bot.lavalink.health_check()
             if health.get("connected"):
                 return {
                     "connected": True,
                     "uri": health.get("uri"),
-                    "latency_ms": None,  # Not in health check, could be added
+                    "latency_ms": None,
                     "players": health.get("players", 0),
-                    "playing_players": 0,  # Not in health check
+                    "playing_players": 0,
                 }
         except Exception:
             logger.warning("Lavalink status check failed")
@@ -136,7 +137,10 @@ def register_routes(app, bot, security, check_write_auth):
     @app.get("/api/nowplaying/{guild_id}")
     async def api_now_playing(guild_id: int):
         player = discord.utils.get(bot.voice_clients, guild__id=guild_id)
-        if player and getattr(player, "playing", False) and getattr(player, "last_track", None):
+        # Check for both playing and paused states — a paused player still has a track
+        if player and getattr(player, "last_track", None) and (
+            getattr(player, "playing", False) or getattr(player, "paused", False)
+        ):
             track = player.last_track
             loop_mode = None
             try:
@@ -151,7 +155,7 @@ def register_routes(app, bot, security, check_write_auth):
                 "uri": track.uri,
                 "length": track.length,
                 "position": player.position if hasattr(player, "position") else 0,
-                "paused": player.paused,
+                "paused": getattr(player, "paused", False),
                 "volume": player.get_volume() if hasattr(player, "get_volume") else 50,
                 "artwork_url": getattr(track, "artwork_url", None),
                 "autoplay": getattr(player, "autoplay_enabled", False),
@@ -463,7 +467,7 @@ def register_routes(app, bot, security, check_write_auth):
                 raise HTTPException(status_code=400, detail="Nothing playing")
 
             if action == "skip":
-                if not player.playing:
+                if not player.playing and not player.paused:
                     raise HTTPException(status_code=400, detail="Nothing playing")
                 await player.stop()
                 await _broadcast_ws(bot, guild_id)
@@ -526,8 +530,12 @@ def register_routes(app, bot, security, check_write_auth):
         }
 
     @app.post("/api/chat")
-    async def api_chat(req: ChatRequest, _: HTTPAuthorizationCredentials = Depends(check_write_auth)):
+    async def api_chat(
+        req: ChatRequest,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
+    ):
         """Send a message to the AI assistant and get a response."""
+        check_write_auth(credentials)
         from bot.core.services.ai_service import get_ai_service
 
         ai = get_ai_service()
@@ -559,9 +567,12 @@ def register_routes(app, bot, security, check_write_auth):
 
     @app.delete("/api/chat/history/{guild_id}/{user_id}")
     async def api_chat_clear(
-        guild_id: int, user_id: int, _: HTTPAuthorizationCredentials = Depends(check_write_auth)
+        guild_id: int,
+        user_id: int,
+        credentials: HTTPAuthorizationCredentials | None = Depends(security),
     ):
         """Clear conversation history for a user in a guild."""
+        check_write_auth(credentials)
         from bot.core.services.ai_service import get_ai_service
 
         ai = get_ai_service()
