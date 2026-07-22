@@ -4,6 +4,39 @@
 
 ---
 
+
+## ⚡ Еднокомандна инсталация (препоръчително)
+
+Ако имаш чист Ubuntu/Debian VPS, можеш да инсталираш всичко автоматично с една команда:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/install.sh | sudo bash
+```
+
+Или с `wget`:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/install.sh | sudo bash
+```
+
+> ⚠️ **Важно**: След инсталацията задължително редактирай `.env` файла:
+> ```bash
+> sudo nano /home/discbot/discbot/.env
+> ```
+> и попълни `DISCORD_BOT_TOKEN`, `LAVALINK_PASSWORD`, `DASHBOARD_SECRET_KEY`.
+
+Скриптът прави следното:
+- Обновява системата
+- Инсталира Python 3.11+, Java 17, FFmpeg, Node.js
+- Създава потребител `discbot`
+- Клонира репото в `/home/discbot/discbot`
+- Създава виртуална среда и инсталира зависимостите
+- Build-ва frontend-а
+- Създава systemd услуги за Lavalink, Bot и Dashboard
+- Настройва UFW защитната стена
+
+---
+
 ## 📋 Съдържание
 
 1. [Изисквания](#изисквания)
@@ -16,6 +49,8 @@
 8. [Защитна стена и сигурност](#защитна-стена-и-сигурност)
 9. [Обновяване](#обновяване)
 10. [Отстраняване на проблеми](#отстраняване-на-проблеми)
+
+> 💡 Ако ползваш **еднокомандната инсталация** по-горе, можеш да пропуснеш стъпките 2-6.
 
 ---
 

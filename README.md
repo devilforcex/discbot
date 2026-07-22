@@ -429,6 +429,29 @@ YTMUSIC_COOKIES_FILE=ytmusic_cookies.json  # за YouTube Music качество
 
 ---
 
+## ⚡ Бърза автоматична инсталация на VPS
+
+Инсталирай бота с една команда на чист Ubuntu/Debian VPS:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/install.sh | sudo bash
+```
+
+Или с `wget`:
+
+```bash
+wget -qO- https://raw.githubusercontent.com/devilforcex/discbot/master/scripts/install.sh | sudo bash
+```
+
+> ⚠️ След инсталацията задължително редактирай `.env` файла с токените:
+> ```bash
+> sudo nano /home/discbot/discbot/.env
+> ```
+
+Пълно ръководство за Hostinger VPS: **[docs/HOSTINGER_VPS_INSTALL.md](docs/HOSTINGER_VPS_INSTALL.md)**
+
+---
+
 ## 🚀 Как да пусна и спра бота
 
 Виж отделното ръководство: **[START_STOP.md](START_STOP.md)**
