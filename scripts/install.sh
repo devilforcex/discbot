@@ -70,6 +70,8 @@ success "System updated"
 
 # ── Install dependencies ───────────────────────────────────
 info "Installing dependencies..."
+
+# Install base dependencies
 apt install -y \
     curl \
     wget \
@@ -84,9 +86,29 @@ apt install -y \
     python3-venv \
     python3-dev \
     openjdk-17-jre-headless \
-    ffmpeg \
-    nodejs \
-    npm
+    ffmpeg
+
+# Install Node.js 20.x from NodeSource (includes npm)
+if ! command -v node &>/dev/null; then
+    info "Installing Node.js 20.x..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt install -y nodejs
+else
+    NODE_VERSION=$(node --version | cut -d'v' -f2 | cut -d'.' -f1)
+    if [ "$NODE_VERSION" -lt 20 ]; then
+        info "Upgrading Node.js to 20.x..."
+        curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+        apt install -y nodejs
+    else
+        info "Node.js $(node --version) already installed"
+    fi
+fi
+
+# npm comes bundled with NodeSource Node.js, but ensure it's available
+if ! command -v npm &>/dev/null; then
+    warn "npm not found, attempting to install separately..."
+    apt install -y npm || warn "Could not install npm separately — frontend build will be skipped"
+fi
 
 # Ensure Python 3.11+ on Ubuntu 22.04
 PYTHON_VERSION=$(python3 --version 2>&1 | awk '{print $2}' | cut -d. -f1,2)
