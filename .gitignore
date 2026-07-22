@@ -47,6 +47,10 @@ env/
 .DS_Store
 Thumbs.db
 
+# Agent / IDE local settings
+.agents/
+.claude/
+
 # Dashboard runtime cache only (keep templates/static in repo)
 # bot/dashboard/static/
 # bot/dashboard/templates/
