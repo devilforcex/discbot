@@ -26,8 +26,7 @@ REM 2. Start Discord Bot (includes Dashboard on port 18080)
 REM ------------------------------------------------------------
 echo.
 echo [DrusaBoT] Starting Discord Bot with Dashboard on port 18080...
-call .venv\Scripts\activate.bat
-start "DrusaBoT - Bot" /B python -m bot.main
+start "DrusaBoT - Bot" cmd /C "call .venv\Scripts\activate.bat && python -m bot.main"
 
 echo.
 echo [DrusaBoT] All services starting...

@@ -429,6 +429,17 @@ YTMUSIC_COOKIES_FILE=ytmusic_cookies.json  # за YouTube Music качество
 
 ---
 
+## 🚀 Как да пусна и спра бота
+
+Виж отделното ръководство: **[START_STOP.md](START_STOP.md)**
+
+Там има най-актуални команди за стартиране и спиране, включително:
+- `start_all.bat` / `stop_all.bat`
+- Стартиране поотделно (Lavalink, Bot, Dashboard)
+- Проверки и health endpoints
+
+---
+
 ## 📄 Лиценз
 
 MIT License — свободно за използване, модификация и дистрибуция.
