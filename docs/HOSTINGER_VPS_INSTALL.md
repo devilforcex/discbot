@@ -457,7 +457,54 @@ sudo dpkg-reconfigure -plow unattended-upgrades
 
 ## Обновяване
 
-### Ръчно обновяване
+### Автоматичен update скрипт (препоръчително)
+
+Проектът включва готов скрипт `scripts/update.sh`, който прави всичко автоматично:
+
+- Спира услугите (bot + dashboard)
+- Изтегля последните промени от git
+- Обновява Python зависимостите
+- Проверява за frontend промени и rebuild-ва ако трябва
+- Стартира услугите отново
+- Показва статус и логове
+
+**Еднократна настройка:**
+
+```bash
+cd /home/discbot/discbot
+chmod +x scripts/update.sh
+```
+
+**Използване:**
+
+```bash
+# Стандартен update (всичко)
+./scripts/update.sh
+
+# Без frontend rebuild (ако нямаш Node.js на VPS-а)
+./scripts/update.sh --skip-frontend
+
+# Без pip install (ако не са се променили зависимости)
+./scripts/update.sh --skip-deps
+
+# Само pull, без рестарт на услугите
+./scripts/update.sh --no-restart
+
+# Update от конкретен branch
+./scripts/update.sh --branch develop
+
+# Помощ
+./scripts/update.sh --help
+```
+
+> 💡 **Съвет**: Добави alias в `~/.bashrc` за бърз достъп:
+> ```bash
+> echo 'alias updatebot="/home/discbot/discbot/scripts/update.sh"' >> ~/.bashrc
+> source ~/.bashrc
+> # Сега можеш просто: updatebot
+> ```
+
+### Ръчно обновяване (ако не ползваш скрипта)
 
 ```bash
 cd /home/discbot/discbot
@@ -467,7 +514,7 @@ sudo systemctl stop discbot
 sudo systemctl stop discbot-dashboard
 
 # Изтегли последните промени
-git pull origin main
+git pull origin master
 
 # Обнови зависимостите
 source .venv/bin/activate
@@ -479,42 +526,6 @@ cd web && npm install && npm run build && cd ..
 # Стартирай услугите
 sudo systemctl start discbot
 sudo systemctl start discbot-dashboard
-```
-
-### Автоматичен скрипт за обновяване
-
-```bash
-nano /home/discbot/update.sh
-```
-
-```bash
-#!/bin/bash
-set -e
-
-cd /home/discbot/discbot
-
-echo "🛑 Спиране на услугите..."
-sudo systemctl stop discbot discbot-dashboard
-
-echo "📥 Изтегляне на обновления..."
-git pull origin main
-
-echo "📦 Обновяване на зависимости..."
-source .venv/bin/activate
-pip install -r requirements.txt
-
-echo "🎨 Обновяване на frontend..."
-cd web && npm install && npm run build && cd ..
-
-echo "🚀 Стартиране на услугите..."
-sudo systemctl start discbot discbot-dashboard
-
-echo "✅ Обновяването завърши!"
-sudo systemctl status discbot --no-pager
-```
-
-```bash
-chmod +x /home/discbot/update.sh
 ```
 
 ---
